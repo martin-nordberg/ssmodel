@@ -31,6 +31,7 @@ export const ssaRules = {
   latestAwiYear: Math.max(...awiTable.keys()),
   latestColaYear: Math.max(...colaTable.keys()),
   latestTaxableMaxYear: Math.max(...taxableMaxTable.keys()),
+  latestEarningsTestYear: Math.max(...earningsTestTable.keys()),
   /** Published AWI for a year, or undefined when not yet published. */
   awi: (year: number): number | undefined => awiTable.get(year),
   taxableMax: (year: number): number | undefined => taxableMaxTable.get(year),

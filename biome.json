@@ -3,7 +3,15 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!src/components/ui", "!src/index.css", "!docs", "!data/history", "!public"]
+    "includes": [
+      "**",
+      "!src/components/ui",
+      "!src/index.css",
+      "!docs",
+      "!data/history",
+      "!public",
+      "!test/fixtures/golden"
+    ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
   "linter": {

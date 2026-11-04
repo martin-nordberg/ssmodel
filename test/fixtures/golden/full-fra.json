@@ -1,0 +1,1942 @@
+{
+ "summary": {
+  "claim": 24340,
+  "lastYear": 2056,
+  "deathMonth": [
+   24627,
+   24672
+  ],
+  "depletedYear": null,
+  "totalShortfallReal": 0,
+  "minLiquidReal": 1300806.05,
+  "terminalNominal": 2793901.62,
+  "terminalRealAfterTax": 1365271.47,
+  "lifetimeSsReal": 1237000.6,
+  "pvSsReal": 960205.27,
+  "lifetimeTaxReal": 181033.74,
+  "irmaaReal": 0,
+  "bequestMet": true
+ },
+ "rows": [
+  {
+   "year": 2027,
+   "ages": [
+    66,
+    64
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1,
+   "ss": [
+    0,
+    16800
+   ],
+   "earnings": 55000,
+   "otherIncome": 0,
+   "investmentIncome": 6800,
+   "rmd": 0,
+   "inheritedDistributions": 31428.57,
+   "required": [
+    0,
+    0,
+    0,
+    31428.57,
+    7518.79,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    0,
+    0,
+    24707.26,
+    0,
+    0,
+    0
+   ],
+   "expenses": 93600,
+   "healthcare": 23718.79,
+   "irmaa": 0,
+   "hsaMedical": 7518.79,
+   "agi": 131156.12,
+   "magi": 131156.12,
+   "taxableIncome": 90459.87,
+   "federalTax": 9698.78,
+   "scTax": 3257.36,
+   "payrollTax": 5179.43,
+   "totalTax": 18135.58,
+   "shortfall": 0,
+   "surplus": 0.26,
+   "endBalances": [
+    193410,
+    685100,
+    95040,
+    175404.62,
+    18758.93,
+    317850,
+    41400.26
+   ],
+   "liquid": 1526963.82,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2028,
+   "ages": [
+    67,
+    65
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.02,
+   "ss": [
+    26616,
+    17208
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 7170.31,
+   "rmd": 0,
+   "inheritedDistributions": 29234.1,
+   "required": [
+    0,
+    0,
+    0,
+    29234.1,
+    9270.79,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    0,
+    0,
+    86096.91,
+    0,
+    21535.87,
+    0
+   ],
+   "expenses": 156900,
+   "healthcare": 15252.95,
+   "irmaa": 0,
+   "hsaMedical": 9270.79,
+   "agi": 166693.2,
+   "magi": 166693.2,
+   "taxableIncome": 119399.2,
+   "federalTax": 14270.02,
+   "scTax": 3538.63,
+   "payrollTax": 0,
+   "totalTax": 17808.64,
+   "shortfall": 0,
+   "surplus": 0.08,
+   "endBalances": [
+    207819.05,
+    722095.4,
+    100362.24,
+    67188.36,
+    10339.61,
+    314594.76,
+    42849.36
+   ],
+   "liquid": 1465248.77,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2029,
+   "ages": [
+    68,
+    66
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.05,
+   "ss": [
+    40920,
+    17640
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 7162.43,
+   "rmd": 0,
+   "inheritedDistributions": 13437.67,
+   "required": [
+    0,
+    0,
+    0,
+    13437.67,
+    9782.09,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    0,
+    0,
+    36546.68,
+    0,
+    0,
+    0
+   ],
+   "expenses": 97245,
+   "healthcare": 14977.52,
+   "irmaa": 0,
+   "hsaMedical": 9782.09,
+   "agi": 99209.56,
+   "magi": 99209.56,
+   "taxableIncome": 60979.94,
+   "federalTax": 6103.93,
+   "scTax": 0,
+   "payrollTax": 0,
+   "totalTax": 6103.93,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    223301.56,
+    761088.55,
+    105982.53,
+    19757.61,
+    888.7,
+    333313.15,
+    44349.08
+   ],
+   "liquid": 1488681.2,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2030,
+   "ages": [
+    69,
+    67
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.08,
+   "ss": [
+    41940,
+    18084
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 7551.85,
+   "rmd": 0,
+   "inheritedDistributions": 4939.4,
+   "required": [
+    0,
+    0,
+    0,
+    4939.4,
+    888.7,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    42953.57,
+    0,
+    14818.21,
+    0,
+    0,
+    0
+   ],
+   "expenses": 99136.12,
+   "healthcare": 15582.23,
+   "irmaa": 0,
+   "hsaMedical": 888.7,
+   "agi": 121283.43,
+   "magi": 121283.43,
+   "taxableIncome": 82098.08,
+   "federalTax": 8584.32,
+   "scTax": 321.16,
+   "payrollTax": 0,
+   "totalTax": 8905.48,
+   "shortfall": 0,
+   "surplus": 0.05,
+   "endBalances": [
+    239937.53,
+    758089.27,
+    111917.55,
+    601.36,
+    27.05,
+    353145.29,
+    45901.35
+   ],
+   "liquid": 1509619.39,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2031,
+   "ages": [
+    70,
+    68
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.1,
+   "ss": [
+    42996,
+    18540
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 7963.16,
+   "rmd": 0,
+   "inheritedDistributions": 200.45,
+   "required": [
+    0,
+    0,
+    0,
+    200.45,
+    27.05,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    55495.9,
+    0,
+    400.91,
+    0,
+    0,
+    0
+   ],
+   "expenses": 93874.53,
+   "healthcare": 16211.37,
+   "irmaa": 0,
+   "hsaMedical": 27.05,
+   "agi": 113264.58,
+   "magi": 113264.58,
+   "taxableIncome": 73099.59,
+   "federalTax": 7447.98,
+   "scTax": 125.73,
+   "payrollTax": 0,
+   "totalTax": 7573.71,
+   "shortfall": 0,
+   "surplus": 0.71,
+   "endBalances": [
+    257812.88,
+    742051.5,
+    118184.93,
+    18.3,
+    0.82,
+    374157.43,
+    47508.61
+   ],
+   "liquid": 1539734.48,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2032,
+   "ages": [
+    71,
+    69
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.13,
+   "ss": [
+    44064,
+    18996
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 8397.64,
+   "rmd": 0,
+   "inheritedDistributions": 9.15,
+   "required": [
+    0,
+    0,
+    0,
+    9.15,
+    0.82,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    38871.15,
+    0,
+    9.15,
+    0,
+    0,
+    0
+   ],
+   "expenses": 81461.39,
+   "healthcare": 16865.9,
+   "irmaa": 0,
+   "hsaMedical": 0.82,
+   "agi": 82881.62,
+   "magi": 82881.62,
+   "taxableIncome": 41712.5,
+   "federalTax": 3622.11,
+   "scTax": 0,
+   "payrollTax": 0,
+   "totalTax": 3622.11,
+   "shortfall": 0,
+   "surplus": 0.88,
+   "endBalances": [
+    277019.94,
+    742215.41,
+    124803.29,
+    0.56,
+    0.03,
+    396419.8,
+    49172.31
+   ],
+   "liquid": 1589631.32,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2033,
+   "ages": [
+    72,
+    70
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.16,
+   "ss": [
+    35231.04,
+    15191.28
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 8856.59,
+   "rmd": 0,
+   "inheritedDistributions": 0.56,
+   "required": [
+    0,
+    0,
+    0,
+    0.56,
+    0.03,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    57276.43,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 83497.93,
+   "healthcare": 17546.86,
+   "irmaa": 0,
+   "hsaMedical": 0.03,
+   "agi": 108992.55,
+   "magi": 108992.55,
+   "taxableIncome": 66794.21,
+   "federalTax": 6569.45,
+   "scTax": 84.83,
+   "payrollTax": 0,
+   "totalTax": 6654.28,
+   "shortfall": 0,
+   "surplus": 0.27,
+   "endBalances": [
+    297657.92,
+    723492.47,
+    131792.27,
+    0.02,
+    0,
+    420006.78,
+    50893.61
+   ],
+   "liquid": 1623843.07,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2034,
+   "ages": [
+    73,
+    71
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.19,
+   "ss": [
+    36110.88,
+    15575.04
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 9341.4,
+   "rmd": 0,
+   "inheritedDistributions": 0.02,
+   "required": [
+    0,
+    0,
+    0,
+    0.02,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    59049.12,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 85585.37,
+   "healthcare": 18255.31,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 112323.57,
+   "magi": 112323.57,
+   "taxableIncome": 69070.27,
+   "federalTax": 6776.89,
+   "scTax": 117.18,
+   "payrollTax": 0,
+   "totalTax": 6894.07,
+   "shortfall": 0,
+   "surplus": 0.3,
+   "endBalances": [
+    319833.44,
+    701938.58,
+    139172.64,
+    0,
+    0,
+    444997.18,
+    52675.19
+   ],
+   "liquid": 1658617.02,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2035,
+   "ages": [
+    74,
+    72
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.22,
+   "ss": [
+    37009.44,
+    15958.8
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 9853.58,
+   "rmd": 0,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    60891.79,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 87725.01,
+   "healthcare": 18992.37,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 115768.38,
+   "magi": 115768.38,
+   "taxableIncome": 71433.74,
+   "federalTax": 6991.42,
+   "scTax": 151.23,
+   "payrollTax": 0,
+   "totalTax": 7142.65,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    343661.03,
+    677329,
+    146966.3,
+    0,
+    0,
+    471474.51,
+    54518.83
+   ],
+   "liquid": 1693949.67,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2036,
+   "ages": [
+    75,
+    73
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.25,
+   "ss": [
+    37936.08,
+    16361.28
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 10394.7,
+   "rmd": 27533.7,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    27533.7,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    35245.74,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 89918.13,
+   "healthcare": 19759.19,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 119326.89,
+   "magi": 119326.89,
+   "taxableIncome": 73883.89,
+   "federalTax": 7212.76,
+   "scTax": 186.69,
+   "payrollTax": 0,
+   "totalTax": 7399.45,
+   "shortfall": 0,
+   "surplus": 0.02,
+   "endBalances": [
+    369263.77,
+    649452.57,
+    155196.42,
+    0,
+    0,
+    499527.24,
+    56427.01
+   ],
+   "liquid": 1729867.02,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2037,
+   "ages": [
+    76,
+    74
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.28,
+   "ss": [
+    38890.8,
+    16773.12
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 10966.44,
+   "rmd": 27403.06,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    27403.06,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    37321.1,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 92166.09,
+   "healthcare": 20556.97,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 123004.93,
+   "magi": 123004.93,
+   "taxableIncome": 76425.85,
+   "federalTax": 7441.33,
+   "scTax": 223.64,
+   "payrollTax": 0,
+   "totalTax": 7664.96,
+   "shortfall": 0,
+   "surplus": 0.06,
+   "endBalances": [
+    396773.92,
+    618074.28,
+    163887.42,
+    0,
+    0,
+    529249.12,
+    58402.01
+   ],
+   "liquid": 1766386.75,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2038,
+   "ages": [
+    77,
+    75
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.31,
+   "ss": [
+    39854.88,
+    17184.96
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 11570.55,
+   "rmd": 33652.23,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    26990.14,
+    6662.09,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    33106.35,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 94470.24,
+   "healthcare": 21386.95,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 126813,
+   "magi": 126813,
+   "taxableIncome": 79069.45,
+   "federalTax": 7678.09,
+   "scTax": 263.13,
+   "payrollTax": 0,
+   "totalTax": 7941.22,
+   "shortfall": 0,
+   "surplus": 0.01,
+   "endBalances": [
+    426333.58,
+    589752.52,
+    166219.02,
+    0,
+    0,
+    560739.44,
+    60446.09
+   ],
+   "liquid": 1803490.66,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2039,
+   "ages": [
+    78,
+    76
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.34,
+   "ss": [
+    40856.4,
+    17615.52
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 12208.92,
+   "rmd": 33820.39,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    26806.93,
+    7013.46,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    35016.38,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 96832,
+   "healthcare": 22250.45,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 130746.83,
+   "magi": 130746.83,
+   "taxableIncome": 81809.69,
+   "federalTax": 7922.22,
+   "scTax": 303.88,
+   "payrollTax": 0,
+   "totalTax": 8226.1,
+   "shortfall": 0,
+   "surplus": 0.14,
+   "endBalances": [
+    458095.43,
+    558128.56,
+    168320.13,
+    0,
+    0,
+    594103.43,
+    62561.85
+   ],
+   "liquid": 1841209.41,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2040,
+   "ages": [
+    79,
+    77
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.38,
+   "ss": [
+    41876.64,
+    18055.44
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 12883.53,
+   "rmd": 33801.81,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    26451.59,
+    7350.22,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    37188.98,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 99252.8,
+   "healthcare": 23148.82,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 134816.59,
+   "magi": 134816.59,
+   "taxableIncome": 84656.02,
+   "federalTax": 8174.62,
+   "scTax": 346.56,
+   "payrollTax": 0,
+   "totalTax": 8521.18,
+   "shortfall": 0,
+   "surplus": 0.08,
+   "endBalances": [
+    492223.54,
+    522931.23,
+    170192.83,
+    0,
+    0,
+    629452.59,
+    64751.6
+   ],
+   "liquid": 1879551.79,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2041,
+   "ages": [
+    80,
+    78
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.41,
+   "ss": [
+    42924.96,
+    18514.08
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 13596.45,
+   "rmd": 33623.72,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    25887.68,
+    7736.04,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    39581.37,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 101734.12,
+   "healthcare": 24083.45,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 139024.73,
+   "magi": 139024.73,
+   "taxableIncome": 87610.15,
+   "federalTax": 8435.24,
+   "scTax": 391.29,
+   "payrollTax": 0,
+   "totalTax": 8826.53,
+   "shortfall": 0,
+   "surplus": 0.04,
+   "endBalances": [
+    528894.2,
+    483956.04,
+    171773.93,
+    0,
+    0,
+    666905.02,
+    67017.94
+   ],
+   "liquid": 1918547.13,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2042,
+   "ages": [
+    81,
+    79
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.45,
+   "ss": [
+    43992,
+    18972.72
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 14349.92,
+   "rmd": 33087.13,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    24946.19,
+    8140.94,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    42424.99,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 104277.47,
+   "healthcare": 25055.82,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 143382.05,
+   "magi": 143382.05,
+   "taxableIncome": 90682.1,
+   "federalTax": 8705.02,
+   "scTax": 438.53,
+   "payrollTax": 0,
+   "totalTax": 9143.56,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    568296.82,
+    440923.38,
+    173027.48,
+    0,
+    0,
+    706585.87,
+    69363.57
+   ],
+   "liquid": 1958197.11,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2043,
+   "ages": [
+    82,
+    80
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.48,
+   "ss": [
+    45096.48,
+    19450.08
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 15146.27,
+   "rmd": 32399.41,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    23833.7,
+    8565.72,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    45477.05,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 106884.4,
+   "healthcare": 26067.45,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 147887.31,
+   "magi": 147887.31,
+   "taxableIncome": 93869.86,
+   "federalTax": 8983.44,
+   "scTax": 487.63,
+   "payrollTax": 0,
+   "totalTax": 9471.07,
+   "shortfall": 0,
+   "surplus": 0.1,
+   "endBalances": [
+    610634.93,
+    393575.71,
+    173914.73,
+    0,
+    0,
+    748627.73,
+    71791.4
+   ],
+   "liquid": 1998544.5,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2044,
+   "ages": [
+    83,
+    81
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.52,
+   "ss": [
+    46219.68,
+    19936.8
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 15988,
+   "rmd": 31200.59,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    22235.92,
+    8964.68,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    49130.41,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 109556.51,
+   "healthcare": 27119.92,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 152552.01,
+   "magi": 152552.01,
+   "taxableIncome": 97184.13,
+   "federalTax": 9271.47,
+   "scTax": 539.27,
+   "payrollTax": 0,
+   "totalTax": 9810.74,
+   "shortfall": 0,
+   "surplus": 0.31,
+   "endBalances": [
+    656127.23,
+    341560.91,
+    174441.69,
+    0,
+    0,
+    793171.07,
+    74304.41
+   ],
+   "liquid": 2039605.32,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2045,
+   "ages": [
+    84,
+    82
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.56,
+   "ss": [
+    47380.32,
+    20432.88
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 16877.73,
+   "rmd": 29760.29,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    20331.01,
+    9429.28,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    53099.18,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 112295.43,
+   "healthcare": 28214.89,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 157378.42,
+   "magi": 157378.42,
+   "taxableIncome": 100626.34,
+   "federalTax": 9568.98,
+   "scTax": 593.37,
+   "payrollTax": 0,
+   "totalTax": 10162.35,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    705008.71,
+    284618.47,
+    174520.72,
+    0,
+    0,
+    840364.75,
+    76905.07
+   ],
+   "liquid": 2081417.71,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2046,
+   "ages": [
+    85,
+    83
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.6,
+   "ss": [
+    48559.68,
+    20947.68
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 17818.24,
+   "rmd": 27648.58,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    17788.65,
+    9859.93,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    57827.62,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 115102.81,
+   "healthcare": 29354.06,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 162375.7,
+   "magi": 162375.7,
+   "taxableIncome": 104204.82,
+   "federalTax": 9876.64,
+   "scTax": 650.05,
+   "payrollTax": 0,
+   "totalTax": 10526.69,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    757531.86,
+    222356.79,
+    174161.63,
+    0,
+    0,
+    890366.46,
+    79596.74
+   ],
+   "liquid": 2124013.48,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2047,
+   "ages": [
+    86,
+    84
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.64,
+   "ss": [
+    49776.48,
+    21471.84
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 18812.48,
+   "rmd": 24995.5,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    14628.74,
+    10366.76,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    63179.73,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 117980.38,
+   "healthcare": 30539.23,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 167548.78,
+   "magi": 167548.78,
+   "taxableIncome": 107923.62,
+   "federalTax": 10194.57,
+   "scTax": 709.24,
+   "payrollTax": 0,
+   "totalTax": 10903.81,
+   "shortfall": 0,
+   "surplus": 0.12,
+   "endBalances": [
+    813967.98,
+    154482.39,
+    173261.61,
+    0,
+    0,
+    943343.26,
+    82382.75
+   ],
+   "liquid": 2167437.98,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2048,
+   "ages": [
+    87,
+    85
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.68,
+   "ss": [
+    51021.36,
+    22005.36
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 19863.57,
+   "rmd": 21556.79,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    10727.94,
+    10828.85,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    69413.97,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 120929.89,
+   "healthcare": 31772.25,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 172907.05,
+   "magi": 172907.05,
+   "taxableIncome": 111791.27,
+   "federalTax": 10523.43,
+   "scTax": 771.67,
+   "payrollTax": 0,
+   "totalTax": 11295.1,
+   "shortfall": 0,
+   "surplus": 0.24,
+   "endBalances": [
+    874608.6,
+    80547.14,
+    171836.33,
+    0,
+    0,
+    999472.18,
+    85266.39
+   ],
+   "liquid": 2211730.64,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2049,
+   "ages": [
+    88,
+    86
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.72,
+   "ss": [
+    52294.32,
+    22557.6
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 20974.82,
+   "rmd": 17184.37,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    5879.35,
+    11305.02,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    74667.78,
+    2004.73,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 123953.14,
+   "healthcare": 33055.06,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 178455.84,
+   "magi": 178455.84,
+   "taxableIncome": 115812.16,
+   "federalTax": 10863.35,
+   "scTax": 836.86,
+   "payrollTax": 0,
+   "totalTax": 11700.21,
+   "shortfall": 0,
+   "surplus": 0.39,
+   "endBalances": [
+    939766.94,
+    2203.37,
+    167781.82,
+    0,
+    0,
+    1058940.78,
+    88251.11
+   ],
+   "liquid": 2256944.01,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2050,
+   "ages": [
+    89,
+    87
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.76,
+   "ss": [
+    53595.36,
+    23119.2
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 22149.72,
+   "rmd": 11822.32,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    170.8,
+    11651.52,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    2032.56,
+    82993.45,
+    0,
+    0,
+    0,
+    0
+   ],
+   "expenses": 127051.97,
+   "healthcare": 34389.66,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 184205.43,
+   "magi": 184205.43,
+   "taxableIncome": 119995.65,
+   "federalTax": 11215.04,
+   "scTax": 905.57,
+   "payrollTax": 0,
+   "totalTax": 12120.61,
+   "shortfall": 0,
+   "surplus": 0.65,
+   "endBalances": [
+    1009779.57,
+    60.27,
+    79918.68,
+    0,
+    0,
+    1121947.76,
+    91340.56
+   ],
+   "liquid": 2303046.84,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2051,
+   "ages": [
+    90,
+    88
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.81,
+   "ss": [
+    54943.2,
+    23699.52
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 23391.98,
+   "rmd": 5838.42,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    4.94,
+    5833.48,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    55.33,
+    74085.2,
+    0,
+    0,
+    17212.99,
+    0
+   ],
+   "expenses": 130228.27,
+   "healthcare": 35778.14,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 180514.52,
+   "magi": 180514.52,
+   "taxableIncome": 114699.51,
+   "federalTax": 9185.3,
+   "scTax": 642.75,
+   "payrollTax": 0,
+   "totalTax": 9828.06,
+   "shortfall": 0,
+   "surplus": 0.2,
+   "endBalances": [
+    1085008.15,
+    1.65,
+    2268.2,
+    0,
+    0,
+    1170985.97,
+    94537.68
+   ],
+   "liquid": 2352801.65,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2052,
+   "ages": [
+    91,
+    89
+   ],
+   "alive": [
+    true,
+    true
+   ],
+   "status": "mfj",
+   "price": 1.85,
+   "ss": [
+    18769.92,
+    45636.24
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 24386.57,
+   "rmd": 175.97,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    0.14,
+    175.83,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    1.51,
+    2092.37,
+    0,
+    0,
+    69375.75,
+    0
+   ],
+   "expenses": 111236.65,
+   "healthcare": 24815.12,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 122770.52,
+   "magi": 122770.52,
+   "taxableIncome": 55310.13,
+   "federalTax": 0,
+   "scTax": 0,
+   "payrollTax": 0,
+   "totalTax": 0,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    1165841.26,
+    0.05,
+    64.37,
+    0,
+    0,
+    1169249.77,
+    97846.5
+   ],
+   "liquid": 2433001.95,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2053,
+   "ages": [
+    92,
+    90
+   ],
+   "alive": [
+    false,
+    true
+   ],
+   "status": "single",
+   "price": 1.9,
+   "ss": [
+    0,
+    57723.12
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 24471.12,
+   "rmd": 5.28,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    0,
+    5.28,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    0.04,
+    59.1,
+    0,
+    0,
+    65911.15,
+    0
+   ],
+   "expenses": 102615.81,
+   "healthcare": 19362.77,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 113714.39,
+   "magi": 113714.39,
+   "taxableIncome": 78361.82,
+   "federalTax": 1720.11,
+   "scTax": 0,
+   "payrollTax": 0,
+   "totalTax": 1720.11,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    1252696.43,
+    0,
+    1.83,
+    0,
+    0,
+    1170976.45,
+    101271.13
+   ],
+   "liquid": 2524945.84,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2054,
+   "ages": [
+    93,
+    91
+   ],
+   "alive": [
+    false,
+    true
+   ],
+   "status": "single",
+   "price": 1.95,
+   "ss": [
+    0,
+    59164.56
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 24622.07,
+   "rmd": 0.16,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    0,
+    0.16,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    0,
+    1.67,
+    0,
+    0,
+    67919.34,
+    0
+   ],
+   "expenses": 105181.2,
+   "healthcare": 20144.55,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 116564.91,
+   "magi": 116564.91,
+   "taxableIncome": 80328.52,
+   "federalTax": 1759.98,
+   "scTax": 0,
+   "payrollTax": 0,
+   "totalTax": 1759.98,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    1346022.32,
+    0,
+    0.05,
+    0,
+    0,
+    1170738.8,
+    104815.62
+   ],
+   "liquid": 2621576.79,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2055,
+   "ages": [
+    94,
+    92
+   ],
+   "alive": [
+    false,
+    true
+   ],
+   "status": "single",
+   "price": 2,
+   "ss": [
+    0,
+    60643.44
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 24741.85,
+   "rmd": 0,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    0,
+    0.05,
+    0,
+    0,
+    69932.44,
+    0
+   ],
+   "expenses": 107810.73,
+   "healthcare": 20957.88,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 119479.05,
+   "magi": 119479.05,
+   "taxableIncome": 82336.75,
+   "federalTax": 1807.32,
+   "scTax": 0,
+   "payrollTax": 0,
+   "totalTax": 1807.32,
+   "shortfall": 0,
+   "surplus": 0,
+   "endBalances": [
+    1446300.98,
+    0,
+    0,
+    0,
+    0,
+    1168414.89,
+    108484.16
+   ],
+   "liquid": 2723200.03,
+   "monthsWithheld": 0
+  },
+  {
+   "year": 2056,
+   "ages": [
+    95,
+    93
+   ],
+   "alive": [
+    false,
+    true
+   ],
+   "status": "single",
+   "price": 2.05,
+   "ss": [
+    0,
+    5179.98
+   ],
+   "earnings": 0,
+   "otherIncome": 0,
+   "investmentIncome": 24828.41,
+   "rmd": 0,
+   "inheritedDistributions": 0,
+   "required": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "withdrawals": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    107221.72,
+    0
+   ],
+   "expenses": 110506,
+   "healthcare": 1817,
+   "irmaa": 0,
+   "hsaMedical": 0,
+   "agi": 95890.12,
+   "magi": 95890.12,
+   "taxableIncome": 57819.27,
+   "federalTax": 0,
+   "scTax": 78.68,
+   "payrollTax": 0,
+   "totalTax": 78.68,
+   "shortfall": 0,
+   "surplus": 0.02,
+   "endBalances": [
+    1554050.4,
+    0,
+    0,
+    0,
+    0,
+    1127570.1,
+    112281.13
+   ],
+   "liquid": 2793901.62,
+   "monthsWithheld": 0
+  }
+ ]
+}
