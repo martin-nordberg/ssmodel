@@ -13,3 +13,7 @@ playwright-report/
 
 # OS
 .DS_Store
+
+# Tooling caches
+node_modules/.tmp/
+*.tsbuildinfo
