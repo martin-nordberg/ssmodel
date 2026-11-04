@@ -23,7 +23,8 @@ function compare(file: HouseholdFile, claimIndexes: number[]) {
       const ctx = `${formatYM(claim)} year ${p.year}`
       expect([ctx, p.ss[0]]).toEqual([ctx, expect.closeTo(r.ss[0], 2)])
       expect([ctx, p.ss[1]]).toEqual([ctx, expect.closeTo(r.ss[1], 2)])
-      expect([ctx, Math.abs(p.totalTax - r.totalTax) < 2 + 1e-4 * r.totalTax]).toEqual([ctx, true])
+      // Both engines solve to about $1 of withdrawal; at tax kinks that can move tax by a few dollars.
+      expect([ctx, Math.abs(p.totalTax - r.totalTax) < 5 + 2e-4 * r.totalTax]).toEqual([ctx, true])
       const tol = 5 * (i + 1) + 1e-5 * r.liquid
       expect([ctx, Math.abs(p.liquid - r.liquid) < tol]).toEqual([ctx, true])
       expect([ctx, Math.abs(p.shortfall - r.shortfall) < tol]).toEqual([ctx, true])

@@ -2,7 +2,8 @@
 // (benefits, earnings, required distributions, dividends), after-tax spending, and the accounts available, find
 // gross withdrawals per account, following the strategy, such that inflows + withdrawals - tax = spending.
 // Net cash is increasing in the total withdrawal G (marginal tax < 100%), so a 1-D root find on G suffices:
-// secant steps with a bisection fallback, to a $1 tolerance.
+// bracketed regula falsi (Illinois) to a $1 tolerance. The inner loop works in scratch buffers so Monte Carlo runs
+// do not churn the garbage collector.
 
 export type SolverKind =
   | 'cash'
@@ -39,6 +40,10 @@ export type TaxOutcome = {
   magi: number
 }
 
+/**
+ * Tax for the year given the delta. The solver reads the returned numbers immediately and never keeps the
+ * object, so implementations may reuse one scratch object across calls.
+ */
 export type TaxFn = (delta: TaxDelta) => TaxOutcome
 
 export type Strategy =
@@ -59,6 +64,7 @@ export type SolveInput = {
 
 export type SolveResult = {
   withdrawals: number[]
+  /** Tax outcome at the chosen withdrawals (a copy). */
   tax: TaxOutcome
   /** Inflows + withdrawals - tax. */
   net: number
@@ -88,13 +94,23 @@ const ORDER_AFTER_BRACKET: SolverKind[] = [
   'hsa',
 ]
 const TRADITIONAL: SolverKind[] = ['inherited_traditional', 'traditional']
+const CASH: SolverKind[] = ['cash']
 
-function deltaFor(accounts: SolverAccount[], w: number[]): TaxDelta {
-  const d: TaxDelta = { ordinaryByPerson: [0, 0], ltcg: 0, penalty: 0 }
+/** Taxable items created by withdrawals `w` (a fresh object). */
+export function taxDelta(accounts: SolverAccount[], w: ArrayLike<number>): TaxDelta {
+  return fillDelta(accounts, w, { ordinaryByPerson: [0, 0], ltcg: 0, penalty: 0 })
+}
+
+/** Fills `d` with the taxable items created by withdrawals `w`. */
+function fillDelta(accounts: SolverAccount[], w: ArrayLike<number>, d: TaxDelta): TaxDelta {
+  d.ordinaryByPerson[0] = 0
+  d.ordinaryByPerson[1] = 0
+  d.ltcg = 0
+  d.penalty = 0
   for (let i = 0; i < accounts.length; i++) {
-    const a = accounts[i]!
     const x = w[i]!
     if (x <= 0) continue
+    const a = accounts[i]!
     switch (a.kind) {
       case 'traditional':
       case 'inherited_traditional':
@@ -117,7 +133,7 @@ function deltaFor(accounts: SolverAccount[], w: number[]): TaxDelta {
 /** Withdraw `amount` from accounts of the given kinds in order; mutates `w`, returns the amount not covered. */
 function drawInOrder(
   accounts: SolverAccount[],
-  w: number[],
+  w: Float64Array,
   order: SolverKind[],
   amount: number,
   useReserve: boolean,
@@ -145,109 +161,156 @@ export function totalAvailable(accounts: SolverAccount[]): number {
 }
 
 /**
- * Allocation of a gross total G across accounts for a strategy. For bracket-fill, `traditionalRoom` is the
- * traditional withdrawal that fills the target bracket (computed once per year).
+ * Allocation of a gross total G across accounts for a strategy, written into `w`. For bracket-fill,
+ * `traditionalRoom` is the traditional withdrawal that fills the target bracket (computed once per year).
  */
-function allocate(accounts: SolverAccount[], strategy: Strategy, g: number, traditionalRoom: number): number[] {
-  const w = new Array<number>(accounts.length).fill(0)
-  if (g <= 0) return w
+function allocate(
+  accounts: SolverAccount[],
+  strategy: Strategy,
+  order: SolverKind[],
+  g: number,
+  traditionalRoom: number,
+  w: Float64Array,
+) {
+  w.fill(0)
+  if (g <= 0) return
   switch (strategy.kind) {
-    case 'conventional': {
-      let left = drawInOrder(accounts, w, ORDER_CONVENTIONAL, g, false)
-      if (left > 0) left = drawInOrder(accounts, w, ['cash'], left, true)
-      return w
-    }
     case 'bracket_fill': {
       let left = g
       const firstTrad = Math.min(traditionalRoom, g)
       left -= firstTrad - drawInOrder(accounts, w, TRADITIONAL, firstTrad, false)
       left = drawInOrder(accounts, w, ORDER_AFTER_BRACKET, left, false)
-      if (left > 0) drawInOrder(accounts, w, ['cash'], left, true)
-      return w
+      if (left > 0) drawInOrder(accounts, w, CASH, left, true)
+      return
     }
     case 'proportional': {
       const total = totalAvailable(accounts)
-      if (total <= 0) return w
+      if (total <= 0) return
       const frac = Math.min(1, g / total)
       for (let i = 0; i < accounts.length; i++) w[i] = Math.max(0, accounts[i]!.available) * frac
-      return w
+      return
     }
-    case 'custom': {
-      const order = [...strategy.order, ...ORDER_CONVENTIONAL.filter((k) => !strategy.order.includes(k))]
-      let left = drawInOrder(accounts, w, order, g, false)
-      if (left > 0) left = drawInOrder(accounts, w, ['cash'], left, true)
-      return w
+    default: {
+      const left = drawInOrder(accounts, w, order, g, false)
+      if (left > 0) drawInOrder(accounts, w, CASH, left, true)
+      return
     }
   }
 }
 
-/** Largest traditional withdrawal keeping ordinary taxable income <= bracketTop and MAGI <= magiCap. */
+/**
+ * Largest traditional withdrawal keeping ordinary taxable income <= bracketTop and MAGI <= magiCap. Both are
+ * increasing, piecewise-linear functions of the withdrawal, so a bracketed secant search (Illinois variant)
+ * converges in a few tax evaluations.
+ */
 export function traditionalRoom(accounts: SolverAccount[], tax: TaxFn, bracketTop: number, magiCap: number): number {
   let maxTrad = 0
   for (const a of accounts) if (a.kind === 'traditional' || a.kind === 'inherited_traditional') maxTrad += a.available
   if (maxTrad <= 0) return 0
-  const ok = (t: number) => {
-    const w = new Array<number>(accounts.length).fill(0)
+  const w = new Float64Array(accounts.length)
+  const d: TaxDelta = { ordinaryByPerson: [0, 0], ltcg: 0, penalty: 0 }
+  const excess = (t: number) => {
+    w.fill(0)
     drawInOrder(accounts, w, TRADITIONAL, t, false)
-    const r = tax(deltaFor(accounts, w))
-    return r.ordinaryTaxable <= bracketTop + 0.5 && r.magi <= magiCap + 0.5
+    const r = tax(fillDelta(accounts, w, d))
+    return Math.max(r.ordinaryTaxable - bracketTop, r.magi - magiCap)
   }
-  if (!ok(0)) return 0
-  if (ok(maxTrad)) return maxTrad
   let lo = 0
+  let flo = excess(0)
+  if (flo > 0.5) return 0
   let hi = maxTrad
-  while (hi - lo > 1) {
-    const mid = (lo + hi) / 2
-    if (ok(mid)) lo = mid
-    else hi = mid
+  let fhi = excess(hi)
+  if (fhi <= 0.5) return maxTrad
+  let side = 0
+  for (let it = 0; it < 40 && hi - lo > 1; it++) {
+    let t = hi - (fhi * (hi - lo)) / (fhi - flo)
+    if (!(t > lo && t < hi)) t = (lo + hi) / 2
+    const f = excess(t)
+    if (f <= 0.5) {
+      lo = t
+      flo = f
+      if (f > -0.5) break
+      if (side === -1) fhi /= 2
+      side = -1
+    } else {
+      hi = t
+      fhi = f
+      if (side === 1) flo /= 2
+      side = 1
+    }
   }
   return lo
 }
 
 export function solveWithdrawals(input: SolveInput): SolveResult {
   const { accounts, strategy, inflows, spending, tax } = input
-  const room =
-    strategy.kind === 'bracket_fill' ? traditionalRoom(accounts, tax, strategy.bracketTop, strategy.magiCap) : 0
-  const evaluate = (g: number) => {
-    const w = allocate(accounts, strategy, g, room)
+  const n = accounts.length
+  const w = new Float64Array(n)
+  const d: TaxDelta = { ordinaryByPerson: [0, 0], ltcg: 0, penalty: 0 }
+  const order =
+    strategy.kind === 'custom'
+      ? [...strategy.order, ...ORDER_CONVENTIONAL.filter((k) => !strategy.order.includes(k))]
+      : ORDER_CONVENTIONAL
+  let room = 0
+  /** Net cash after tax at gross withdrawal g (allocation left in `w`). */
+  const netAt = (g: number) => {
+    allocate(accounts, strategy, order, g, room, w)
     let drawn = 0
-    for (const x of w) drawn += x
-    const t = tax(deltaFor(accounts, w))
-    return { w, t, net: inflows + drawn - t.total }
+    for (let i = 0; i < n; i++) drawn += w[i]!
+    return inflows + drawn - tax(fillDelta(accounts, w, d)).total
   }
-
-  const zero = evaluate(0)
-  if (zero.net >= spending) {
-    return { withdrawals: zero.w, tax: zero.t, net: zero.net, shortfall: 0, surplus: zero.net - spending }
-  }
-  const maxG = totalAvailable(accounts)
-  const full = evaluate(maxG)
-  if (full.net <= spending) {
-    return { withdrawals: full.w, tax: full.t, net: full.net, shortfall: spending - full.net, surplus: 0 }
-  }
-
-  // Root find on f(G) = net(G) - spending with f(lo) < 0 <= f(hi); the answer is the funded side (hi).
-  let lo = 0
-  let flo = zero.net - spending
-  let hi = maxG
-  let fhi = full.net - spending
-  let atHi = full
-  let g = Math.min(maxG, -flo) // first guess: no tax on the extra
-  for (let it = 0; it < 80 && fhi >= 1 && hi - lo > 0.01; it++) {
-    const r = evaluate(g)
-    const f = r.net - spending
-    if (f < 0) {
-      lo = g
-      flo = f
-    } else {
-      hi = g
-      fhi = f
-      atHi = r
+  const finish = (g: number, shortfall: number): SolveResult => {
+    allocate(accounts, strategy, order, g, room, w)
+    let drawn = 0
+    for (let i = 0; i < n; i++) drawn += w[i]!
+    const t = tax(fillDelta(accounts, w, d))
+    const net = inflows + drawn - t.total
+    return {
+      withdrawals: Array.from(w),
+      tax: { total: t.total, ordinaryTaxable: t.ordinaryTaxable, magi: t.magi },
+      net,
+      shortfall,
+      surplus: shortfall > 0 ? 0 : Math.max(0, net - spending),
     }
-    // Secant step within the bracket, alternating with bisection after a few steps to guarantee progress.
-    const s = hi - fhi * ((hi - lo) / (fhi - flo))
-    g = it < 6 && s > lo && s < hi && Number.isFinite(s) ? s : (lo + hi) / 2
-    if (f < 0 && f > -1) g = Math.min(hi, g + 2 * -f)
   }
-  return { withdrawals: atHi.w, tax: atHi.t, net: atHi.net, shortfall: 0, surplus: Math.max(0, atHi.net - spending) }
+
+  const f0 = netAt(0) - spending
+  if (f0 >= 0) return finish(0, 0)
+  // The bracket room only matters once withdrawals are needed.
+  if (strategy.kind === 'bracket_fill') room = traditionalRoom(accounts, tax, strategy.bracketTop, strategy.magiCap)
+  const maxG = totalAvailable(accounts)
+
+  // Bracket the root of f(G) = net(G) - spending, starting from the untaxed need and stepping up.
+  let lo = 0
+  let flo = f0
+  let g = Math.min(maxG, -f0)
+  let f = netAt(g) - spending
+  while (f < 0) {
+    if (g >= maxG) return finish(maxG, -f)
+    lo = g
+    flo = f
+    g = Math.min(maxG, g + 1.6 * -f + 1)
+    f = netAt(g) - spending
+  }
+  let hi = g
+  let fhi = f
+  // Illinois regula falsi on [lo, hi] with f(lo) < 0 <= f(hi); the answer is the funded side.
+  let side = 0
+  for (let it = 0; it < 60 && fhi >= 1 && hi - lo > 0.01; it++) {
+    let t = hi - (fhi * (hi - lo)) / (fhi - flo)
+    if (!(t > lo && t < hi)) t = (lo + hi) / 2
+    const ft = netAt(t) - spending
+    if (ft < 0) {
+      lo = t
+      flo = ft
+      if (side === -1) fhi /= 2
+      side = -1
+    } else {
+      hi = t
+      fhi = ft
+      if (side === 1) flo /= 2
+      side = 1
+    }
+  }
+  return finish(hi, 0)
 }

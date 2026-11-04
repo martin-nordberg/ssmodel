@@ -9,8 +9,8 @@ export function rmdStartYear(ownerBirthDate: string): number {
   return by + rmdRules.rmdAge(by)
 }
 
-export function lifetimeRmd(ownerBirthDate: string, year: number, priorYearEndBalance: number): number {
-  const by = parseDate(ownerBirthDate).year
+export function lifetimeRmd(ownerBirthDate: string | number, year: number, priorYearEndBalance: number): number {
+  const by = typeof ownerBirthDate === 'number' ? ownerBirthDate : parseDate(ownerBirthDate).year
   if (year < by + rmdRules.rmdAge(by) || priorYearEndBalance <= 0) return 0
   return priorYearEndBalance / rmdRules.uniformDivisor(year - by)
 }

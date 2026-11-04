@@ -110,48 +110,68 @@ function payroll(i: FederalTaxInput): { tax: number; halfSe: number } {
   return { tax, halfSe }
 }
 
-export function federalTax(i: FederalTaxInput, params?: FederalParams): FederalTaxResult {
+/** Evaluates tax for extra income; writes into `out` when given (to avoid allocation in hot loops). */
+export type FederalEvaluator = (extraOrdinary: number, extraLtcg: number, out?: FederalTaxResult) => FederalTaxResult
+
+/**
+ * Precomputes everything in a household-year that does not depend on discretionary withdrawals, and returns a
+ * function of the extra ordinary income and long-term gain. The withdrawal solver calls it many times a year.
+ */
+export function federalEvaluator(i: FederalTaxInput, params?: FederalParams): FederalEvaluator {
   const fp = params ?? federalRules.params(i.year, i.priceFactor).value
   const st = i.status
-  const wages = i.wagesByPerson.reduce((a, b) => a + b, 0)
-  const se = i.seByPerson.reduce((a, b) => a + b, 0)
-  const pay = payroll(i)
-  const pref = i.qualifiedDividends + Math.max(0, i.ltcg)
-  const agiExSs = wages + se - pay.halfSe + i.ordinary + i.investmentOrdinary + pref
-  const taxableSs = taxableSocialSecurity(i.socialSecurity, agiExSs + i.taxExemptInterest, st)
-  const agi = agiExSs + taxableSs
-  const magi = agi + i.taxExemptInterest
-  const senior = seniorDeduction(i.year, i.count65, magi, st)
-  const deduction = fp.standardDeduction[st] + fp.additional65[st] * i.count65 + senior
-  const taxableIncome = Math.max(0, agi - deduction)
-  const prefTaxable = Math.min(pref, taxableIncome)
-  const ordinaryTaxable = taxableIncome - prefTaxable
-  const ordinaryTax = bracketTax(ordinaryTaxable, fp.brackets[st])
+  const brackets = fp.brackets[st]
   const [zeroTop, fifteenTop] = fp.ltcg[st]
-  const at0 = Math.max(0, Math.min(taxableIncome, zeroTop) - ordinaryTaxable)
-  const at15 = Math.max(0, Math.min(taxableIncome, fifteenTop) - Math.max(ordinaryTaxable, zeroTop))
-  const at20 = Math.max(0, prefTaxable - at0 - at15)
-  const capitalGainsTax = 0.15 * at15 + 0.2 * at20
-  const nii = i.investmentOrdinary + pref
-  const niit = federalRules.niit.rate * Math.max(0, Math.min(nii, magi - federalRules.niit.threshold[st]))
-  const incomeTax = ordinaryTax + capitalGainsTax + niit
-  return {
-    agi,
-    magi,
-    provisionalIncome: agiExSs + i.taxExemptInterest + i.socialSecurity / 2,
-    taxableSocialSecurity: taxableSs,
-    deduction,
-    seniorDeduction: senior,
-    taxableIncome,
-    ordinaryTaxable,
-    ordinaryTax,
-    capitalGainsTax,
-    niit,
-    incomeTax,
-    payrollTax: pay.tax,
-    total: incomeTax + pay.tax,
-    marginalRate: marginalRate(ordinaryTaxable, fp.brackets[st]),
+  let wages = 0
+  for (const w of i.wagesByPerson) wages += w
+  let se = 0
+  for (const x of i.seByPerson) se += x
+  const pay = payroll(i)
+  const baseDeduction = fp.standardDeduction[st] + fp.additional65[st] * i.count65
+  const niitRate = federalRules.niit.rate
+  const niitThreshold = federalRules.niit.threshold[st]
+  const fixedAgi = wages + se - pay.halfSe + i.ordinary + i.investmentOrdinary + i.qualifiedDividends
+  return (extraOrdinary, extraLtcg, out) => {
+    const pref = i.qualifiedDividends + Math.max(0, i.ltcg + extraLtcg)
+    const agiExSs = fixedAgi + extraOrdinary + Math.max(0, i.ltcg + extraLtcg)
+    const taxableSs = taxableSocialSecurity(i.socialSecurity, agiExSs + i.taxExemptInterest, st)
+    const agi = agiExSs + taxableSs
+    const magi = agi + i.taxExemptInterest
+    const senior = seniorDeduction(i.year, i.count65, magi, st)
+    const deduction = baseDeduction + senior
+    const taxableIncome = Math.max(0, agi - deduction)
+    const prefTaxable = Math.min(pref, taxableIncome)
+    const ordinaryTaxable = taxableIncome - prefTaxable
+    const ordinaryTax = bracketTax(ordinaryTaxable, brackets)
+    const at0 = Math.max(0, Math.min(taxableIncome, zeroTop) - ordinaryTaxable)
+    const at15 = Math.max(0, Math.min(taxableIncome, fifteenTop) - Math.max(ordinaryTaxable, zeroTop))
+    const at20 = Math.max(0, prefTaxable - at0 - at15)
+    const capitalGainsTax = 0.15 * at15 + 0.2 * at20
+    const nii = i.investmentOrdinary + pref
+    const niit = niitRate * Math.max(0, Math.min(nii, magi - niitThreshold))
+    const incomeTax = ordinaryTax + capitalGainsTax + niit
+    const r = out ?? ({} as FederalTaxResult)
+    r.agi = agi
+    r.magi = magi
+    r.provisionalIncome = agiExSs + i.taxExemptInterest + i.socialSecurity / 2
+    r.taxableSocialSecurity = taxableSs
+    r.deduction = deduction
+    r.seniorDeduction = senior
+    r.taxableIncome = taxableIncome
+    r.ordinaryTaxable = ordinaryTaxable
+    r.ordinaryTax = ordinaryTax
+    r.capitalGainsTax = capitalGainsTax
+    r.niit = niit
+    r.incomeTax = incomeTax
+    r.payrollTax = pay.tax
+    r.total = incomeTax + pay.tax
+    r.marginalRate = out ? 0 : marginalRate(ordinaryTaxable, brackets)
+    return r
   }
+}
+
+export function federalTax(i: FederalTaxInput, params?: FederalParams): FederalTaxResult {
+  return federalEvaluator(i, params)(0, 0)
 }
 
 export function emptyFederalInput(year: number, status: FilingStatus): FederalTaxInput {

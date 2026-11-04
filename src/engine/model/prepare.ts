@@ -3,11 +3,11 @@
 import type { HouseholdFile, ScenarioT } from '../../schema/model.ts'
 import { type InheritedRules, inheritedRules } from '../accounts/inheritedIra.ts'
 import type { ExpenseItem, IncomeStream } from '../cashflow/expenses.ts'
-import { claimCandidates, parseYM, SsaAge, type YM, ymYear } from '../core/dates.ts'
+import { claimCandidates, parseYM, SsaAge, type YM, ym, ymYear } from '../core/dates.ts'
 import { ssaRules } from '../rules/tables.ts'
 import { resolveReturn } from '../sim/returnPresets.ts'
 import { type Haircut, haircutSchedule } from '../ss/haircut.ts'
-import { PiaCalculator, projectedAwi, type StatementCheck, statementCrossCheck } from '../ss/pia.ts'
+import { PiaCalculator, projectedAwi, type StatementCheck, statementCrossCheck, taxableMax } from '../ss/pia.ts'
 import { piaFromCurrentBenefit } from '../ss/spouse.ts'
 import type { PersonIndex, SolverKind } from '../withdraw/solver.ts'
 
@@ -63,6 +63,10 @@ export type Prepared = {
   statementCheck: StatementCheck | null
   /** Nominal AWI growth used for PIA projections (mean inflation + real wage growth). */
   awiGrowth: number
+  /** Payable fraction of benefits by month, indexed from baseYM [FR-TF-1]. */
+  haircutByMonth: Float64Array
+  /** OASDI taxable maximum by year, indexed from baseYear. */
+  taxableMaxByYear: Float64Array
 }
 
 export function accountKind(a: ScenarioT['accounts'][number]): SolverKind {
@@ -200,6 +204,12 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
 
   const younger = people[0].birthYear >= people[1].birthYear ? people[0] : people[1]
   const endYear = younger.birthYear + scenario.simulation.maxAge
+  const haircut = haircutSchedule(scenario.trustFund)
+  const nMonths = (endYear - baseYear + 1) * 12
+  const haircutByMonth = new Float64Array(nMonths)
+  for (let i = 0; i < nMonths; i++) haircutByMonth[i] = haircut(ym(baseYear, 1) + i)
+  const taxableMaxByYear = new Float64Array(endYear - baseYear + 1)
+  for (let y = baseYear; y <= endYear; y++) taxableMaxByYear[y - baseYear] = taxableMax(y, awi)
 
   return {
     scenario,
@@ -211,11 +221,17 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     spouse: { claimed: spouseClaimed, currentMonthly: s.ss.currentMonthly, pia: spousePia },
     candidates: claimCandidates(people[0].age, baseYM),
     accounts,
-    expenses: scenario.expenses.items,
+    expenses: scenario.expenses.items.map((e) => ({
+      ...e,
+      startYM: parseYM(e.start),
+      endYM: e.end ? parseYM(e.end) : undefined,
+    })),
     incomes: scenario.income.streams,
-    haircut: haircutSchedule(scenario.trustFund),
+    haircut,
     priorMagi: new Map(Object.entries(hh.priorMagi).map(([y, v]) => [Number(y), v])),
     statementCheck,
     awiGrowth,
+    haircutByMonth,
+    taxableMaxByYear,
   }
 }

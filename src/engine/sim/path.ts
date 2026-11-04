@@ -10,20 +10,19 @@ import type { EngineAccount, Prepared } from '../model/prepare.ts'
 import { type FilingStatus, federalRules, medicareRules, scRules, ssaRules } from '../rules/tables.ts'
 import { earningsTest } from '../ss/earningsTest.ts'
 import { monthlyBenefit, ownBenefitFactor } from '../ss/ownBenefit.ts'
-import { taxableMax } from '../ss/pia.ts'
+import { truncDime } from '../ss/pia.ts'
 import { spousalExcess, survivorBenefit } from '../ss/spouse.ts'
-import { bracketTop, federalTax } from '../tax/federal.ts'
+import { bracketTop, federalEvaluator, type federalTax } from '../tax/federal.ts'
 import { irmaaTier } from '../tax/irmaa.ts'
-import { scTax } from '../tax/sc.ts'
+import { scEvaluator, type scTax } from '../tax/sc.ts'
 import {
   type SolverAccount,
   type Strategy,
   solveWithdrawals,
   type TaxDelta,
   type TaxOutcome,
+  taxDelta,
 } from '../withdraw/solver.ts'
-
-type FullTax = TaxOutcome & { fed: ReturnType<typeof federalTax>; sc: ReturnType<typeof scTax> }
 
 export type PathDraws = {
   /** Inflation for each simulated year (index = year - baseYear). */
@@ -90,7 +89,22 @@ export type PathSummary = {
 
 export type PathResult = { summary: PathSummary; rows: YearRow[] | null }
 
-export type RunOptions = { recordRows: boolean }
+/** Values that depend only on the path (prices, deaths), shared across claiming candidates. */
+export type PathCache = {
+  expenses: Float64Array
+  otherOrdinary: Float64Array
+  otherTaxFree: Float64Array
+}
+
+export function newPathCache(years: number): PathCache {
+  return {
+    expenses: new Float64Array(years).fill(Number.NaN),
+    otherOrdinary: new Float64Array(years).fill(Number.NaN),
+    otherTaxFree: new Float64Array(years).fill(Number.NaN),
+  }
+}
+
+export type RunOptions = { recordRows: boolean; cache?: PathCache }
 
 const REAL_DISCOUNT = 0.02
 
@@ -119,8 +133,15 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     return i >= 0 && i < draws.inflation.length ? draws.inflation[i]! : meanInfl
   }
   const colaFn = (payYear: number) => ssaRules.cola(payYear) ?? Math.max(0, inflAt(payYear - 1))
-  const awiFn = (y: number) =>
-    ssaRules.awi(y) ?? ssaRules.awi(ssaRules.latestAwiYear)! * (1 + prep.awiGrowth) ** (y - ssaRules.latestAwiYear)
+  const cache = opts.cache
+  const monthlyP = new Float64Array(12)
+  const monthlyS = new Float64Array(12)
+  const excessS = new Float64Array(12)
+  const required = new Float64Array(nAcc)
+  const eligYear = prep.primaryPia.eligibilityYear
+  let lastPia = 0
+  let lastPiaBase = Number.NaN
+  let lastPiaYear = Number.NaN
 
   let price = 1
   let colaIndex = 1 // COLAs payable after the base year
@@ -153,7 +174,14 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     for (let i = 0; i < nAcc; i++) startBal[i] = accounts[i]!.balance
 
     // ---- Social Security ----
-    const piaP = prep.primaryPia.piaInYear(y, colaFn)
+    // PIA: earnings through y-1, COLAs from eligibility; updated incrementally while the base is unchanged.
+    const piaBase = prep.primaryPia.basePia(y - 1)
+    let piaP: number
+    if (piaBase === lastPiaBase && lastPiaYear === y - 1 && y > eligYear) piaP = truncDime(lastPia * (1 + colaFn(y)))
+    else piaP = prep.primaryPia.piaInYear(y, colaFn)
+    lastPia = piaP
+    lastPiaBase = piaBase
+    lastPiaYear = y
     const piaS = prep.spouse.pia * colaIndex
     const ownSMonthly = Math.floor(prep.spouse.currentMonthly * colaIndex)
     const preFraFactor = ownBenefitFactor(claim, ageP)
@@ -181,15 +209,16 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
             start: Math.max(deathS + 1, claim),
           })
         : 0
-    const monthlyP = new Float64Array(12)
-    const monthlyS = new Float64Array(12)
-    const excessS = new Float64Array(12)
+    monthlyP.fill(0)
+    monthlyS.fill(0)
+    excessS.fill(0)
+    const postFraFactor = ownBenefitFactor(claim, ageP, withheldP)
     for (let k = 0; k < 12; k++) {
       const m = m0 + k
       const pAlive = m <= deathP
       const sAlive = m <= deathS
       if (pAlive && m >= claim) {
-        const factor = m >= ageP.fraMonth ? ownBenefitFactor(claim, ageP, withheldP) : preFraFactor
+        const factor = m >= ageP.fraMonth ? postFraFactor : preFraFactor
         let amt = monthlyBenefit(piaP, factor)
         if (!sAlive) amt = Math.max(amt, Math.floor(survivorOfS))
         monthlyP[k] = amt
@@ -255,20 +284,31 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     let ssP = 0
     let ssS = 0
     for (let k = 0; k < 12; k++) {
-      const hc = prep.haircut(m0 + k)
+      const hc = prep.haircutByMonth[m0 + k - ym(prep.baseYear, 1)] ?? 1
       ssP += monthlyP[k]! * hc
       ssS += (monthlyS[k]! + excessS[k]!) * hc
     }
 
     // ---- other income ----
     const ictx = { baseYear: prep.baseYear, price, medical }
-    let otherOrdinary = 0
-    let otherTaxFree = 0
-    for (const s of prep.incomes) {
-      const ownerDeath = s.owner === 'primary' ? deathP : s.owner === 'spouse' ? deathS : null
-      const amt = incomeForYear(s, y, ictx, ownerDeath !== null && ownerDeath <= m11 ? ownerDeath : null)
-      if (s.tax === 'ordinary') otherOrdinary += amt
-      else otherTaxFree += amt
+    let otherOrdinary: number
+    let otherTaxFree: number
+    if (cache && !Number.isNaN(cache.otherOrdinary[yi]!)) {
+      otherOrdinary = cache.otherOrdinary[yi]!
+      otherTaxFree = cache.otherTaxFree[yi]!
+    } else {
+      otherOrdinary = 0
+      otherTaxFree = 0
+      for (const s of prep.incomes) {
+        const ownerDeath = s.owner === 'primary' ? deathP : s.owner === 'spouse' ? deathS : null
+        const amt = incomeForYear(s, y, ictx, ownerDeath !== null && ownerDeath <= m11 ? ownerDeath : null)
+        if (s.tax === 'ordinary') otherOrdinary += amt
+        else otherTaxFree += amt
+      }
+      if (cache) {
+        cache.otherOrdinary[yi] = otherOrdinary
+        cache.otherTaxFree[yi] = otherTaxFree
+      }
     }
 
     // ---- investment income (reinvested, taxed) ----
@@ -280,7 +320,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
 
     // ---- required distributions ----
-    const required = new Float64Array(nAcc)
+    required.fill(0)
     const retirementByPerson: [number, number] = [0, 0]
     const reqOrdinaryByPerson: [number, number] = [0, 0]
     let rmdTotal = 0
@@ -292,7 +332,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       if (a.kind === 'traditional') {
         const owner = prep.people[a.owner]
         const ownerWages = a.owner === 0 ? eP.wages : eS.wages
-        if (!(a.currentEmployer && ownerWages > 0)) amt = lifetimeRmd(owner.birthDate, y, a.balance)
+        if (!(a.currentEmployer && ownerWages > 0)) amt = lifetimeRmd(owner.birthYear, y, a.balance)
         rmdTotal += amt
       } else if (a.inherited) {
         amt = Math.min(a.balance, inheritedScheduled(a.inherited, a.inherited.schedule, y, a.balance))
@@ -348,58 +388,54 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     // ---- expenses ----
     const survivorFrom = firstDeath <= m11 ? firstDeath + 1 : null
     const ectx = { ...ictx, survivorFrom, survivorFraction: sc.expenses.survivorFraction, scale: asm.expenseScale }
-    let expenses = 0
-    for (const item of prep.expenses) expenses += expenseForYear(item, y, ectx)
+    let expenses: number
+    if (cache && !Number.isNaN(cache.expenses[yi]!)) expenses = cache.expenses[yi]!
+    else {
+      expenses = 0
+      for (const item of prep.expenses) expenses += expenseForYear(item, y, ectx)
+      if (cache) cache.expenses[yi] = expenses
+    }
     const spending = expenses + healthTotal - hsaMedical
 
     // ---- tax function ----
     const count65 = (deathP >= m0 && y - P.birthYear >= 65 ? 1 : 0) + (deathS >= m0 && y - S.birthYear >= 65 ? 1 : 0)
     const is65: [boolean, boolean] = [y - P.birthYear >= 65, y - S.birthYear >= 65]
-    const tmax = taxableMax(y, awiFn)
+    const tmax = prep.taxableMaxByYear[yi]!
     const scFactor = price * (1 + meanInfl) ** (prep.baseYear - scRules.latestYear)
-    const tax = (d: TaxDelta): FullTax => {
-      const fed = federalTax(
-        {
-          year: y,
-          status,
-          priceFactor: fedFactor,
-          count65,
-          taxableMax: tmax,
-          wagesByPerson: [eP.wages, eS.wages],
-          seByPerson: [eP.selfEmployment, eS.selfEmployment],
-          ordinary:
-            reqOrdinaryByPerson[0] +
-            reqOrdinaryByPerson[1] +
-            otherOrdinary +
-            d.ordinaryByPerson[0] +
-            d.ordinaryByPerson[1],
-          investmentOrdinary: interest,
-          qualifiedDividends: dividends,
-          ltcg: d.ltcg,
-          taxExemptInterest: 0,
-          socialSecurity: ssP + ssS,
-        },
-        fedParams,
-      )
-      const st = scTax({
+    const scParams = scRules.params(y, scFactor).value
+    const fedEval = federalEvaluator(
+      {
         year: y,
         status,
-        priceFactor: scFactor,
-        federalAgi: fed.agi,
-        taxableSocialSecurity: fed.taxableSocialSecurity,
-        ltcg: d.ltcg,
-        people: [
-          { retirementIncome: retirementByPerson[0] + d.ordinaryByPerson[0], is65: is65[0] },
-          { retirementIncome: retirementByPerson[1] + d.ordinaryByPerson[1], is65: is65[1] },
-        ],
-      })
-      return {
-        total: fed.total + st.tax + d.penalty,
-        ordinaryTaxable: fed.ordinaryTaxable,
-        magi: fed.magi,
-        fed,
-        sc: st,
-      }
+        priceFactor: fedFactor,
+        count65,
+        taxableMax: tmax,
+        wagesByPerson: [eP.wages, eS.wages],
+        seByPerson: [eP.selfEmployment, eS.selfEmployment],
+        ordinary: reqOrdinaryByPerson[0] + reqOrdinaryByPerson[1] + otherOrdinary,
+        investmentOrdinary: interest,
+        qualifiedDividends: dividends,
+        ltcg: 0,
+        taxExemptInterest: 0,
+        socialSecurity: ssP + ssS,
+      },
+      fedParams,
+    )
+    const scEval = scEvaluator(status, is65, scParams)
+    const fedScratch = {} as ReturnType<typeof federalTax>
+    const scScratch = {} as ReturnType<typeof scTax>
+    const retScratch: [number, number] = [0, 0]
+    const outScratch: TaxOutcome = { total: 0, ordinaryTaxable: 0, magi: 0 }
+    // Solver calls reuse scratch objects; the recorded row uses a fresh evaluation below.
+    const tax = (d: TaxDelta): TaxOutcome => {
+      const fed = fedEval(d.ordinaryByPerson[0] + d.ordinaryByPerson[1], d.ltcg, fedScratch)
+      retScratch[0] = retirementByPerson[0] + d.ordinaryByPerson[0]
+      retScratch[1] = retirementByPerson[1] + d.ordinaryByPerson[1]
+      const st = scEval(fed.agi, fed.taxableSocialSecurity, d.ltcg, retScratch, scScratch)
+      outScratch.total = fed.total + st.tax + d.penalty
+      outScratch.ordinaryTaxable = fed.ordinaryTaxable
+      outScratch.magi = fed.magi
+      return outScratch
     }
 
     // ---- strategy ----
@@ -451,7 +487,13 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
     if (solved.shortfall > 1 && depletedYear === null) depletedYear = y
     totalShortfallReal += solved.shortfall / price
-    const finalTax = solved.tax as FullTax
+    const finalDelta = taxDelta(solverAccounts, solved.withdrawals)
+    const fedRes = fedEval(finalDelta.ordinaryByPerson[0] + finalDelta.ordinaryByPerson[1], finalDelta.ltcg)
+    const scRes = scEval(fedRes.agi, fedRes.taxableSocialSecurity, finalDelta.ltcg, [
+      retirementByPerson[0] + finalDelta.ordinaryByPerson[0],
+      retirementByPerson[1] + finalDelta.ordinaryByPerson[1],
+    ])
+    const finalTax = { total: solved.tax.total, magi: fedRes.magi }
     magiHistory.set(y, finalTax.magi)
 
     // ---- returns (mid-year convention) and dividend basis ----
@@ -473,8 +515,6 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
 
     // ---- bookkeeping ----
-    const fedRes = finalTax.fed
-    const scRes = finalTax.sc
     const totalTax = solved.tax.total
     let liquid = 0
     for (const a of accounts) liquid += a.balance

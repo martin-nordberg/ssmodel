@@ -15,6 +15,8 @@ export type ScTaxInput = {
   people: { retirementIncome: number; is65: boolean }[]
 }
 
+export type ScParams = ReturnType<typeof scRules.params>['value']
+
 export type ScTaxResult = {
   subtractions: number
   sciad: number
@@ -34,21 +36,48 @@ export function scIncomeAdjustedDeduction(
   return s.amount[status] - reduction
 }
 
-export function scTax(i: ScTaxInput): ScTaxResult {
-  const p = scRules.params(i.year, i.priceFactor).value
-  let personal = 0
-  for (const person of i.people) {
-    const cap = person.is65 ? p.retirementDeduction.age65 : p.retirementDeduction.under65
-    const retirement = Math.min(Math.max(0, person.retirementIncome), cap)
-    personal += retirement
-    if (person.is65) personal += Math.max(0, p.age65Deduction - retirement)
-  }
-  const ssSub = p.socialSecurityExempt ? i.taxableSocialSecurity : 0
-  const capGainSub = p.capitalGainDeductionRate * Math.max(0, i.ltcg)
-  const subtractions = ssSub + capGainSub + personal
-  const sciad = scIncomeAdjustedDeduction(i.federalAgi, i.status, p.sciad)
-  const taxableIncome = Math.max(0, i.federalAgi - subtractions - sciad)
+export function scTax(i: ScTaxInput, params?: ScParams): ScTaxResult {
+  const p = params ?? scRules.params(i.year, i.priceFactor).value
+  const a = i.people[0]
+  const b = i.people[1]
+  return scEvaluator(i.status, [a?.is65 ?? false, b?.is65 ?? false], p)(i.federalAgi, i.taxableSocialSecurity, i.ltcg, [
+    a?.retirementIncome ?? 0,
+    b?.retirementIncome ?? 0,
+  ])
+}
+
+export type ScEvaluator = (
+  federalAgi: number,
+  taxableSocialSecurity: number,
+  ltcg: number,
+  retirementIncome: [number, number],
+  out?: ScTaxResult,
+) => ScTaxResult
+
+/** Per-year SC evaluator for the withdrawal solver; writes into `out` when given. */
+export function scEvaluator(status: FilingStatus, is65: [boolean, boolean], p: ScParams): ScEvaluator {
+  const s = p.sciad
   const r = p.rates
-  const tax = taxableIncome < r.bracket ? taxableIncome * r.lowRate : taxableIncome * r.highRate - r.highSubtract
-  return { subtractions, sciad, taxableIncome, tax: Math.max(0, tax) }
+  return (agi, tss, ltcg, ret, out) => {
+    let personal = 0
+    for (let k = 0; k < 2; k++) {
+      const cap = is65[k] ? p.retirementDeduction.age65 : p.retirementDeduction.under65
+      const retirement = Math.min(Math.max(0, ret[k]!), cap)
+      personal += retirement
+      if (is65[k]) personal += Math.max(0, p.age65Deduction - retirement)
+    }
+    const subtractions = (p.socialSecurityExempt ? tss : 0) + p.capitalGainDeductionRate * Math.max(0, ltcg) + personal
+    const sciad = scIncomeAdjustedDeduction(agi, status, s)
+    const taxableIncome = Math.max(0, agi - subtractions - sciad)
+    const tax = Math.max(
+      0,
+      taxableIncome < r.bracket ? taxableIncome * r.lowRate : taxableIncome * r.highRate - r.highSubtract,
+    )
+    const o = out ?? ({} as ScTaxResult)
+    o.subtractions = subtractions
+    o.sciad = sciad
+    o.taxableIncome = taxableIncome
+    o.tax = tax
+    return o
+  }
 }

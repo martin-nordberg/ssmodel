@@ -28,6 +28,9 @@ export function indexFactor(indexing: Indexing, year: number, ctx: IndexContext)
 
 export type ExpenseItem = {
   label: string
+  /** Pre-parsed start/end months (optional; parsed on the fly when absent). */
+  startYM?: YM
+  endYM?: YM
   annual: number
   start: string
   end?: string
@@ -47,7 +50,7 @@ export type ExpenseContext = IndexContext & {
 }
 
 export function expenseForYear(item: ExpenseItem, year: number, ctx: ExpenseContext): number {
-  const start = parseYM(item.start)
+  const start = item.startYM ?? parseYM(item.start)
   const f = indexFactor(item.indexing, year, ctx) * ctx.scale
   const override = ctx.endOverride?.get(item.label)
   if (item.oneTime) {
@@ -57,7 +60,7 @@ export function expenseForYear(item: ExpenseItem, year: number, ctx: ExpenseCont
       item.perPerson && ctx.survivorFrom !== null && start >= ctx.survivorFrom ? ctx.survivorFraction : 1
     return item.annual * f * survivorAdj
   }
-  let end = item.end ? parseYM(item.end) : undefined
+  let end = item.endYM ?? (item.end ? parseYM(item.end) : undefined)
   if (override !== undefined) end = end === undefined ? override : Math.min(end, override)
   const months = monthsActive(year, start, end)
   if (months === 0) return 0

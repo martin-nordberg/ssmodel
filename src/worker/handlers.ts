@@ -1,3 +1,5 @@
+import { prepare } from '@/engine/model/prepare.ts'
+import { pathRows, runDetailShard, runShard } from '@/engine/sim/monteCarlo.ts'
 import { createRng, Stream } from '@/engine/sim/rng.ts'
 import type { TaskKind, TaskMap } from './protocol.ts'
 
@@ -16,4 +18,7 @@ export const handlers: Handlers = {
     })
     return { draws }
   },
+  mcShard: (req, ctx) => runShard(prepare(req.file, req.scenarioId), req, ctx.progress),
+  mcDetail: (req, ctx) => runDetailShard(prepare(req.file, req.scenarioId), req, ctx.progress),
+  pathRows: (req) => pathRows(prepare(req.file, req.scenarioId), req.seed, req.path, req.claim),
 }
