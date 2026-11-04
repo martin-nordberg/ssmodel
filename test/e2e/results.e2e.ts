@@ -57,3 +57,11 @@ test('sensitivity view', async ({ page }) => {
   await expect(chart).toContainText('Inheritances')
   await page.screenshot({ path: 'test-results/sensitivity.png' })
 })
+
+test('warnings panel lists projected rule tables', async ({ page }) => {
+  await installFsaMock(page, { 'full.yaml': full })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Open…' }).click()
+  await page.getByRole('button', { name: /^Warnings:/ }).click()
+  await expect(page.getByTestId('warnings')).toContainText('IRS tax brackets: published through 2026')
+})
