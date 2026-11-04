@@ -89,6 +89,13 @@ export function parseDate(text: string): Parsed<string> {
   return { ok: true, value: `${y}-${pad(m)}-${pad(d)}` }
 }
 
+let moneyStyle: 'full' | 'compact' = 'full'
+/** Display preference for money in read-only views [FR-UI-16]. */
+export function setMoneyStyle(style: 'full' | 'compact') {
+  moneyStyle = style
+}
+export const getMoneyStyle = () => moneyStyle
+
 export function formatCurrency(v: number | undefined, compact = false): string {
   if (v === undefined || !Number.isFinite(v)) return ''
   if (compact && Math.abs(v) >= 1e6) return `$${(v / 1e6).toFixed(2)}M`

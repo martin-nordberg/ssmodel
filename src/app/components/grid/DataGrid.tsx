@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import {
   formatCurrency,
   formatPercent,
+  getMoneyStyle,
   type Parsed,
   parseCurrency,
   parseDate,
@@ -68,11 +69,16 @@ type Cell = { r: number; c: number }
 // Cells of an ARIA grid table; focus stays on the grid container (aria-activedescendant).
 const gridCellProps = (selected: boolean) => ({ role: 'gridcell', 'aria-selected': selected }) as const
 
-export function formatCell(type: CellType, v: unknown, options?: GridColumn<unknown>['options']): string {
+export function formatCell(
+  type: CellType,
+  v: unknown,
+  options?: GridColumn<unknown>['options'],
+  readOnly = false,
+): string {
   if (v === undefined || v === null) return ''
   switch (type) {
     case 'currency':
-      return formatCurrency(v as number)
+      return formatCurrency(v as number, readOnly && getMoneyStyle() === 'compact')
     case 'percent':
       return formatPercent(v as number)
     case 'boolean':
@@ -384,7 +390,7 @@ export function DataGrid<R>({
           }
           return (
             <span className={cn('block truncate px-1', err && 'text-destructive')} title={err}>
-              {formatCell(col.type, col.get(row), col.options)}
+              {formatCell(col.type, col.get(row), col.options, col.readOnly || readOnly)}
             </span>
           )
         },

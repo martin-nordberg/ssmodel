@@ -157,3 +157,24 @@
   --grid-line: #33332f;
   --ghost: #8f8e88;
 }
+
+/* Print [FR-OUT-7]: content only, full width, no chrome. */
+@media print {
+  .no-print,
+  [aria-label="Levers"],
+  [aria-label="Setup sections"],
+  [aria-label="Scenarios"],
+  footer {
+    display: none !important;
+  }
+  html,
+  body,
+  #root,
+  #root > div {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  * {
+    overflow: visible !important;
+  }
+}

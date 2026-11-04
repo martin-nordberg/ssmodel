@@ -5,15 +5,20 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDocument } from '@/state/documentStore.ts'
+import { useSettings } from '@/state/settingsStore.ts'
 import { useUi, type View } from '@/state/uiStore.ts'
 import { FileMenu } from './FileMenu.tsx'
 import { NewHouseholdDialog } from './NewHouseholdDialog.tsx'
 import { ScenarioTabs } from './ScenarioTabs.tsx'
+import { SettingsMenu } from './SettingsMenu.tsx'
 import { StatusBar } from './StatusBar.tsx'
+import { useDisplaySettings } from './useDisplaySettings.ts'
 import { useShortcuts } from './useShortcuts.ts'
 
 export function AppShell() {
   useShortcuts()
+  useDisplaySettings()
+  useSettings((s) => s.numberFormat)
   const name = useDocument((s) => s.name)
   const dirty = useDocument((s) => s.dirty)
   const hasFile = useDocument((s) => s.file !== null)
@@ -34,7 +39,7 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground text-sm">
-      <header className="flex h-10 items-center gap-2 border-b px-2">
+      <header className="no-print flex h-10 items-center gap-2 border-b px-2">
         <FileMenu />
         <Tabs value={view} onValueChange={(v) => setView(v as View)}>
           <TabsList>
@@ -53,6 +58,7 @@ export function AppShell() {
           </TabsList>
         </Tabs>
         <h1 className="ml-auto font-semibold text-sm">Social Security Claiming Model</h1>
+        <SettingsMenu />
       </header>
       {hasFile && <ScenarioTabs />}
       <LoadErrors />
