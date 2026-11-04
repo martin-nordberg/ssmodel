@@ -10,7 +10,7 @@ const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'ut
 
 async function openConsole(page: Page) {
   await installFsaMock(page, { 'full.yaml': full })
-  await page.goto('/')
+  await page.goto('/?poolSize=3')
   await page.getByRole('button', { name: 'Open…' }).click()
   await page.getByRole('tab', { name: 'Console' }).click()
   await expect(page.getByTestId('recommendation')).toContainText('Claim at', { timeout: 30_000 })

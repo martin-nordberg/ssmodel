@@ -113,3 +113,22 @@ describe('coarse→fine grid', () => {
   })
   test('short lists are evaluated in full', () => expect(coarseCandidates(all.slice(0, 10), 1009)).toHaveLength(10))
 })
+
+import { accountMedians, fanSummary } from '@/engine/recommend/fan.ts'
+
+test('fan summary percentiles per year, ignoring ended paths', () => {
+  const paths = 20
+  const years = 3
+  const liquid = new Float32Array(paths * years)
+  for (let p = 0; p < paths; p++) {
+    liquid[p * years] = p
+    liquid[p * years + 1] = p * 2
+    liquid[p * years + 2] = p < 15 ? Number.NaN : 1
+  }
+  const f = fanSummary(liquid, paths, years, 2027)
+  expect(f.length).toBe(2) // year 3 has only 5 live paths (< 10)
+  expect(f[0]!.p50).toBe(9.5)
+  expect(f[1]!.p90).toBeCloseTo(34.2, 6)
+  const m = accountMedians(Float32Array.from([1, 10, 3, 30]), 2, 1, 2, 2027, 5)
+  expect(m[0]).toEqual({ year: 2027, values: [2, 20] })
+})

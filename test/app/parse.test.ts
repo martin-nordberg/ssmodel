@@ -89,3 +89,16 @@ test('percent formatting keeps whole-number zeros', () => {
   expect(formatPercent(0.025)).toBe('2.5%')
   expect(formatPercent(1, 0)).toBe('100%')
 })
+
+import { DEFAULT_LEVERS } from '@/app/views/console/levers.ts'
+
+test('lever formats keep whole-number zeros', () => {
+  const fmt = (id: string, v: number) => {
+    const l = DEFAULT_LEVERS.find((x) => x.id === id)!
+    return l.kind === 'slider' ? l.format(v) : ''
+  }
+  expect(fmt('expenseScale', 1)).toBe('100%')
+  expect(fmt('successFloor', 0.9)).toBe('90%')
+  expect(fmt('inflation', 0.025)).toBe('2.5%')
+  expect(fmt('deathP', 90)).toBe('90')
+})

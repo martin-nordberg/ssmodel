@@ -82,7 +82,7 @@ function ConsoleBody() {
   return (
     <div className="flex h-full min-h-0">
       <LeverRail saved={saved} effective={effective} prep={prep} />
-      <div className="grid min-w-0 flex-1 grid-rows-[auto_auto_minmax(16rem,1fr)_minmax(10rem,auto)] gap-3 overflow-auto p-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-auto p-3 [&>*]:shrink-0">
         <RunStatus />
         <section
           aria-label="Recommendation"

@@ -29,14 +29,16 @@ export type SegmentLever = {
 
 export type LeverDef = SliderLever | SegmentLever
 
+/** Drops trailing zeros after a decimal point only ("90" stays "90"; "2.50" becomes "2.5"). */
+export const trimZeros = (s: string) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s)
 const pct =
   (digits = 2) =>
   (v: number) =>
-    `${(v * 100).toFixed(digits).replace(/\.?0+$/, '')}%`
+    `${trimZeros((v * 100).toFixed(digits))}%`
 const num =
   (digits = 2) =>
   (v: number) =>
-    v.toFixed(digits).replace(/\.?0+$/, '')
+    trimZeros(v.toFixed(digits))
 const money = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`
 const ok = <T>(r: { ok: true; value: T } | { ok: false }) => (r.ok ? r.value : null)
 const parsePct = (t: string) => ok(parsePercent(t))

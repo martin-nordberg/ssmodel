@@ -4,6 +4,9 @@ export default defineConfig({
   testDir: './test/e2e',
   testMatch: '**/*.e2e.ts',
   fullyParallel: true,
+  // Each page runs its own engine worker pool; more parallel pages starve the CPU.
+  workers: 2,
+  timeout: 90_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
