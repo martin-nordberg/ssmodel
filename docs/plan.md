@@ -509,3 +509,24 @@ with/without-inheritance comparison is shown.
 | No external oracle (no other planner, no spreadsheet) | Worked examples + independent reference engine + Open Social Security cross-checks + PIA vs. statement |
 | Scope creep in M3 | The slip list in requirements §15 |
 | Real data leaking into git | `private/` git-ignored from the first commit; only synthetic fixtures in tests |
+
+---
+
+## Implementation status (2026-11-05)
+
+M0–M4 (v1) are implemented, with one commit per task. v1.1 (T5.1 command palette, T5.2 explain-a-number) is
+not started.
+
+Deviations and notes:
+- **NFR-SIM-1 (5 s for 33 × 5,000):** not met on the development machine (4-core i7-7700). This household's 18
+  candidates take about 8 s in Chromium. Mitigations: a 500-path preview first, cancel, and the coarse→fine grid.
+  See `docs/benchmarks.md`.
+- **NFR-TEST-3 (Open Social Security cross-check):** not automated; there is no API. SSA-published factors and
+  percentages are used as test vectors instead.
+- **NFR-TEST-7 (reference engine):** covers M1 features. Inheritances, property, annuities and Roth conversions
+  have targeted tests rather than differential coverage.
+- **Rule data:** ssa.gov blocks automated downloads. The AWI series was checked against SSA's published bend
+  points and taxable maximums (1995–2027). IRS and CMS 2027 values were not yet published and are projected.
+- **T3.2/T3.6** share one property model: the home and inherited real estate.
+- **Taxable sales that pay conversion tax** realize gains that are not themselves taxed in that year
+  (second-order).

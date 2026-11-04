@@ -16,6 +16,7 @@ published bend points and taxable maximums, so a mistyped AWI value fails the te
 | November | CMS | Part B standard premium, Part D base beneficiary premium, IRMAA thresholds and amounts | `medicare.json` (add a year key) |
 | December–January | SC DOR (SC1040 instructions) | Rate schedule (rates may fall under Act 110 triggers), SCIAD amounts and phase-out, retirement and age-65 deductions | `scTax.json` (add a year key) |
 | Spring | SSA Trustees Report | Depletion dates and payable percentages for the presets; new period life table | `ssa.json` `trusteesPresets`, `lifeTable.json` |
+| January | Damodaran (NYU Stern) + BLS CPI-U | Append last year's S&P 500, T-bill, 10-year Treasury returns and Dec/Dec CPI-U to `data/history/us-annual.csv`, then run `bun scripts/genHistory.ts` | `data/history/us-annual.csv` |
 | As needed | IRS Pub 590-B | Life expectancy tables (changed in 2022 only) and RMD ages | `rmd.json` |
 | Law changes | Congress / SC General Assembly | Senior deduction (2025–2028), NIIT, SS taxation thresholds (unindexed) | `federalTax.json` `unindexed` |
 
