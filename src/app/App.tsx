@@ -1,7 +1,15 @@
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { isFileAccessSupported } from './files/fileAccess.ts'
+import { AppShell } from './shell/AppShell.tsx'
+import { UnsupportedBrowser } from './shell/UnsupportedBrowser.tsx'
+
 export function App() {
+  if (!isFileAccessSupported()) return <UnsupportedBrowser />
   return (
-    <main className="p-4 text-sm">
-      <h1 className="text-lg font-semibold">Social Security Claiming Model</h1>
-    </main>
+    <TooltipProvider>
+      <AppShell />
+      <Toaster position="bottom-right" />
+    </TooltipProvider>
   )
 }
