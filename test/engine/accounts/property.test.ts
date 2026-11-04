@@ -89,3 +89,25 @@ describe('properties in the path', () => {
     expect((received.homeEquity ?? 0) - (prev.homeEquity ?? 0) * 1.03).toBeLessThan(1)
   })
 })
+
+describe('HSA contributions', () => {
+  test('contributions until Medicare raise the HSA and lower taxable income', () => {
+    const contrib = (amount: number) =>
+      run((f) => {
+        const hsa = f.scenarios[0]!.accounts.find((a) => a.type === 'hsa')!
+        if (hsa.type === 'hsa') {
+          hsa.owner = 'spouse'
+          hsa.annualContribution = amount
+        }
+      })
+    const a = contrib(0)
+    const b = contrib(8000)
+    const idx = a.prep.accounts.findIndex((x) => x.kind === 'hsa')
+    const r0a = a.rows[0]!
+    const r0b = b.rows[0]!
+    expect(r0b.endBalances[idx]! - r0a.endBalances[idx]!).toBeGreaterThan(7900)
+    expect(r0b.taxableIncome).toBeLessThan(r0a.taxableIncome + 1)
+    // The spouse turns 65 in February 2028: one month of contributions that year.
+    expect(b.rows[1]!.expenses - a.rows[1]!.expenses).toBeCloseTo((8000 * 1.025) / 12, 0)
+  })
+})

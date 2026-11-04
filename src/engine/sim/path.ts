@@ -515,6 +515,21 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       propertyIncome += pr.rent * price
     }
     expenses += saleShortfall
+    // HSA contributions before Medicare: deductible, paid from cash flow, deposited to the HSA [FR-ACC-6].
+    let hsaContrib = 0
+    const hsaDeposits: [EngineAccount, number][] = []
+    for (const a of accounts) {
+      if (a.kind !== 'hsa' || a.hsaContribution <= 0) continue
+      const person = prep.people[a.owner]
+      const death = a.owner === 0 ? deathP : deathS
+      const lastMonth = Math.min(death, person.age.medicareMonth - 1, m11)
+      const months = Math.max(0, lastMonth - m0 + 1)
+      if (months === 0) continue
+      const amt = (a.hsaContribution * price * months) / 12
+      hsaContrib += amt
+      hsaDeposits.push([a, amt])
+    }
+    expenses += hsaContrib
     const spending = expenses + healthTotal - hsaMedical
 
     // ---- tax function ----
@@ -532,7 +547,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         taxableMax: tmax,
         wagesByPerson: [eP.wages, eS.wages],
         seByPerson: [eP.selfEmployment, eS.selfEmployment],
-        ordinary: reqOrdinaryByPerson[0] + reqOrdinaryByPerson[1] + otherOrdinary,
+        ordinary: reqOrdinaryByPerson[0] + reqOrdinaryByPerson[1] + otherOrdinary - hsaContrib,
         investmentOrdinary: interest + propertyIncome,
         qualifiedDividends: dividends,
         ltcg: realizedGain,
@@ -633,6 +648,8 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       if (a.kind === 'taxable') a.basis += startBal[i]! * a.dividendYield
       a.balance = Math.max(0, startBal[i]! * (1 + r) + flow * Math.sqrt(Math.max(0, 1 + r)))
     }
+
+    for (const [a, amt] of hsaDeposits) a.balance += amt
 
     // ---- property appreciation ----
     let homeEquity = 0
