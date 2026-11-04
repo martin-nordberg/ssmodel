@@ -8,7 +8,10 @@ import { AssumptionsPanel } from './panels/AssumptionsPanel.tsx'
 import { EarningsPanel } from './panels/EarningsPanel.tsx'
 import { ExpensesPanel } from './panels/ExpensesPanel.tsx'
 import { HealthcarePanel } from './panels/HealthcarePanel.tsx'
+import { HomePanel } from './panels/HomePanel.tsx'
 import { HouseholdPanel } from './panels/HouseholdPanel.tsx'
+import { IncomePanel } from './panels/IncomePanel.tsx'
+import { InheritancesPanel } from './panels/InheritancesPanel.tsx'
 import { SocialSecurityPanel } from './panels/SocialSecurityPanel.tsx'
 import { StrategyPanel } from './panels/StrategyPanel.tsx'
 
@@ -19,6 +22,9 @@ export const SECTIONS: Section[] = [
   { id: 'earnings', label: 'Earnings', shared: true, render: () => <EarningsPanel /> },
   { id: 'socialSecurity', label: 'Social Security', render: () => <SocialSecurityPanel /> },
   { id: 'accounts', label: 'Accounts', render: () => <AccountsPanel /> },
+  { id: 'home', label: 'Home', render: () => <HomePanel /> },
+  { id: 'inheritances', label: 'Inheritances', render: () => <InheritancesPanel /> },
+  { id: 'income', label: 'Income', render: () => <IncomePanel /> },
   { id: 'expenses', label: 'Expenses', render: () => <ExpensesPanel /> },
   { id: 'healthcare', label: 'Healthcare', render: () => <HealthcarePanel /> },
   { id: 'assumptions', label: 'Assumptions', render: () => <AssumptionsPanel /> },

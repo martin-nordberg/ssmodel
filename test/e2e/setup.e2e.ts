@@ -98,3 +98,37 @@ test('undo and redo with the keyboard', async ({ page }) => {
   await page.keyboard.press('Control+Shift+z')
   await expect(page.getByLabel('Survivor spending fraction')).toHaveValue('60%')
 })
+
+test('M3 panels: add an inheritance with real estate, an annuity, and a home sale', async ({ page }) => {
+  const minimal = readFileSync(new URL('../fixtures/minimal.yaml', import.meta.url), 'utf8')
+  await installFsaMock(page, { 'minimal.yaml': minimal })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Open…' }).click()
+  await page.getByRole('tab', { name: 'Setup' }).click()
+
+  await section(page, 'Inheritances').click()
+  await page.getByRole('button', { name: 'Add row' }).first().click()
+  const grid = page.getByRole('grid', { name: 'Inheritances' })
+  await grid.focus()
+  await page.keyboard.type("Mother's estate")
+  await page.keyboard.press('Enter')
+  await expect(grid).toContainText("Mother's estate")
+  await page.getByRole('button', { name: 'Add row' }).nth(1).click()
+  await expect(page.getByRole('grid', { name: 'Inherited real estate' })).toContainText('Property')
+
+  await section(page, 'Income').click()
+  await page.getByRole('button', { name: 'Add row' }).first().click()
+  await expect(page.getByRole('grid', { name: 'Annuities' })).toContainText('Annuity')
+
+  await section(page, 'Home').click()
+  await page.getByLabel('We own a home').click()
+  await page.getByLabel('Value today').fill('450k')
+  await page.getByLabel('Value today').press('Enter')
+
+  await page.keyboard.press('Control+s')
+  const saved = (await readDisk(page, 'minimal.yaml')) ?? ''
+  expect(saved).toContain("label: Mother's estate")
+  expect(saved).toContain('label: Property')
+  expect(saved).toContain('label: Annuity')
+  expect(saved).toContain('value: 450000')
+})
