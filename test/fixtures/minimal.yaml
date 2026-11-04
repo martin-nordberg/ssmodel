@@ -1,0 +1,14 @@
+# Minimal synthetic household: only required facts, one empty scenario.
+schemaVersion: 1
+household:
+  people:
+    primary:
+      birthDate: 1961-05-14
+    spouse:
+      birthDate: 1963-02-02
+      ss:
+        currentMonthly: 1400
+        claimedDate: 2025-03
+scenarios:
+  - id: base
+    name: Base case

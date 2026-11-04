@@ -1,0 +1,158 @@
+# Full synthetic household (not real data). Exercises every section of the schema.
+schemaVersion: 1
+household:
+  baseDate: 2027-01
+  state: SC
+  priorMagi: { "2025": 118000, "2026": 124000 } # IRMAA lookback
+  people:
+    primary:
+      name: Husband
+      birthDate: 1961-05-14
+      sex: male
+      ss:
+        fraEstimateMonthly: 3150 # from SSA statement, today's dollars
+        estimateAsOf: 2026-10
+      earningsRecord:
+        - { year: 1983, amount: 14200 }
+        - { year: 1984, amount: 15000 }
+        - { year: 1985, amount: 15800 }
+        - { year: 1986, amount: 16700 }
+        - { year: 1987, amount: 17600 }
+        - { year: 1988, amount: 18600 }
+        - { year: 1989, amount: 19600 }
+        - { year: 1990, amount: 20700 }
+        - { year: 1991, amount: 21800 }
+        - { year: 1992, amount: 23000 }
+        - { year: 1993, amount: 24300 }
+        - { year: 1994, amount: 25600 }
+        - { year: 1995, amount: 27000 }
+        - { year: 1996, amount: 28500 }
+        - { year: 1997, amount: 30000 }
+        - { year: 1998, amount: 31700 }
+        - { year: 1999, amount: 33400 }
+        - { year: 2000, amount: 35300 }
+        - { year: 2001, amount: 37200 }
+        - { year: 2002, amount: 39300 }
+        - { year: 2003, amount: 41400 }
+        - { year: 2004, amount: 43700 }
+        - { year: 2005, amount: 46100 }
+        - { year: 2006, amount: 48700 }
+        - { year: 2007, amount: 51300 }
+        - { year: 2008, amount: 54200 }
+        - { year: 2009, amount: 57100 }
+        - { year: 2010, amount: 60300 }
+        - { year: 2011, amount: 63600 }
+        - { year: 2012, amount: 67100 }
+        - { year: 2013, amount: 70800 }
+        - { year: 2014, amount: 74700 }
+        - { year: 2015, amount: 78800 }
+        - { year: 2016, amount: 83100 }
+        - { year: 2017, amount: 87700 }
+        - { year: 2018, amount: 92500 }
+        - { year: 2019, amount: 97600 }
+        - { year: 2020, amount: 103000 }
+        - { year: 2021, amount: 108600 }
+        - { year: 2022, amount: 114600 }
+        - { year: 2023, amount: 120900 }
+        - { year: 2024, amount: 127500 }
+        - { year: 2025, amount: 134600 }
+      earnings:
+        - { year: 2026, wages: 85000 }
+        - { year: 2027, wages: 40000, selfEmployment: 15000 }
+    spouse:
+      name: Wife
+      birthDate: 1963-02-02
+      sex: female
+      ss:
+        currentMonthly: 1400
+        claimedDate: 2025-03 # PIA derived from these
+scenarios:
+  - id: base
+    name: Base case
+    trustFund:
+      preset: trustees_2026_oasi
+    accounts:
+      - { type: roth_ira, owner: primary, balance: 180000, return: { preset: aggressive }, fee: 0.0005 }
+      - { type: traditional_ira, owner: primary, balance: 650000, return: { mean: 0.055, sd: 0.11 }, fee: 0.001 }
+      - { type: traditional_401k, owner: spouse, balance: 90000, return: { preset: moderate }, fee: 0.004 }
+      - type: inherited_ira
+        flavor: traditional
+        beneficiary: spouse
+        balance: 220000
+        decedentBirthDate: 1938-07-01
+        decedentDeathDate: 2023-04-15 # deadline 2033, annual RMDs required
+        beneficiaryClass: designated
+        return: { preset: moderate }
+      - { type: hsa, owner: primary, balance: 25000, payMedicalFirst: true, return: { preset: moderate } }
+      - type: taxable
+        owner: joint
+        balance: 300000
+        costBasis: 210000
+        dividendYield: 0.018
+        return: { preset: moderate }
+        fee: 0.0005
+      - { type: cash, owner: joint, balance: 40000, rate: 0.035, targetMonths: 12 }
+    home:
+      value: 450000
+      basis: 280000
+      appreciation: { mean: 0.03, sd: 0.06 }
+      mortgageExpense: Mortgage
+      sale: { mode: backstop, liquidFloor: 50000, sellingCostPct: 0.07, replacementCost: 0 }
+    inheritances:
+      - label: Mother's estate
+        heir: primary
+        decedentBirthDate: 1940-09-10
+        decedentSex: female
+        timing: { mode: mortality, ageOffset: 0 }
+        amounts: { traditionalIra: 150000, rothIra: 40000, nonIra: 250000 } # base-date dollars
+        realEstate:
+          - label: Lake cabin
+            value: 220000
+            disposition: keep
+            appreciation: { mean: 0.03, sd: 0.08 }
+            carryingCosts: 6500
+            rentalIncome: 0
+            sale: { mode: planned, date: 2038-06, sellingCostPct: 0.07 }
+        growth: { realRate: 0.0, annualSpendDown: 0 }
+        probability: 1.0
+        ifHeirPredeceases: surviving_spouse
+        beneficiaryClass: designated
+    income:
+      annuities:
+        - label: SPIA
+          owner: primary
+          monthly: 800
+          start: 2030-01
+          colaPercent: 0
+          survivorPercent: 0.5
+          qualified: false
+          exclusionRatio: 0.6
+          basis: 120000
+      streams: []
+    expenses:
+      survivorFraction: 0.75
+      bequestTarget: 200000
+      items:
+        - { label: Living, annual: 72000, start: 2027-01, indexing: inflation, perPerson: true }
+        - { label: Mortgage, annual: 21600, start: 2027-01, end: 2031-08, indexing: none }
+        - { label: Roof + kitchen, annual: 60000, start: 2028-06, oneTime: true, indexing: inflation }
+    healthcare:
+      medicalInflationSpread: 0.015
+      pre65:
+        primary: { cobraMonthly: 0, outOfPocket: 0 } # already 65 by the base date
+        spouse: { cobraMonthly: 1150, start: 2027-01, outOfPocket: 3000 } # runs until 65
+      medicare: { medigapAnnual: 2400, outOfPocket: 1500 }
+    strategy:
+      withdrawal: bracket_fill
+      targetBracket: 0.12
+      irmaaCapTier: 0
+      inheritedIraSchedule: { traditional: even, roth: back_loaded }
+      rothConversions: { enabled: true, upToBracket: 0.22, irmaaCapTier: 1, until: claim }
+    assumptions:
+      inflation: { mean: 0.025, sd: 0.012, phi: 0.6 }
+      returns: { model: parametric, crossAccountCorrelation: 0.85, inflationCorrelation: -0.1 }
+      heirTaxRate: 0.22
+    simulation: { paths: 5000, seed: 20270101, maxAge: 100 }
+    objective: { metric: median_terminal_real_after_tax, successFloor: 0.90, bequestFloor: 0.50 }
+    consoleLevers:
+      - { path: healthcare.medicalInflationSpread, min: 0, max: 0.04, step: 0.0025 }
