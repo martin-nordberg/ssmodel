@@ -98,7 +98,8 @@ export function formatCurrency(v: number | undefined, compact = false): string {
 
 export function formatPercent(v: number | undefined, digits = 2): string {
   if (v === undefined || !Number.isFinite(v)) return ''
-  return `${(v * 100).toFixed(digits).replace(/\.?0+$/, '')}%`
+  const t = (v * 100).toFixed(digits)
+  return `${t.includes('.') ? t.replace(/0+$/, '').replace(/\.$/, '') : t}%`
 }
 
 /** Tab-separated rows/columns as copied from a spreadsheet. */

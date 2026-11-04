@@ -13,6 +13,7 @@ export function HealthcarePanel() {
     >
       <FieldRow>
         <Field
+          leverPath="healthcare.medicalInflationSpread"
           label="Medical inflation above CPI"
           type="percent"
           min={-0.05}
@@ -69,6 +70,7 @@ export function HealthcarePanel() {
       <h3 className="font-medium text-xs">Medicare (per person)</h3>
       <FieldRow>
         <Field
+          leverPath="healthcare.medicare.medigapAnnual"
           label="Medigap / Advantage premium (annual)"
           type="currency"
           min={0}
@@ -80,6 +82,7 @@ export function HealthcarePanel() {
           }
         />
         <Field
+          leverPath="healthcare.medicare.outOfPocket"
           label="Out-of-pocket (annual)"
           type="currency"
           min={0}

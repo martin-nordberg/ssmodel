@@ -1,11 +1,36 @@
 // Form fields that parse and format like grid cells [FR-UI-4]. Values commit on blur or Enter.
 import { type ReactNode, useEffect, useId, useState } from 'react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { updateScenario } from '@/state/scenario.ts'
 import { type CellType, formatCell, parseCell } from './grid/DataGrid.tsx'
 
+/** Default lever range around the current value. */
+export function leverRange(type: CellType, v: number): { min: number; max: number; step: number } {
+  if (type === 'percent') {
+    const span = Math.max(0.05, Math.abs(v))
+    return { min: Math.max(-1, v - span), max: Math.min(1, v + span), step: 0.0025 }
+  }
+  if (type === 'currency') {
+    const max = Math.max(1000, Math.ceil((v * 2) / 1000) * 1000)
+    return { min: 0, max, step: Math.max(50, Math.round(max / 40 / 50) * 50) }
+  }
+  const span = Math.max(1, Math.abs(v))
+  return { min: v - span, max: v + span, step: span / 20 }
+}
+
+function addToConsole(path: string, label: string, type: CellType, value: number) {
+  updateScenario((s) => {
+    if (s.consoleLevers.some((l) => l.path === path)) return
+    s.consoleLevers.push({ path, label, ...leverRange(type, value) })
+  }, 'add lever')
+}
+
 type FieldProps = {
+  /** Scenario-relative path; enables right-click "Add to Console" [FR-UI-7a]. */
+  leverPath?: string
   label: string
   type: Exclude<CellType, 'select' | 'boolean'>
   value: unknown
@@ -18,7 +43,19 @@ type FieldProps = {
   className?: string
 }
 
-export function Field({ label, type, value, onCommit, optional, min, max, hint, placeholder, className }: FieldProps) {
+export function Field({
+  label,
+  type,
+  value,
+  onCommit,
+  optional,
+  min,
+  max,
+  hint,
+  placeholder,
+  className,
+  leverPath,
+}: FieldProps) {
   const id = useId()
   const display = formatCell(type, value)
   const [text, setText] = useState(display)
@@ -39,35 +76,63 @@ export function Field({ label, type, value, onCommit, optional, min, max, hint, 
     setText(formatCell(type, r.value))
   }
 
+  const [menu, setMenu] = useState(false)
+  const field = (
+    <input
+      id={id}
+      value={text}
+      placeholder={placeholder}
+      aria-invalid={!!error}
+      aria-describedby={error || hint ? `${id}-help` : undefined}
+      className={cn(
+        'h-7 rounded-md border bg-background px-2 font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+        error && 'border-destructive',
+      )}
+      onFocus={() => setFocused(true)}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        setFocused(false)
+        commit()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+        if (e.key === 'Escape') {
+          setText(display)
+          setError(null)
+        }
+      }}
+      onContextMenu={
+        leverPath && typeof value === 'number'
+          ? (e) => {
+              e.preventDefault()
+              setMenu(true)
+            }
+          : undefined
+      }
+    />
+  )
   return (
     <div className={cn('grid gap-1', className)}>
       <Label htmlFor={id} className="text-muted-foreground text-xs">
         {label}
       </Label>
-      <input
-        id={id}
-        value={text}
-        placeholder={placeholder}
-        aria-invalid={!!error}
-        aria-describedby={error || hint ? `${id}-help` : undefined}
-        className={cn(
-          'h-7 rounded-md border bg-background px-2 font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-          error && 'border-destructive',
-        )}
-        onFocus={() => setFocused(true)}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => {
-          setFocused(false)
-          commit()
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit()
-          if (e.key === 'Escape') {
-            setText(display)
-            setError(null)
-          }
-        }}
-      />
+      {leverPath && typeof value === 'number' ? (
+        <DropdownMenu open={menu} onOpenChange={setMenu}>
+          <div className="relative grid">
+            {field}
+            <DropdownMenuTrigger asChild>
+              <span aria-hidden className="pointer-events-none absolute bottom-0 left-0 size-0" />
+            </DropdownMenuTrigger>
+          </div>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onSelect={() => addToConsole(leverPath, label, type, value)}>
+              Add to Console
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        field
+      )}
       {(error || hint) && (
         <span id={`${id}-help`} className={cn('text-xs', error ? 'text-destructive' : 'text-muted-foreground')}>
           {error ?? hint}

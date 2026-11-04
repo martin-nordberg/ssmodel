@@ -95,6 +95,7 @@ export function ExpensesPanel() {
     >
       <FieldRow>
         <Field
+          leverPath="expenses.survivorFraction"
           label="Survivor spending fraction"
           type="percent"
           min={0}
@@ -107,6 +108,7 @@ export function ExpensesPanel() {
           }
         />
         <Field
+          leverPath="expenses.bequestTarget"
           label="Bequest target (real, after tax)"
           type="currency"
           min={0}

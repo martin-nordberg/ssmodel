@@ -10,6 +10,7 @@ export function AssumptionsPanel() {
       <h3 className="font-medium text-xs">Inflation (AR(1))</h3>
       <FieldRow>
         <Field
+          leverPath="assumptions.inflation.mean"
           label="Mean"
           type="percent"
           min={-0.05}
@@ -22,6 +23,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.inflation.sd"
           label="Volatility"
           type="percent"
           min={0}
@@ -34,6 +36,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.inflation.phi"
           label="Persistence (phi)"
           type="number"
           min={0}
@@ -46,6 +49,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.realWageGrowth"
           label="Real wage growth"
           type="percent"
           min={-0.05}
@@ -75,6 +79,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.returns.crossAccountCorrelation"
           label="Cross-account correlation"
           type="number"
           min={-1}
@@ -87,6 +92,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.returns.inflationCorrelation"
           label="Correlation with inflation"
           type="number"
           min={-1}
@@ -99,6 +105,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.returns.realReturnShift"
           label="Return shift (all accounts)"
           type="percent"
           min={-0.1}
@@ -111,6 +118,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.returns.volatilityMultiplier"
           label="Volatility multiplier"
           type="number"
           min={0}
@@ -123,6 +131,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.returns.blockLength"
           label="Bootstrap block (years)"
           type="integer"
           min={1}
@@ -185,6 +194,7 @@ export function AssumptionsPanel() {
       <h3 className="font-medium text-xs">Other</h3>
       <FieldRow>
         <Field
+          leverPath="assumptions.heirTaxRate"
           label="Heirs' tax rate on IRAs"
           type="percent"
           min={0}
@@ -197,6 +207,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="assumptions.expenseScale"
           label="Expense scale"
           type="number"
           min={0}
@@ -212,6 +223,7 @@ export function AssumptionsPanel() {
       <h3 className="font-medium text-xs">Simulation</h3>
       <FieldRow>
         <Field
+          leverPath="simulation.paths"
           label="Paths"
           type="integer"
           min={100}
@@ -224,6 +236,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="simulation.seed"
           label="Seed"
           type="integer"
           min={0}
@@ -235,6 +248,7 @@ export function AssumptionsPanel() {
           }
         />
         <Field
+          leverPath="simulation.maxAge"
           label="Maximum age (younger spouse)"
           type="integer"
           min={85}

@@ -1,4 +1,5 @@
 import { useUi } from '@/state/uiStore.ts'
+import { ConsoleView } from './console/ConsoleView.tsx'
 import { ResultsView } from './results/ResultsView.tsx'
 import { SetupView } from './setup/SetupView.tsx'
 
@@ -7,6 +8,8 @@ export function ViewHost() {
   switch (view) {
     case 'setup':
       return <SetupView />
+    case 'console':
+      return <ConsoleView />
     case 'results':
       return <ResultsView />
     default:

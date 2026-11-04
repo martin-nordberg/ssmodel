@@ -140,6 +140,7 @@ export function StrategyPanel() {
         />
         {typeof st.rothConversions.until === 'number' && (
           <Field
+            leverPath="strategy.rothConversions.until"
             label="Until year"
             type="integer"
             value={st.rothConversions.until}
@@ -154,6 +155,7 @@ export function StrategyPanel() {
       <h3 className="font-medium text-xs">Recommendation</h3>
       <FieldRow>
         <Field
+          leverPath="objective.successFloor"
           label="Success floor"
           type="percent"
           min={0}
@@ -166,6 +168,7 @@ export function StrategyPanel() {
           }
         />
         <Field
+          leverPath="objective.bequestFloor"
           label="Bequest floor"
           type="percent"
           min={0}
@@ -178,6 +181,7 @@ export function StrategyPanel() {
           }
         />
         <Field
+          leverPath="objective.runnerUpTolerance"
           label="Runner-up tolerance"
           type="percent"
           min={0}

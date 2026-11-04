@@ -3,7 +3,7 @@
 // Shift+arrows select a range; Ctrl+C / Ctrl+V copy and paste TSV (Excel/Sheets compatible).
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
-import { type KeyboardEvent, useId, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -57,6 +57,10 @@ export type DataGridProps<R> = {
   validateRow?: (row: R) => Record<string, string>
   readOnly?: boolean
   maxHeight?: number
+  /** Row index to highlight (linked highlighting) [FR-UI-11]. */
+  highlightRow?: number
+  /** Pointer or keyboard focus moved to a row (null when leaving the grid). */
+  onRowHover?: (index: number | null) => void
 }
 
 type Cell = { r: number; c: number }
@@ -147,6 +151,8 @@ export function DataGrid<R>({
   validateRow,
   readOnly,
   maxHeight,
+  highlightRow,
+  onRowHover,
 }: DataGridProps<R>) {
   const [active, setActive] = useState<Cell>({ r: 0, c: 0 })
   const [anchor, setAnchor] = useState<Cell | null>(null)
@@ -172,6 +178,9 @@ export function DataGrid<R>({
   }, [anchor, active])
 
   const focusGrid = () => gridRef.current?.focus()
+  useEffect(() => {
+    if (document.activeElement === gridRef.current) onRowHover?.(active.r)
+  }, [active.r, onRowHover])
 
   const move = (dr: number, dc: number, extend = false) => {
     if (extend) setAnchor((a) => a ?? active)
@@ -397,6 +406,7 @@ export function DataGrid<R>({
         onKeyDown={onGridKey}
         onCopy={onCopy}
         onPaste={onPaste}
+        onMouseLeave={() => onRowHover?.(null)}
         className="group overflow-auto rounded-md border font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         style={{ maxHeight }}
       >
@@ -419,7 +429,11 @@ export function DataGrid<R>({
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} aria-rowindex={row.index + 1}>
+              <tr
+                key={row.id}
+                aria-rowindex={row.index + 1}
+                className={cn(row.index === highlightRow && 'bg-primary/10')}
+              >
                 {row.getVisibleCells().map((cell, ci) => {
                   const ri = row.index
                   const isActive = active.r === ri && active.c === ci

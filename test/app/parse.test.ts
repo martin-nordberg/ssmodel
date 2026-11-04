@@ -83,3 +83,9 @@ describe('parseCell / formatCell', () => {
     expect(formatCell('boolean', false)).toBe('No')
   })
 })
+
+test('percent formatting keeps whole-number zeros', () => {
+  expect(formatPercent(0.9, 0)).toBe('90%')
+  expect(formatPercent(0.025)).toBe('2.5%')
+  expect(formatPercent(1, 0)).toBe('100%')
+})
