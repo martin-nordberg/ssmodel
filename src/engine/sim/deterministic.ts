@@ -1,6 +1,7 @@
 // Deterministic path [FR-MC-3 deterministic]: mean inflation and returns every year, fixed death ages.
 import type { YM } from '../core/dates.ts'
 import type { EnginePerson, Prepared } from '../model/prepare.ts'
+import { drawInheritances } from './inheritance.ts'
 import { type PathDraws, type PathResult, runPath } from './path.ts'
 
 /** Last month alive for someone who lives through the year of the given age. */
@@ -16,6 +17,7 @@ export function deterministicDraws(prep: Prepared): PathDraws {
     inflation: new Float64Array(n).fill(asm.inflation.mean),
     returns: prep.accounts.map((a) => new Float64Array(n).fill(a.mean + (a.kind === 'cash' ? 0 : shift))),
     deathMonth: [fixedDeathMonth(prep.people[0]), fixedDeathMonth(prep.people[1])],
+    inheritances: drawInheritances(prep.inheritances, prep.baseYM, 0, null),
   }
 }
 

@@ -32,6 +32,24 @@ export type EngineAccount = {
   proxyMix: { stocks: number; bonds: number; cash: number } | null
 }
 
+export type EngineInheritance = {
+  index: number
+  label: string
+  heir: PersonIndex
+  decedentBirthDate: string
+  decedentSex: 'male' | 'female'
+  timing: ScenarioT['inheritances'][number]['timing']
+  /** Base-date amounts after the inheritance scale; zero when inheritances are disabled. */
+  amounts: { traditionalIra: number; rothIra: number; nonIra: number }
+  realEstate: ScenarioT['inheritances'][number]['realEstate']
+  growth: { realRate: number; annualSpendDown: number }
+  probability: number
+  ifHeirPredeceases: 'surviving_spouse' | 'lost'
+  beneficiaryClass: 'designated' | 'eligible_designated'
+  /** Placeholder account indexes that receive the IRA parts. */
+  accountIndex: { traditional: number; roth: number }
+}
+
 export type EnginePerson = {
   name: string
   birthDate: string
@@ -67,6 +85,8 @@ export type Prepared = {
   haircutByMonth: Float64Array
   /** OASDI taxable maximum by year, indexed from baseYear. */
   taxableMaxByYear: Float64Array
+  /** Future inheritances [§3.9]; placeholders keep the account list identical when they are disabled. */
+  inheritances: EngineInheritance[]
 }
 
 export function accountKind(a: ScenarioT['accounts'][number]): SolverKind {
@@ -202,6 +222,85 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     }
   })
 
+  // Placeholder accounts for inherited IRAs received later; present even when disabled so that the account list
+  // (and with it every random draw) is the same with and without inheritances [FR-MC-4, FR-INH-6].
+  const enabled = a.inheritancesEnabled
+  const inheritances: EngineInheritance[] = scenario.inheritances.map((h, index) => {
+    const heir = personIndex(h.heir)
+    const placeholder = (kind: 'inherited_traditional' | 'inherited_roth', what: string): number => {
+      const ret = resolveReturn({ preset: 'moderate' })
+      accounts.push({
+        index: accounts.length,
+        label: `${h.label} (${what})`,
+        kind,
+        owner: heir,
+        joint: false,
+        balance: 0,
+        basis: 0,
+        mean: ret.mean,
+        sd: ret.sd,
+        fee: 0,
+        dividendYield: 0,
+        cashRate: 0,
+        cashTargetMonths: 0,
+        currentEmployer: false,
+        inherited: null,
+        hsaContribution: 0,
+        hsaPayMedicalFirst: false,
+        proxyMix: null,
+      })
+      return accounts.length - 1
+    }
+    const scale = enabled ? a.inheritanceScale : 0
+    return {
+      index,
+      label: h.label,
+      heir,
+      decedentBirthDate: h.decedentBirthDate,
+      decedentSex: h.decedentSex,
+      timing: h.timing,
+      amounts: {
+        traditionalIra: h.amounts.traditionalIra * scale,
+        rothIra: h.amounts.rothIra * scale,
+        nonIra: h.amounts.nonIra * scale,
+      },
+      realEstate: enabled ? h.realEstate.map((re) => ({ ...re, value: re.value * a.inheritanceScale })) : [],
+      growth: h.growth,
+      probability: h.probability,
+      ifHeirPredeceases: h.ifHeirPredeceases,
+      beneficiaryClass: h.beneficiaryClass,
+      accountIndex: {
+        traditional: placeholder('inherited_traditional', 'inherited IRA'),
+        roth: placeholder('inherited_roth', 'inherited Roth'),
+      },
+    }
+  })
+
+  // Non-IRA inheritances and sale proceeds need a taxable account to land in.
+  if (scenario.inheritances.length > 0 && !accounts.some((x) => x.kind === 'taxable')) {
+    const ret = resolveReturn({ preset: 'moderate' })
+    accounts.push({
+      index: accounts.length,
+      label: 'Taxable (inheritances)',
+      kind: 'taxable',
+      owner: 0,
+      joint: true,
+      balance: 0,
+      basis: 0,
+      mean: ret.mean,
+      sd: ret.sd,
+      fee: 0,
+      dividendYield: 0.015,
+      cashRate: 0,
+      cashTargetMonths: 0,
+      currentEmployer: false,
+      inherited: null,
+      hsaContribution: 0,
+      hsaPayMedicalFirst: false,
+      proxyMix: null,
+    })
+  }
+
   const younger = people[0].birthYear >= people[1].birthYear ? people[0] : people[1]
   const endYear = younger.birthYear + scenario.simulation.maxAge
   const haircut = haircutSchedule(scenario.trustFund)
@@ -233,5 +332,6 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     awiGrowth,
     haircutByMonth,
     taxableMaxByYear,
+    inheritances,
   }
 }

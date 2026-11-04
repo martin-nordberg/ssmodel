@@ -3,6 +3,7 @@
 import { type YM, ym } from '../core/dates.ts'
 import type { EnginePerson, Prepared } from '../model/prepare.ts'
 import { fixedDeathMonth } from './deterministic.ts'
+import { drawInheritances } from './inheritance.ts'
 import { monthsUntilDeath } from './mortality.ts'
 import { newPathCache, type PathDraws, type PathSummary, runPath, type YearRow } from './path.ts'
 import { ParametricMarket } from './returns.ts'
@@ -54,7 +55,7 @@ export function drawPath(ctx: DrawContext, seed: number, path: number): PathDraw
     const uS = createRng(seed, path, Stream.mortalitySpouse).next()
     deathMonth = [stochasticDeath(prep.people[0], prep.baseYM, uP), stochasticDeath(prep.people[1], prep.baseYM, uS)]
   }
-  return { inflation, returns, deathMonth }
+  return { inflation, returns, deathMonth, inheritances: drawInheritances(prep.inheritances, prep.baseYM, seed, path) }
 }
 
 /** Per-path samples for one candidate. */

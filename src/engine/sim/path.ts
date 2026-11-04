@@ -1,11 +1,11 @@
 // One simulated path for one claiming date [FR-SIM-1..4]. Annual steps with monthly precision for benefits,
 // earnings test, deaths and dated items. Order within a year follows FR-SIM-3.
-import { inheritedScheduled } from '../accounts/inheritedIra.ts'
+import { inheritedRules, inheritedScheduled } from '../accounts/inheritedIra.ts'
 import { lifetimeRmd } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
 import { earningsForYear, expenseForYear, incomeForYear } from '../cashflow/expenses.ts'
 import { healthcareCost } from '../cashflow/healthcare.ts'
-import { type YM, ym, ymYear } from '../core/dates.ts'
+import { formatYM, type YM, ym, ymYear } from '../core/dates.ts'
 import type { EngineAccount, Prepared } from '../model/prepare.ts'
 import { type FilingStatus, federalRules, medicareRules, scRules, ssaRules } from '../rules/tables.ts'
 import { earningsTest } from '../ss/earningsTest.ts'
@@ -23,6 +23,7 @@ import {
   type TaxOutcome,
   taxDelta,
 } from '../withdraw/solver.ts'
+import { grownAmount, type InheritanceDraw } from './inheritance.ts'
 
 export type PathDraws = {
   /** Inflation for each simulated year (index = year - baseYear). */
@@ -31,6 +32,8 @@ export type PathDraws = {
   returns: Float64Array[]
   /** Last month each person is alive: [primary, spouse]. */
   deathMonth: [YM, YM]
+  /** Arrival month and receipt of each inheritance [FR-INH-3]. */
+  inheritances?: InheritanceDraw[]
 }
 
 export type YearRow = {
@@ -172,6 +175,53 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     const medicare = medicareRules.params(y, medFactor, medPremiumFactor).value
     const fedParams = federalRules.params(y, fedFactor).value
     for (let i = 0; i < nAcc; i++) startBal[i] = accounts[i]!.balance
+
+    // ---- inheritances received this year (a mid-year inflow) [FR-INH-1..4] ----
+    let inheritedThisYear = 0
+    for (const h of prep.inheritances) {
+      const d = draws.inheritances?.[h.index]
+      if (!d || !d.received || ymYear(d.month) !== y) continue
+      let heir = h.heir
+      const heirDeath = heir === 0 ? deathP : deathS
+      if (heirDeath < d.month) {
+        const other = heir === 0 ? 1 : 0
+        const otherDeath = other === 0 ? deathP : deathS
+        if (h.ifHeirPredeceases !== 'surviving_spouse' || otherDeath < d.month) continue
+        heir = other
+      }
+      const years = (d.month - prep.baseYM) / 12
+      const parts = h.amounts
+      const total = parts.traditionalIra + parts.rothIra + parts.nonIra
+      if (total <= 0) continue
+      const grown = grownAmount(total, h.growth.realRate, h.growth.annualSpendDown, years)
+      const nominal = (grown / total) * price
+      const deathDate = `${formatYM(d.month)}-15`
+      for (const [flavor, amount, idx] of [
+        ['traditional', parts.traditionalIra, h.accountIndex.traditional],
+        ['roth', parts.rothIra, h.accountIndex.roth],
+      ] as const) {
+        if (amount <= 0) continue
+        const acc = accounts[idx]!
+        acc.owner = heir
+        acc.balance += amount * nominal
+        acc.inherited = {
+          ...inheritedRules({
+            flavor,
+            decedentBirthDate: h.decedentBirthDate,
+            decedentDeathDate: deathDate,
+            beneficiaryBirthDate: prep.people[heir].birthDate,
+            beneficiaryClass: h.beneficiaryClass,
+          }),
+          schedule: sc.strategy.inheritedIraSchedule[flavor],
+        }
+        inheritedThisYear += amount * nominal
+      }
+      if (parts.nonIra > 0) {
+        const taxable = accounts.find((x) => x.kind === 'taxable')
+        if (taxable) addToTaxable(taxable, parts.nonIra * nominal) // basis stepped up to value at death
+        inheritedThisYear += parts.nonIra * nominal
+      }
+    }
 
     // ---- Social Security ----
     // PIA: earnings through y-1, COLAs from eligibility; updated incrementally while the base is unchanged.
@@ -556,6 +606,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         endBalances: accounts.map((a) => a.balance),
         liquid,
         monthsWithheld,
+        inheritances: inheritedThisYear,
       })
     }
     price *= 1 + inflAt(y)
