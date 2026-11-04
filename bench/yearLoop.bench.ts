@@ -39,7 +39,7 @@ function totalTax(ordinary: number, ltcg: number, ss: number, idx: number) {
   const capTax = Math.max(0, taxable - Math.max(ordTaxable, 98900 * idx)) * 0.15
   let irmaa = 0
   for (const t of IRMAA) if (agi > t * idx) irmaa += 1000
-  return ordinaryTax(ordTaxable, idx) + capTax + irmaa * 0 + (irmaa > 0 ? irmaa : 0)
+  return ordinaryTax(ordTaxable, idx) + capTax + irmaa
 }
 
 function runPath(seed: number, path: number, claimAge: number, years: number) {
@@ -59,7 +59,6 @@ function runPath(seed: number, path: number, claimAge: number, years: number) {
     const ss = y + 66 >= claimAge ? 38000 * idx * (1 + (claimAge - 67) * 0.08) : 0
     const rmd = y > 8 ? (bal[2]! + bal[3]!) / (27 - y * 0.5) : 0
     const inh = y < 7 ? bal[4]! / (7 - y) : 0
-    let need: number
     // Fixed-point solve: withdraw from taxable then traditional until after-tax cash meets need.
     let wTaxable = 0
     let wTrad = 0
@@ -72,7 +71,7 @@ function runPath(seed: number, path: number, claimAge: number, years: number) {
       if (bal[1]! - wTaxable > gap) wTaxable = Math.max(0, wTaxable + gap)
       else wTrad = Math.max(0, wTrad + gap * 1.15)
     }
-    need = wTaxable + wTrad
+    const need = wTaxable + wTrad
     if (need < 0) minBal = 0
     bal[1] = bal[1]! - wTaxable
     bal[2] = bal[2]! - wTrad - rmd / 2
