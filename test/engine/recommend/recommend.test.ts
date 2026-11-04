@@ -142,3 +142,22 @@ test('inheritance note says whether the date changes', () => {
   expect(inheritanceNote(a, a, age)).toContain('the same')
   expect(inheritanceNote(a, b, age)).toContain('would be 68y0m')
 })
+
+import { sensitivityVariants } from '@/engine/recommend/sensitivity.ts'
+import { Scenario } from '@/schema/model.ts'
+
+test('sensitivity variants cover longevity, returns, trust fund and inheritances', () => {
+  const s = Scenario.parse({
+    id: 'x',
+    name: 'x',
+    inheritances: [{ label: 'm', heir: 'primary', decedentBirthDate: '1940-01-01' }],
+  })
+  const v = sensitivityVariants(s)
+  expect(new Set(v.map((x) => x.factor))).toEqual(new Set(['Longevity', 'Returns', 'Trust fund', 'Inheritances']))
+  const l75 = v.find((x) => x.label === 'Both live to 75')!.apply(s)
+  expect(l75.assumptions.mortality).toMatchObject({ mode: 'fixed', deathAge: { primary: 75, spouse: 75 } })
+  expect(v.find((x) => x.label === '+2% a year')!.apply(s).assumptions.returns.realReturnShift).toBeCloseTo(0.02, 10)
+  expect(sensitivityVariants(Scenario.parse({ id: 'y', name: 'y' })).some((x) => x.factor === 'Inheritances')).toBe(
+    false,
+  )
+})

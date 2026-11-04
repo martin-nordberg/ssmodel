@@ -10,6 +10,7 @@ import { runDeterministic } from '@/engine/sim/deterministic.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
 import { useEffectivePrepared } from '@/state/scenario.ts'
 import { useSettings } from '@/state/settingsStore.ts'
+import { SensitivityPanel } from './SensitivityPanel.tsx'
 import { scheduleColumns, toCsv, yearColumns } from './yearTable.ts'
 
 export function DollarsToggle() {
@@ -47,7 +48,7 @@ export function ResultsView() {
     () => (prep && claim !== undefined && claim !== null ? runDeterministic(prep, claim) : null),
     [prep, claim],
   )
-  const [table, setTable] = useState<'years' | 'schedule'>('years')
+  const [table, setTable] = useState<'years' | 'schedule' | 'sensitivity'>('years')
   const cols = useMemo(
     () => (prep ? (table === 'years' ? yearColumns(prep.accounts) : scheduleColumns(prep.accounts)) : []),
     [prep, table],
@@ -100,11 +101,12 @@ export function ResultsView() {
           size="sm"
           variant="outline"
           value={table}
-          onValueChange={(v) => v && setTable(v as 'years' | 'schedule')}
+          onValueChange={(v) => v && setTable(v as 'years' | 'schedule' | 'sensitivity')}
           aria-label="Table"
         >
           <ToggleGroupItem value="years">Year table</ToggleGroupItem>
           <ToggleGroupItem value="schedule">Withdrawal schedule</ToggleGroupItem>
+          <ToggleGroupItem value="sensitivity">Sensitivity</ToggleGroupItem>
         </ToggleGroup>
         <Button variant="outline" size="sm" onClick={exportCsv}>
           <Download /> Export CSV
@@ -122,14 +124,18 @@ export function ResultsView() {
           <Stat label="Savings depleted" value={s.depletedYear === null ? 'Never' : String(s.depletedYear)} />
         </dl>
       )}
-      <DataGrid
-        label="Year-by-year results"
-        rows={rows}
-        columns={gridCols}
-        onChange={() => {}}
-        readOnly
-        maxHeight={600}
-      />
+      {table === 'sensitivity' ? (
+        <SensitivityPanel prep={prep} />
+      ) : (
+        <DataGrid
+          label="Year-by-year results"
+          rows={rows}
+          columns={gridCols}
+          onChange={() => {}}
+          readOnly
+          maxHeight={600}
+        />
+      )}
     </div>
   )
 }

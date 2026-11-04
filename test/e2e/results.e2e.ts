@@ -42,3 +42,18 @@ test('withdrawal schedule view', async ({ page }) => {
   await expect(grid).toContainText('Roth conversions')
   await expect(grid).toContainText('Total withdrawn')
 })
+
+test('sensitivity view', async ({ page }) => {
+  test.setTimeout(240_000)
+  const light = full.replace('paths: 5000', 'paths: 300')
+  await installFsaMock(page, { 'full.yaml': light })
+  await page.goto('/?poolSize=3')
+  await page.getByRole('button', { name: 'Open…' }).click()
+  await page.getByRole('tab', { name: 'Results' }).click()
+  await page.getByRole('radio', { name: 'Sensitivity' }).click()
+  await page.getByRole('button', { name: 'Run sensitivity' }).click()
+  const chart = page.getByTestId('sensitivity')
+  await expect(chart).toContainText('Both live to 75', { timeout: 200_000 })
+  await expect(chart).toContainText('Inheritances')
+  await page.screenshot({ path: 'test-results/sensitivity.png' })
+})

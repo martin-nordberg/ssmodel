@@ -3,6 +3,7 @@
 import { coarseCandidates, refineCandidates } from '@/engine/recommend/grid.ts'
 import { type CandidateMetrics, candidateMetrics } from '@/engine/recommend/metrics.ts'
 import { type ObjectiveSettings, type Recommendation, recommend } from '@/engine/recommend/recommend.ts'
+import { sensitivityVariants } from '@/engine/recommend/sensitivity.ts'
 import { type CandidateSamples, concatSamples, type DetailShard } from '@/engine/sim/monteCarlo.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
 import type { HouseholdFile } from '@/schema/model.ts'
@@ -132,4 +133,43 @@ export async function runRecommendation(
   metrics.sort((a, b) => a.claim - b.claim)
   o.onProgress?.(1)
   return { metrics, recommendation: recommend(metrics, o.objective), evaluated: metrics.map((m) => m.claim) }
+}
+
+export type SensitivityRow = {
+  factor: string
+  label: string
+  claim: number | null
+  floorsMet: boolean
+  medianEstate: number
+  successProb: number
+}
+
+/** Runs the recommendation for each sensitivity variant on the same paths [FR-REC-4]. */
+export async function runSensitivity(
+  pool: WorkerPool,
+  file: HouseholdFile,
+  scenarioId: string,
+  o: Omit<McOptions, 'onProgress'> & { fra: number; objective: ObjectiveSettings; onProgress?: (f: number) => void },
+): Promise<SensitivityRow[]> {
+  const scenario = file.scenarios.find((s) => s.id === scenarioId)!
+  const variants = sensitivityVariants(scenario)
+  const rows: SensitivityRow[] = []
+  for (const [i, v] of variants.entries()) {
+    const varied = { ...file, scenarios: file.scenarios.map((s) => (s.id === scenarioId ? v.apply(s) : s)) }
+    const r = await runRecommendation(pool, varied, scenarioId, {
+      ...o,
+      refine: o.candidates.length > 12,
+      onProgress: (f) => o.onProgress?.((i + f) / variants.length),
+    })
+    const best = r.recommendation?.best
+    rows.push({
+      factor: v.factor,
+      label: v.label,
+      claim: best?.claim ?? null,
+      floorsMet: r.recommendation?.floorsMet ?? false,
+      medianEstate: best?.terminal.p50 ?? 0,
+      successProb: best?.successProb ?? 0,
+    })
+  }
+  return rows
 }
