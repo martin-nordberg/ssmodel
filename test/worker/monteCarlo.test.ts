@@ -100,3 +100,19 @@ test('recommendation run: refined grid finds the same best date as the full grid
   const fraFine = fine.metrics.find((m) => m.claim === fra)!
   expect(fraFine.terminal.p50).toBe(fraFull.terminal.p50)
 })
+
+test('with and without inheritances share paths: identical when the inheritance is zero', async () => {
+  const off = structuredClone(file)
+  off.scenarios[0]!.assumptions.inheritanceScale = 0
+  const p0 = prepare(off)
+  const p1 = prepare({
+    ...off,
+    scenarios: [
+      { ...off.scenarios[0]!, assumptions: { ...off.scenarios[0]!.assumptions, inheritancesEnabled: false } },
+    ],
+  })
+  expect(p1.accounts.length).toBe(p0.accounts.length)
+  const a = runShard(p0, { seed: 2, pathStart: 0, pathEnd: 30, candidates: [p0.candidates[0]!] })
+  const b = runShard(p1, { seed: 2, pathStart: 0, pathEnd: 30, candidates: [p1.candidates[0]!] })
+  expect(Array.from(b[0]!.terminal)).toEqual(Array.from(a[0]!.terminal))
+})

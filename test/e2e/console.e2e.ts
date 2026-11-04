@@ -93,3 +93,8 @@ test('pin a baseline and see deltas after a what-if', async ({ page }) => {
   await page.getByRole('button', { name: 'Clear' }).click()
   await expect(page.getByTestId('kpi-tiles')).not.toContainText('vs baseline')
 })
+
+test('the explanation reports the recommendation without inheritances', async ({ page }) => {
+  await openConsole(page)
+  await expect(page.getByTestId('explanation')).toContainText('Without the expected inheritances', { timeout: 60_000 })
+})

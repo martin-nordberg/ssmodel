@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
 import { prepare } from '@/engine/model/prepare.ts'
-import { explain } from '@/engine/recommend/recommend.ts'
+import { explain, inheritanceNote } from '@/engine/recommend/recommend.ts'
 import { runDeterministic } from '@/engine/sim/deterministic.ts'
 import { cn } from '@/lib/utils'
 import { shownClaim, useConsole } from '@/state/consoleStore.ts'
@@ -77,6 +77,11 @@ function ConsoleBody() {
     rec && c.result
       ? explain(rec, c.result.metrics, prep.people[0].age, { fra: prep.people[0].age.fraMonth }, money)
       : []
+  const inhNote =
+    c.result?.withoutInheritance !== undefined
+      ? inheritanceNote(rec, c.result.withoutInheritance, prep.people[0].age)
+      : null
+  if (inhNote) lines.push(inhNote)
   const dim = c.stale || c.draft !== null
 
   return (

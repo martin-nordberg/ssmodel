@@ -132,3 +132,13 @@ test('fan summary percentiles per year, ignoring ended paths', () => {
   const m = accountMedians(Float32Array.from([1, 10, 3, 30]), 2, 1, 2, 2027, 5)
   expect(m[0]).toEqual({ year: 2027, values: [2, 20] })
 })
+
+import { inheritanceNote } from '@/engine/recommend/recommend.ts'
+
+test('inheritance note says whether the date changes', () => {
+  const age = new SsaAge('1966-05-02')
+  const a = recommend([m(age.fraMonth, 0.95, 100)], o)!
+  const b = recommend([m(age.fraMonth + 12, 0.95, 100)], o)!
+  expect(inheritanceNote(a, a, age)).toContain('the same')
+  expect(inheritanceNote(a, b, age)).toContain('would be 68y0m')
+})

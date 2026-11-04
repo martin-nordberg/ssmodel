@@ -10,6 +10,8 @@ export type RunResult = {
   paths: number
   /** True for the quick low-path preview run [FR-UI-9]. */
   preview: boolean
+  /** Recommendation with inheritances removed, on the same paths [FR-INH-6]; absent when there are none. */
+  withoutInheritance?: Recommendation | null
 }
 
 export type Baseline = { label: string; result: RunResult; detail: Detail | null }

@@ -66,6 +66,22 @@ export function useConsoleRunner() {
           })
           set({ result: { ...full, paths: s.simulation.paths, preview: false } })
         }
+        // Same paths without the expected inheritances [FR-INH-6].
+        if (s.inheritances.length > 0 && s.assumptions.inheritancesEnabled) {
+          const noInh = {
+            ...file,
+            scenarios: file.scenarios.map((x) =>
+              x.id === scenarioId ? { ...x, assumptions: { ...x.assumptions, inheritancesEnabled: false } } : x,
+            ),
+          }
+          const wo = await runRecommendation(pool, noInh, scenarioId, {
+            ...base,
+            paths: s.simulation.paths,
+            refine: prep.candidates.length > 12,
+          })
+          const cur = useConsole.getState().result
+          if (cur) set({ result: { ...cur, withoutInheritance: wo.recommendation } })
+        }
         set({ status: 'done', progress: 1, cancel: null })
       } catch (e) {
         if (!isAbort(e)) set({ status: 'error', error: e instanceof Error ? e.message : String(e) })

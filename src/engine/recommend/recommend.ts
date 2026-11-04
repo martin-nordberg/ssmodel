@@ -93,3 +93,16 @@ export function explain(
   }
   return lines
 }
+
+/** Sentence comparing the recommendation with and without expected inheritances [FR-INH-6]. */
+export function inheritanceNote(
+  withInh: Recommendation | null,
+  without: Recommendation | null,
+  age: SsaAge,
+): string | null {
+  if (!withInh || !without) return null
+  const a = (c: YM) => `${formatAge(age.ageAt(c))} (${formatYM(c)})`
+  if (withInh.best.claim === without.best.claim)
+    return `Without the expected inheritances the recommendation is the same: ${a(without.best.claim)}.`
+  return `Without the expected inheritances the recommendation would be ${a(without.best.claim)}${without.floorsMet ? '' : ' (no date meets the success floor)'}.`
+}
