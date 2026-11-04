@@ -11,7 +11,9 @@ test('open, edit, save, reopen', async ({ page }) => {
   await page.getByRole('menuitem', { name: /^Open…/ }).click()
   await expect(page.getByTestId('status-file')).toHaveText('minimal.yaml')
 
-  await page.getByLabel('Base date').fill('2028-03')
+  await page.getByRole('tab', { name: 'Setup' }).click()
+  await page.getByLabel('Base date (month)').fill('2028-03')
+  await page.getByLabel('Base date (month)').press('Enter')
   await expect(page.getByTestId('status-file')).toHaveText('minimal.yaml • modified')
   await expect(page).toHaveTitle(/^• minimal\.yaml/)
 
@@ -26,7 +28,8 @@ test('open, edit, save, reopen', async ({ page }) => {
   await installFsaMock(page2, { 'minimal.yaml': saved ?? '' })
   await page2.goto('/')
   await page2.getByRole('button', { name: 'Open…' }).click()
-  await expect(page2.getByLabel('Base date')).toHaveValue('2028-03')
+  await page2.getByRole('tab', { name: 'Setup' }).click()
+  await expect(page2.getByLabel('Base date (month)')).toHaveValue('2028-03')
 })
 
 test('new household and save as', async ({ page }) => {
