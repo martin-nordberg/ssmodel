@@ -314,3 +314,39 @@ export function solveWithdrawals(input: SolveInput): SolveResult {
   }
   return finish(hi, 0)
 }
+
+/**
+ * Largest extra ordinary income X (up to `max`) such that ordinary taxable income stays <= bracketTop and MAGI
+ * <= magiCap, given the year's withdrawals `base` [FR-WD-2 bracket-aware, FR-WD-4]. `owner` receives the income.
+ */
+export function ordinaryRoom(
+  tax: TaxFn,
+  base: TaxDelta,
+  owner: PersonIndex,
+  bracketTop: number,
+  magiCap: number,
+  max: number,
+): number {
+  if (max <= 0) return 0
+  const d: TaxDelta = {
+    ordinaryByPerson: [base.ordinaryByPerson[0], base.ordinaryByPerson[1]],
+    ltcg: base.ltcg,
+    penalty: base.penalty,
+  }
+  const excess = (x: number) => {
+    d.ordinaryByPerson[0] = base.ordinaryByPerson[0] + (owner === 0 ? x : 0)
+    d.ordinaryByPerson[1] = base.ordinaryByPerson[1] + (owner === 1 ? x : 0)
+    const r = tax(d)
+    return Math.max(r.ordinaryTaxable - bracketTop, r.magi - magiCap)
+  }
+  if (excess(0) > 0.5) return 0
+  if (excess(max) <= 0.5) return max
+  let lo = 0
+  let hi = max
+  while (hi - lo > 1) {
+    const mid = (lo + hi) / 2
+    if (excess(mid) <= 0.5) lo = mid
+    else hi = mid
+  }
+  return lo
+}

@@ -31,3 +31,14 @@ test('results table, dollars toggle and CSV export', async ({ page }) => {
   await expect(grid).toContainText('2031')
   await page.screenshot({ path: 'test-results/results.png' })
 })
+
+test('withdrawal schedule view', async ({ page }) => {
+  await installFsaMock(page, { 'full.yaml': full })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Open…' }).click()
+  await page.getByRole('tab', { name: 'Results' }).click()
+  await page.getByRole('radio', { name: 'Withdrawal schedule' }).click()
+  const grid = page.getByRole('grid', { name: 'Year-by-year results' })
+  await expect(grid).toContainText('Roth conversions')
+  await expect(grid).toContainText('Total withdrawn')
+})

@@ -76,3 +76,31 @@ export function toCsv(rows: YearRow[], cols: YearColumn[], real: boolean): strin
   }
   return `${lines.join('\n')}\n`
 }
+
+/** Withdrawal schedule [FR-WD-5, FR-OUT-5]: per account, required plus discretionary withdrawals, and conversions. */
+export function scheduleColumns(accounts: EngineAccount[]): YearColumn[] {
+  const money = (id: string, header: string, value: (r: YearRow) => number): YearColumn => ({
+    id,
+    header,
+    group: 'Schedule',
+    money: true,
+    value,
+  })
+  return [
+    { id: 'year', header: 'Year', group: '', money: false, value: (r) => r.year },
+    {
+      id: 'ages',
+      header: 'Ages',
+      group: '',
+      money: false,
+      value: (r) => r.ages.map((a, i) => (r.alive[i] ? String(a) : '—')).join('/'),
+    },
+    ...accounts.map((a, i) => money(`s${i}`, a.label, (r) => (r.required[i] ?? 0) + (r.withdrawals[i] ?? 0))),
+    money('conv', 'Roth conversions', (r) => r.conversions ?? 0),
+    money(
+      'total',
+      'Total withdrawn',
+      (r) => r.required.reduce((x, y) => x + y, 0) + r.withdrawals.reduce((x, y) => x + y, 0),
+    ),
+  ]
+}

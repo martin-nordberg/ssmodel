@@ -2,7 +2,7 @@
 // earnings test, deaths and dated items. Order within a year follows FR-SIM-3.
 import { inheritedRules, inheritedScheduled } from '../accounts/inheritedIra.ts'
 import { sellProperty } from '../accounts/property.ts'
-import { lifetimeRmd } from '../accounts/rmd.ts'
+import { lifetimeRmd, rmdStartYear } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
 import { annuityForYear } from '../cashflow/annuities.ts'
 import { earningsForYear, expenseForYear, incomeForYear } from '../cashflow/expenses.ts'
@@ -18,6 +18,7 @@ import { bracketTop, federalEvaluator, type federalTax } from '../tax/federal.ts
 import { irmaaTier } from '../tax/irmaa.ts'
 import { scEvaluator, type scTax } from '../tax/sc.ts'
 import {
+  ordinaryRoom,
   type SolverAccount,
   type Strategy,
   solveWithdrawals,
@@ -641,13 +642,89 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
     if (solved.shortfall > 1 && depletedYear === null) depletedYear = y
     totalShortfallReal += solved.shortfall / price
+    // ---- bracket-aware inherited withdrawals and Roth conversions [FR-WD-2, FR-WD-4] ----
     const finalDelta = taxDelta(solverAccounts, solved.withdrawals)
+    const withdrawalsRow = solved.withdrawals.slice()
+    let extraTax = 0
+    let extraSurplus = 0
+    let conversions = 0
+    const nearMed = [P, S].some((p, i) => (i === 0 ? deathP : deathS) >= m0 && y - p.birthYear >= 63)
+    const capFor = (tier: number) =>
+      nearMed && tier < 5 ? medicare.thresholds[status][tier]! : Number.POSITIVE_INFINITY
+    const taxableAcc = accounts.find((x) => x.kind === 'taxable')
+    const cashAcc = accounts.find((x) => x.kind === 'cash')
+    for (const a of accounts) {
+      if (a.kind !== 'inherited_traditional' || a.inherited?.schedule !== 'bracket_aware' || a.balance <= 0) continue
+      const top = bracketTop(st.targetBracket, fedParams.brackets[status])
+      const before = tax(finalDelta).total
+      const x = ordinaryRoom(tax, finalDelta, a.owner, top, capFor(st.irmaaCapTier), a.balance)
+      if (x <= 1) continue
+      finalDelta.ordinaryByPerson[a.owner] += x
+      const dt = tax(finalDelta).total - before
+      a.balance -= x
+      withdrawalsRow[a.index] = withdrawalsRow[a.index]! + x
+      extraTax += dt
+      extraSurplus += x - dt
+      if (taxableAcc) addToTaxable(taxableAcc, x - dt)
+      else if (cashAcc) cashAcc.balance += x - dt
+    }
+    const rc = st.rothConversions
+    const convEnd =
+      rc.until === 'claim' ? ymYear(claim) - 1 : rc.until === 'rmd' ? rmdStartYear(P.birthDate) - 1 : rc.until
+    if (rc.enabled && y >= (rc.startYear ?? prep.baseYear) && y <= convEnd) {
+      for (const owner of [0, 1] as const) {
+        if ((owner === 0 ? deathP : deathS) < m0) continue
+        const trads = accounts.filter((x) => x.kind === 'traditional' && x.owner === owner && x.balance > 0)
+        const roth = accounts.find((x) => x.kind === 'roth' && x.owner === owner)
+        const available = trads.reduce((t, x) => t + x.balance, 0)
+        if (!roth || available <= 0) continue
+        const top = bracketTop(rc.upToBracket, fedParams.brackets[status])
+        const before = tax(finalDelta).total
+        let x = ordinaryRoom(tax, finalDelta, owner, top, capFor(rc.irmaaCapTier), available)
+        if (x <= 1) continue
+        const taxAt = (amt: number) => {
+          finalDelta.ordinaryByPerson[owner] += amt
+          const t = tax(finalDelta).total - before
+          finalDelta.ordinaryByPerson[owner] -= amt
+          return t
+        }
+        // The conversion's tax is paid from taxable, then cash; convert less if they cannot cover it.
+        const payable = (taxableAcc?.balance ?? 0) + (cashAcc?.balance ?? 0)
+        let dt = taxAt(x)
+        if (dt > payable) {
+          x *= payable / dt
+          dt = taxAt(x)
+        }
+        if (x <= 1) continue
+        finalDelta.ordinaryByPerson[owner] += x
+        let left = x
+        for (const t of trads) {
+          const take = Math.min(t.balance, left)
+          t.balance -= take
+          left -= take
+        }
+        roth.balance += x
+        conversions += x
+        extraTax += dt
+        let due = dt
+        if (taxableAcc && due > 0) {
+          const sold = sellTaxable(taxableAcc, due).sold
+          withdrawalsRow[taxableAcc.index] = withdrawalsRow[taxableAcc.index]! + sold
+          due -= sold
+        }
+        if (cashAcc && due > 0) {
+          const paid = Math.min(cashAcc.balance, due)
+          cashAcc.balance -= paid
+          withdrawalsRow[cashAcc.index] = withdrawalsRow[cashAcc.index]! + paid
+        }
+      }
+    }
     const fedRes = fedEval(finalDelta.ordinaryByPerson[0] + finalDelta.ordinaryByPerson[1], finalDelta.ltcg)
     const scRes = scEval(fedRes.agi, fedRes.taxableSocialSecurity, finalDelta.ltcg + realizedGain, [
       retirementByPerson[0] + finalDelta.ordinaryByPerson[0],
       retirementByPerson[1] + finalDelta.ordinaryByPerson[1],
     ])
-    const finalTax = { total: solved.tax.total, magi: fedRes.magi }
+    const finalTax = { total: solved.tax.total + extraTax, magi: fedRes.magi }
     magiHistory.set(y, finalTax.magi)
 
     // ---- returns (mid-year convention) and dividend basis ----
@@ -679,7 +756,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
 
     // ---- bookkeeping ----
-    const totalTax = solved.tax.total
+    const totalTax = finalTax.total
     let liquid = 0
     for (const a of accounts) liquid += a.balance
     const ssTotal = ssP + ssS
@@ -703,7 +780,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         rmd: rmdTotal,
         inheritedDistributions: inheritedTotal,
         required: Array.from(required),
-        withdrawals: solved.withdrawals.slice(),
+        withdrawals: withdrawalsRow,
         expenses,
         healthcare: healthTotal,
         irmaa: irmaaTotal,
@@ -716,12 +793,13 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         payrollTax: fedRes.payrollTax,
         totalTax,
         shortfall: solved.shortfall,
-        surplus: solved.surplus,
+        surplus: solved.surplus + extraSurplus,
         endBalances: accounts.map((a) => a.balance),
         liquid,
         monthsWithheld,
         inheritances: inheritedThisYear,
         homeEquity,
+        conversions,
       })
     }
     price *= 1 + inflAt(y)

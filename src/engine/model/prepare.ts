@@ -279,6 +279,35 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     }
   })
 
+  // Roth conversions need a Roth account for each spouse with traditional money; present whether or not
+  // conversions are enabled so the random draws are the same either way [FR-WD-4, FR-MC-4].
+  for (const owner of [0, 1] as const) {
+    const hasTrad = accounts.some((x) => x.kind === 'traditional' && x.owner === owner)
+    const hasRoth = accounts.some((x) => x.kind === 'roth' && x.owner === owner)
+    if (!hasTrad || hasRoth) continue
+    const ret = resolveReturn({ preset: 'moderate' })
+    accounts.push({
+      index: accounts.length,
+      label: `Roth IRA (conversions, ${owner === 0 ? 'Primary' : 'Spouse'})`,
+      kind: 'roth',
+      owner,
+      joint: false,
+      balance: 0,
+      basis: 0,
+      mean: ret.mean,
+      sd: ret.sd,
+      fee: 0,
+      dividendYield: 0,
+      cashRate: 0,
+      cashTargetMonths: 0,
+      currentEmployer: false,
+      inherited: null,
+      hsaContribution: 0,
+      hsaPayMedicalFirst: false,
+      proxyMix: null,
+    })
+  }
+
   // Non-IRA inheritances and sale proceeds need a taxable account to land in.
   if ((scenario.inheritances.length > 0 || scenario.home) && !accounts.some((x) => x.kind === 'taxable')) {
     const ret = resolveReturn({ preset: 'moderate' })

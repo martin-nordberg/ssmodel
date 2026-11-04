@@ -10,7 +10,7 @@ import { runDeterministic } from '@/engine/sim/deterministic.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
 import { useEffectivePrepared } from '@/state/scenario.ts'
 import { useSettings } from '@/state/settingsStore.ts'
-import { toCsv, yearColumns } from './yearTable.ts'
+import { scheduleColumns, toCsv, yearColumns } from './yearTable.ts'
 
 export function DollarsToggle() {
   const dollars = useSettings((s) => s.dollars)
@@ -47,7 +47,11 @@ export function ResultsView() {
     () => (prep && claim !== undefined && claim !== null ? runDeterministic(prep, claim) : null),
     [prep, claim],
   )
-  const cols = useMemo(() => (prep ? yearColumns(prep.accounts) : []), [prep])
+  const [table, setTable] = useState<'years' | 'schedule'>('years')
+  const cols = useMemo(
+    () => (prep ? (table === 'years' ? yearColumns(prep.accounts) : scheduleColumns(prep.accounts)) : []),
+    [prep, table],
+  )
 
   if (!prep) return <p className="p-4 text-muted-foreground">The household could not be prepared; check Setup.</p>
   if (prep.candidates.length === 0 || claim === undefined || claim === null) {
@@ -91,6 +95,17 @@ export function ResultsView() {
           className="w-64"
         />
         <DollarsToggle />
+        <ToggleGroup
+          type="single"
+          size="sm"
+          variant="outline"
+          value={table}
+          onValueChange={(v) => v && setTable(v as 'years' | 'schedule')}
+          aria-label="Table"
+        >
+          <ToggleGroupItem value="years">Year table</ToggleGroupItem>
+          <ToggleGroupItem value="schedule">Withdrawal schedule</ToggleGroupItem>
+        </ToggleGroup>
         <Button variant="outline" size="sm" onClick={exportCsv}>
           <Download /> Export CSV
         </Button>
