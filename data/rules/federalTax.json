@@ -1,0 +1,80 @@
+{
+  "description": "Federal income tax parameters. Indexed amounts are projected forward with simulated inflation after the latest year [FR-DATA-2].",
+  "sources": {
+    "2026": "https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2026-including-amendments-from-the-one-big-beautiful-bill (Rev. Proc. 2025-32)",
+    "ssTaxation": "https://www.irs.gov/publications/p915",
+    "seniorDeduction": "P.L. 119-21 (OBBBA) sec. 70103",
+    "niit": "https://www.irs.gov/individuals/net-investment-income-tax"
+  },
+  "years": {
+    "2026": {
+      "brackets": {
+        "mfj": [
+          [0, 0.1],
+          [24800, 0.12],
+          [100800, 0.22],
+          [211400, 0.24],
+          [403550, 0.32],
+          [512450, 0.35],
+          [768700, 0.37]
+        ],
+        "single": [
+          [0, 0.1],
+          [12400, 0.12],
+          [50400, 0.22],
+          [105700, 0.24],
+          [201775, 0.32],
+          [256225, 0.35],
+          [640600, 0.37]
+        ]
+      },
+      "standardDeduction": {
+        "mfj": 32200,
+        "single": 16100
+      },
+      "additional65": {
+        "mfj": 1650,
+        "single": 2050
+      },
+      "ltcg": {
+        "mfj": [98900, 613700],
+        "single": [49450, 545500]
+      }
+    }
+  },
+  "unindexed": {
+    "ssTaxation": {
+      "mfj": [32000, 44000],
+      "single": [25000, 34000]
+    },
+    "niit": {
+      "rate": 0.038,
+      "threshold": {
+        "mfj": 250000,
+        "single": 200000
+      }
+    },
+    "seniorDeduction": {
+      "amount": 6000,
+      "firstYear": 2025,
+      "lastYear": 2028,
+      "phaseoutRate": 0.06,
+      "phaseoutStart": {
+        "mfj": 150000,
+        "single": 75000
+      }
+    },
+    "payroll": {
+      "oasdiRate": 0.062,
+      "medicareRate": 0.0145,
+      "seNetFactor": 0.9235,
+      "additionalMedicare": {
+        "rate": 0.009,
+        "threshold": {
+          "mfj": 250000,
+          "single": 200000
+        }
+      }
+    }
+  }
+}

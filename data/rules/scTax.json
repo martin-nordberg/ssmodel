@@ -1,0 +1,42 @@
+{
+  "description": "South Carolina individual income tax. 2026 rates and SC income adjusted deduction (SCIAD) from Act 110 of 2026 (H.4216); starting point is federal AGI. Retirement, age-65, Social Security and capital gain provisions are from existing SC Code sections not amended by Act 110.",
+  "sources": {
+    "act110": "https://www.scstatehouse.gov/sess126_2025-2026/bills/4216.htm (ratified text, Act No. 110, approved 2026-03-30)",
+    "dorSummary": "https://dor.sc.gov/news/information-about-h-4216",
+    "retirement": "S.C. Code 12-6-1170",
+    "socialSecurity": "S.C. Code 12-6-1120",
+    "capitalGains": "S.C. Code 12-6-1150"
+  },
+  "verification": "Rates and SCIAD verified against the ratified Act 110 text on 2026-11-04. Section 12-6-1170 amounts are unchanged law; confirm against the 2026 SC1040 instructions when published.",
+  "years": {
+    "2026": {
+      "rates": {
+        "lowRate": 0.0199,
+        "bracket": 30000,
+        "highRate": 0.0521,
+        "highSubtract": 966
+      },
+      "sciad": {
+        "amount": {
+          "mfj": 30000,
+          "single": 15000
+        },
+        "phaseoutStart": {
+          "mfj": 80000,
+          "single": 40000
+        },
+        "phaseoutDenominator": {
+          "mfj": 110000,
+          "single": 55000
+        }
+      },
+      "retirementDeduction": {
+        "under65": 3000,
+        "age65": 10000
+      },
+      "age65Deduction": 15000,
+      "capitalGainDeductionRate": 0.44,
+      "socialSecurityExempt": true
+    }
+  }
+}
