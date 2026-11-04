@@ -85,3 +85,20 @@ test('bracket-aware inherited schedule fills the target bracket and still emptie
   expect(r.rows.find((x) => x.year === 2033)!.endBalances[idx]).toBeLessThan(1)
   expect(r.rows[0]!.taxableIncome).toBeGreaterThan(even.rows[0]!.taxableIncome)
 })
+
+test('eligible designated beneficiary stretches withdrawals past ten years [FR-ACC-2, T3.8]', () => {
+  const r = run((f) => {
+    const s = f.scenarios[0]!
+    s.strategy.withdrawal = 'conventional'
+    for (const a of s.accounts)
+      if (a.type === 'inherited_ira') {
+        a.beneficiaryClass = 'eligible_designated'
+        a.schedule = 'back_loaded'
+      }
+  })
+  const idx = r.prep.accounts.findIndex((a) => a.kind === 'inherited_traditional')
+  const after2033 = r.rows.find((x) => x.year === 2034)!
+  // A designated beneficiary must be empty at the end of 2033; the stretch is not.
+  expect(r.rows.find((x) => x.year === 2033)!.endBalances[idx]!).toBeGreaterThan(1)
+  expect(after2033.required[idx]!).toBeGreaterThan(0)
+})
