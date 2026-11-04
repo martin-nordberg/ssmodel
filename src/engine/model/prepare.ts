@@ -7,6 +7,7 @@ import { type EngineAnnuity, toEngineAnnuity } from '../cashflow/annuities.ts'
 import type { ExpenseItem, IncomeStream } from '../cashflow/expenses.ts'
 import { claimCandidates, parseYM, SsaAge, type YM, ym, ymYear } from '../core/dates.ts'
 import { ssaRules } from '../rules/tables.ts'
+import { PRESET_MIX } from '../sim/bootstrap.ts'
 import { resolveReturn } from '../sim/returnPresets.ts'
 import { type Haircut, haircutSchedule } from '../ss/haircut.ts'
 import { PiaCalculator, projectedAwi, type StatementCheck, statementCrossCheck, taxableMax } from '../ss/pia.ts'
@@ -222,7 +223,11 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
       inherited,
       hsaContribution: acc.type === 'hsa' ? acc.annualContribution : 0,
       hsaPayMedicalFirst: acc.type === 'hsa' ? acc.payMedicalFirst : false,
-      proxyMix: acc.type === 'cash' ? null : (acc.return.proxyMix ?? null),
+      proxyMix:
+        acc.type === 'cash'
+          ? null
+          : (acc.return.proxyMix ??
+            (acc.return.preset && acc.return.mean === undefined ? (PRESET_MIX[acc.return.preset] ?? null) : null)),
     }
   })
 

@@ -2,6 +2,7 @@
 // candidate sees the same paths (common random numbers) and results do not depend on how paths are sharded.
 import { type YM, ym } from '../core/dates.ts'
 import type { EnginePerson, Prepared } from '../model/prepare.ts'
+import { BootstrapMarket } from './bootstrap.ts'
 import { fixedDeathMonth } from './deterministic.ts'
 import { drawInheritances } from './inheritance.ts'
 import { monthsUntilDeath } from './mortality.ts'
@@ -9,7 +10,7 @@ import { newPathCache, type PathDraws, type PathSummary, runPath, type YearRow }
 import { lognormalParams, ParametricMarket } from './returns.ts'
 import { createRng, Stream } from './rng.ts'
 
-export type DrawContext = { prep: Prepared; market: ParametricMarket | null; years: number }
+export type DrawContext = { prep: Prepared; market: ParametricMarket | BootstrapMarket | null; years: number }
 
 export function drawContext(prep: Prepared): DrawContext {
   const asm = prep.scenario.assumptions
@@ -17,13 +18,15 @@ export function drawContext(prep: Prepared): DrawContext {
   const market =
     asm.returns.model === 'deterministic'
       ? null
-      : new ParametricMarket(prep.accounts, {
-          inflation: asm.inflation,
-          crossAccountCorrelation: asm.returns.crossAccountCorrelation,
-          inflationCorrelation: asm.returns.inflationCorrelation,
-          realReturnShift: asm.returns.realReturnShift,
-          volatilityMultiplier: asm.returns.volatilityMultiplier,
-        })
+      : asm.returns.model === 'bootstrap'
+        ? new BootstrapMarket(prep.accounts, asm.returns)
+        : new ParametricMarket(prep.accounts, {
+            inflation: asm.inflation,
+            crossAccountCorrelation: asm.returns.crossAccountCorrelation,
+            inflationCorrelation: asm.returns.inflationCorrelation,
+            realReturnShift: asm.returns.realReturnShift,
+            volatilityMultiplier: asm.returns.volatilityMultiplier,
+          })
   return { prep, market, years }
 }
 
