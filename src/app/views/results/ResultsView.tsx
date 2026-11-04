@@ -8,7 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
 import { runDeterministic } from '@/engine/sim/deterministic.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
-import { usePrepared } from '@/state/scenario.ts'
+import { useEffectivePrepared } from '@/state/scenario.ts'
 import { useSettings } from '@/state/settingsStore.ts'
 import { toCsv, yearColumns } from './yearTable.ts'
 
@@ -32,7 +32,7 @@ export function DollarsToggle() {
 
 /** Results view [FR-OUT-4, FR-OUT-7]: deterministic year-by-year table for a chosen claiming date. */
 export function ResultsView() {
-  const prepNow = usePrepared()
+  const prepNow = useEffectivePrepared()
   const prep = useDeferredValue(prepNow)
   const dollars = useSettings((s) => s.dollars)
   const real = dollars === 'real'

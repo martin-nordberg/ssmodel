@@ -8,6 +8,7 @@ import { useDocument } from '@/state/documentStore.ts'
 import { useUi, type View } from '@/state/uiStore.ts'
 import { FileMenu } from './FileMenu.tsx'
 import { NewHouseholdDialog } from './NewHouseholdDialog.tsx'
+import { ScenarioTabs } from './ScenarioTabs.tsx'
 import { StatusBar } from './StatusBar.tsx'
 import { useShortcuts } from './useShortcuts.ts'
 
@@ -53,6 +54,7 @@ export function AppShell() {
         </Tabs>
         <h1 className="ml-auto font-semibold text-sm">Social Security Claiming Model</h1>
       </header>
+      {hasFile && <ScenarioTabs />}
       <LoadErrors />
       <div className="min-h-0 flex-1 overflow-auto">{hasFile ? <ViewHost /> : <Welcome />}</div>
       <StatusBar />
