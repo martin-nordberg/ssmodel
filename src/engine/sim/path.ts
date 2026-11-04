@@ -4,6 +4,7 @@ import { inheritedRules, inheritedScheduled } from '../accounts/inheritedIra.ts'
 import { sellProperty } from '../accounts/property.ts'
 import { lifetimeRmd } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
+import { annuityForYear } from '../cashflow/annuities.ts'
 import { earningsForYear, expenseForYear, incomeForYear } from '../cashflow/expenses.ts'
 import { healthcareCost } from '../cashflow/healthcare.ts'
 import { formatYM, type YM, ym, ymYear } from '../core/dates.ts'
@@ -176,6 +177,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
   }
   const endOverride = new Map<string, YM>()
+  const annuityRecovered = new Float64Array(prep.annuities.length)
   const soldOnce = new Set<number>()
   // A home sale can end the mortgage at a candidate-dependent time, so expenses cannot be shared across candidates.
   const shareExpenses = !props.some((pr) => pr.mortgageLabel !== null)
@@ -410,6 +412,14 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         const amt = incomeForYear(s, y, ictx, ownerDeath !== null && ownerDeath <= m11 ? ownerDeath : null)
         if (s.tax === 'ordinary') otherOrdinary += amt
         else otherTaxFree += amt
+      }
+      for (const [i, an] of prep.annuities.entries()) {
+        const ownerDeath = an.owner === 0 ? deathP : deathS
+        const otherDeath = an.owner === 0 ? deathS : deathP
+        const r = annuityForYear(an, y, ownerDeath, otherDeath, annuityRecovered[i]!)
+        annuityRecovered[i] = r.recovered
+        otherOrdinary += r.taxable
+        otherTaxFree += r.taxFree
       }
       if (cache) {
         cache.otherOrdinary[yi] = otherOrdinary

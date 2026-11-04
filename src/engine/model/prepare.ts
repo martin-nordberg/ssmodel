@@ -3,6 +3,7 @@
 import type { HouseholdFile, ScenarioT } from '../../schema/model.ts'
 import { type InheritedRules, inheritedRules } from '../accounts/inheritedIra.ts'
 import type { EngineProperty } from '../accounts/property.ts'
+import { type EngineAnnuity, toEngineAnnuity } from '../cashflow/annuities.ts'
 import type { ExpenseItem, IncomeStream } from '../cashflow/expenses.ts'
 import { claimCandidates, parseYM, SsaAge, type YM, ym, ymYear } from '../core/dates.ts'
 import { ssaRules } from '../rules/tables.ts'
@@ -89,6 +90,7 @@ export type Prepared = {
   inheritances: EngineInheritance[]
   /** Home (first, if any) and inherited real estate [FR-ACC-7, FR-INH-7]. */
   properties: EngineProperty[]
+  annuities: EngineAnnuity[]
 }
 
 export function accountKind(a: ScenarioT['accounts'][number]): SolverKind {
@@ -380,5 +382,6 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     taxableMaxByYear,
     inheritances,
     properties,
+    annuities: scenario.income.annuities.map(toEngineAnnuity),
   }
 }
