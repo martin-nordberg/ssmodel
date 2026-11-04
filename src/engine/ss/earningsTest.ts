@@ -31,6 +31,9 @@ export function earningsTest(i: EarningsTestInput): EarningsTestResult {
     excess = Math.max(0, i.annualEarnings - i.limits.underFra)
     withholding = excess / 2
   }
-  const monthsWithheld = Math.min(i.entitledMonthsBeforeFra, Math.ceil(withholding / i.monthlyOnRecord - 1e-9))
+  const monthsWithheld = Math.min(
+    i.entitledMonthsBeforeFra,
+    Math.max(0, Math.ceil(withholding / i.monthlyOnRecord - 1e-9)),
+  )
   return { excess, withholding, monthsWithheld }
 }
