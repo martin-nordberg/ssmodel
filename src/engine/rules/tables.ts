@@ -51,6 +51,16 @@ export const ssaRules = {
     for (const [y, v] of entries) if (birthYear >= y) fra = v
     return fra[0]! * 12 + fra[1]!
   },
+  /** Survivor FRA in months (the survivor schedule lags the retirement schedule by two years). */
+  survivorFraMonths(birthYear: number): number {
+    const entries = Object.entries(ssaJson.survivorFraByBirthYear)
+      .map(([y, v]) => [Number(y), v] as const)
+      .sort((a, b) => a[0] - b[0])
+    let fra = entries[0]![1]
+    for (const [y, v] of entries) if (birthYear >= y) fra = v
+    return fra[0]! * 12 + fra[1]!
+  },
+  survivorReductionAt60: ssaJson.survivorReductionAt60,
   trusteesPreset(name: string): { effective: string; payablePercent: number }[] {
     return (ssaJson.trusteesPresets as Record<string, { effective: string; payablePercent: number }[]>)[name] ?? []
   },

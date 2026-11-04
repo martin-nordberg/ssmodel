@@ -7,7 +7,8 @@
     "earningsTest": "https://www.ssa.gov/cola/factsheets/2027.html",
     "fra": "https://www.ssa.gov/benefits/retirement/planner/agereduction.html",
     "bendPoints": "https://www.ssa.gov/oact/cola/piaformula.html (computed: 180 and 1085 x AWI[t-2] / AWI[1977])",
-    "trustees": "https://www.ssa.gov/news/en/press/releases/2026-06-09.html"
+    "trustees": "https://www.ssa.gov/news/en/press/releases/2026-06-09.html",
+    "survivorFra": "https://www.ssa.gov/benefits/survivors/survivorchartred.html"
   },
   "effectiveYear": 2027,
   "awi": {
@@ -238,5 +239,15 @@
         "payablePercent": 83
       }
     ]
-  }
+  },
+  "survivorFraByBirthYear": {
+    "1945": [66, 0],
+    "1957": [66, 2],
+    "1958": [66, 4],
+    "1959": [66, 6],
+    "1960": [66, 8],
+    "1961": [66, 10],
+    "1962": [67, 0]
+  },
+  "survivorReductionAt60": 0.285
 }

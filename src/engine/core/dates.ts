@@ -46,6 +46,7 @@ export function formatAge(months: number): string {
 export class SsaAge {
   readonly attainBase: YM
   readonly fraMonths: number
+  readonly survivorFraMonths: number
   readonly firstEligible: YM
   readonly birth: DateParts
 
@@ -54,6 +55,7 @@ export class SsaAge {
     const adj = dayBefore(this.birth)
     this.attainBase = ym(adj.year, adj.month)
     this.fraMonths = ssaRules.fraMonths(adj.year)
+    this.survivorFraMonths = ssaRules.survivorFraMonths(adj.year)
     this.firstEligible = this.attainBase + 62 * 12 + (adj.day === 1 ? 0 : 1)
   }
 
@@ -64,6 +66,10 @@ export class SsaAge {
 
   get fraMonth(): YM {
     return this.attainMonth(this.fraMonths)
+  }
+
+  get survivorFraMonth(): YM {
+    return this.attainMonth(this.survivorFraMonths)
   }
 
   get age70Month(): YM {
