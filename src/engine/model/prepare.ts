@@ -2,6 +2,7 @@
 // on random draws or the claiming date is resolved once here.
 import type { HouseholdFile, ScenarioT } from '../../schema/model.ts'
 import { type InheritedRules, inheritedRules } from '../accounts/inheritedIra.ts'
+import type { EngineProperty } from '../accounts/property.ts'
 import type { ExpenseItem, IncomeStream } from '../cashflow/expenses.ts'
 import { claimCandidates, parseYM, SsaAge, type YM, ym, ymYear } from '../core/dates.ts'
 import { ssaRules } from '../rules/tables.ts'
@@ -41,7 +42,6 @@ export type EngineInheritance = {
   timing: ScenarioT['inheritances'][number]['timing']
   /** Base-date amounts after the inheritance scale; zero when inheritances are disabled. */
   amounts: { traditionalIra: number; rothIra: number; nonIra: number }
-  realEstate: ScenarioT['inheritances'][number]['realEstate']
   growth: { realRate: number; annualSpendDown: number }
   probability: number
   ifHeirPredeceases: 'surviving_spouse' | 'lost'
@@ -87,6 +87,8 @@ export type Prepared = {
   taxableMaxByYear: Float64Array
   /** Future inheritances [§3.9]; placeholders keep the account list identical when they are disabled. */
   inheritances: EngineInheritance[]
+  /** Home (first, if any) and inherited real estate [FR-ACC-7, FR-INH-7]. */
+  properties: EngineProperty[]
 }
 
 export function accountKind(a: ScenarioT['accounts'][number]): SolverKind {
@@ -264,7 +266,6 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
         rothIra: h.amounts.rothIra * scale,
         nonIra: h.amounts.nonIra * scale,
       },
-      realEstate: enabled ? h.realEstate.map((re) => ({ ...re, value: re.value * a.inheritanceScale })) : [],
       growth: h.growth,
       probability: h.probability,
       ifHeirPredeceases: h.ifHeirPredeceases,
@@ -277,11 +278,11 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
   })
 
   // Non-IRA inheritances and sale proceeds need a taxable account to land in.
-  if (scenario.inheritances.length > 0 && !accounts.some((x) => x.kind === 'taxable')) {
+  if ((scenario.inheritances.length > 0 || scenario.home) && !accounts.some((x) => x.kind === 'taxable')) {
     const ret = resolveReturn({ preset: 'moderate' })
     accounts.push({
       index: accounts.length,
-      label: 'Taxable (inheritances)',
+      label: 'Taxable (proceeds)',
       kind: 'taxable',
       owner: 0,
       joint: true,
@@ -299,6 +300,51 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
       hsaPayMedicalFirst: false,
       proxyMix: null,
     })
+  }
+
+  const properties: EngineProperty[] = []
+  const saleOf = (sale: ScenarioT['inheritances'][number]['realEstate'][number]['sale']) => ({
+    mode: sale.mode,
+    month: sale.date ? parseYM(sale.date) : null,
+    floor: sale.liquidFloor,
+    costPct: sale.sellingCostPct,
+    replacement: sale.replacementCost,
+  })
+  if (scenario.home) {
+    const h = scenario.home
+    properties.push({
+      label: 'Home',
+      primaryResidence: true,
+      mortgageLabel: h.mortgageExpense ?? null,
+      value: h.value,
+      basis: h.basis,
+      mean: h.appreciation.mean,
+      sd: h.appreciation.sd,
+      carrying: 0,
+      rent: 0,
+      sale: saleOf(h.sale),
+      inheritance: null,
+      sellOnReceipt: false,
+    })
+  }
+  // Real estate is listed even when inheritances are disabled (value 0) so the random draws stay aligned.
+  for (const [index, h] of scenario.inheritances.entries()) {
+    for (const re of h.realEstate) {
+      properties.push({
+        label: re.label,
+        primaryResidence: false,
+        mortgageLabel: null,
+        value: enabled ? re.value * a.inheritanceScale : 0,
+        basis: 0,
+        mean: re.appreciation.mean,
+        sd: re.appreciation.sd,
+        carrying: re.carryingCosts,
+        rent: re.rentalIncome,
+        sale: saleOf(re.sale),
+        inheritance: index,
+        sellOnReceipt: re.disposition === 'sell_on_receipt',
+      })
+    }
   }
 
   const younger = people[0].birthYear >= people[1].birthYear ? people[0] : people[1]
@@ -333,5 +379,6 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     haircutByMonth,
     taxableMaxByYear,
     inheritances,
+    properties,
   }
 }

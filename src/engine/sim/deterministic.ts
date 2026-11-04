@@ -18,6 +18,7 @@ export function deterministicDraws(prep: Prepared): PathDraws {
     returns: prep.accounts.map((a) => new Float64Array(n).fill(a.mean + (a.kind === 'cash' ? 0 : shift))),
     deathMonth: [fixedDeathMonth(prep.people[0]), fixedDeathMonth(prep.people[1])],
     inheritances: drawInheritances(prep.inheritances, prep.baseYM, 0, null),
+    propertyReturns: prep.properties.map((pr) => new Float64Array(n).fill(pr.mean)),
   }
 }
 

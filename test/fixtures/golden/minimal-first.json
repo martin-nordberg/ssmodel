@@ -57,7 +57,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2028,
@@ -98,7 +99,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2029,
@@ -139,7 +141,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2030,
@@ -180,7 +183,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2031,
@@ -221,7 +225,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2032,
@@ -262,7 +267,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2033,
@@ -303,7 +309,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2034,
@@ -344,7 +351,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2035,
@@ -385,7 +393,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2036,
@@ -426,7 +435,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2037,
@@ -467,7 +477,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2038,
@@ -508,7 +519,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2039,
@@ -549,7 +561,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2040,
@@ -590,7 +603,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2041,
@@ -631,7 +645,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2042,
@@ -672,7 +687,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2043,
@@ -713,7 +729,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2044,
@@ -754,7 +771,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2045,
@@ -795,7 +813,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2046,
@@ -836,7 +855,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2047,
@@ -877,7 +897,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2048,
@@ -918,7 +939,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2049,
@@ -959,7 +981,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2050,
@@ -1000,7 +1023,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2051,
@@ -1041,7 +1065,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2052,
@@ -1082,7 +1107,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2053,
@@ -1123,7 +1149,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2054,
@@ -1164,7 +1191,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2055,
@@ -1205,7 +1233,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   },
   {
    "year": 2056,
@@ -1246,7 +1275,8 @@
    "endBalances": [],
    "liquid": 0,
    "monthsWithheld": 0,
-   "inheritances": 0
+   "inheritances": 0,
+   "homeEquity": 0
   }
  ]
 }

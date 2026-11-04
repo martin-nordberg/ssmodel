@@ -6,7 +6,7 @@ import { fixedDeathMonth } from './deterministic.ts'
 import { drawInheritances } from './inheritance.ts'
 import { monthsUntilDeath } from './mortality.ts'
 import { newPathCache, type PathDraws, type PathSummary, runPath, type YearRow } from './path.ts'
-import { ParametricMarket } from './returns.ts'
+import { lognormalParams, ParametricMarket } from './returns.ts'
 import { createRng, Stream } from './rng.ts'
 
 export type DrawContext = { prep: Prepared; market: ParametricMarket | null; years: number }
@@ -55,7 +55,21 @@ export function drawPath(ctx: DrawContext, seed: number, path: number): PathDraw
     const uS = createRng(seed, path, Stream.mortalitySpouse).next()
     deathMonth = [stochasticDeath(prep.people[0], prep.baseYM, uP), stochasticDeath(prep.people[1], prep.baseYM, uS)]
   }
-  return { inflation, returns, deathMonth, inheritances: drawInheritances(prep.inheritances, prep.baseYM, seed, path) }
+  const propertyReturns = prep.properties.map((pr, k) => {
+    const out = new Float64Array(years)
+    if (!market) return out.fill(pr.mean)
+    const rng = createRng(seed, path, Stream.realEstate + 16 * (k + 1))
+    const { mu, sigma } = lognormalParams(pr.mean, pr.sd)
+    for (let y = 0; y < years; y++) out[y] = Math.exp(mu + sigma * rng.normal()) - 1
+    return out
+  })
+  return {
+    inflation,
+    returns,
+    deathMonth,
+    inheritances: drawInheritances(prep.inheritances, prep.baseYM, seed, path),
+    propertyReturns,
+  }
 }
 
 /** Per-path samples for one candidate. */

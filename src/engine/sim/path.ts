@@ -1,6 +1,7 @@
 // One simulated path for one claiming date [FR-SIM-1..4]. Annual steps with monthly precision for benefits,
 // earnings test, deaths and dated items. Order within a year follows FR-SIM-3.
 import { inheritedRules, inheritedScheduled } from '../accounts/inheritedIra.ts'
+import { sellProperty } from '../accounts/property.ts'
 import { lifetimeRmd } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
 import { earningsForYear, expenseForYear, incomeForYear } from '../cashflow/expenses.ts'
@@ -34,6 +35,8 @@ export type PathDraws = {
   deathMonth: [YM, YM]
   /** Arrival month and receipt of each inheritance [FR-INH-3]. */
   inheritances?: InheritanceDraw[]
+  /** Nominal appreciation per property per year [FR-ACC-7]. */
+  propertyReturns?: Float64Array[]
 }
 
 export type YearRow = {
@@ -160,6 +163,23 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
   const fraYearP = ymYear(ageP.fraMonth)
   const fraYearS = ymYear(ageS.fraMonth)
 
+  // Property state (home and inherited real estate).
+  const props = prep.properties
+  const propValue = new Float64Array(props.length)
+  const propBasis = new Float64Array(props.length)
+  const owned = new Uint8Array(props.length)
+  for (const [k, pr] of props.entries()) {
+    if (pr.inheritance === null && pr.value > 0) {
+      owned[k] = 1
+      propValue[k] = pr.value
+      propBasis[k] = pr.basis
+    }
+  }
+  const endOverride = new Map<string, YM>()
+  const soldOnce = new Set<number>()
+  // A home sale can end the mortgage at a candidate-dependent time, so expenses cannot be shared across candidates.
+  const shareExpenses = !props.some((pr) => pr.mortgageLabel !== null)
+
   for (let y = prep.baseYear; y <= prep.endYear; y++) {
     const m0 = ym(y, 1)
     const m11 = ym(y, 12)
@@ -175,6 +195,29 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     const medicare = medicareRules.params(y, medFactor, medPremiumFactor).value
     const fedParams = federalRules.params(y, fedFactor).value
     for (let i = 0; i < nAcc; i++) startBal[i] = accounts[i]!.balance
+
+    // ---- property sales at the start of the year [FR-ACC-7] ----
+    let realizedGain = 0
+    let saleShortfall = 0
+    let liquidStart = 0
+    for (let i = 0; i < nAcc; i++) liquidStart += startBal[i]!
+    for (const [k, pr] of props.entries()) {
+      if (!owned[k] || soldOnce.has(k)) continue
+      const planned = pr.sale.mode === 'planned' && pr.sale.month !== null && ymYear(pr.sale.month) <= y
+      const backstop = pr.sale.mode === 'backstop' && liquidStart < pr.sale.floor * price
+      if (!planned && !backstop) continue
+      const r = sellProperty(pr, propValue[k]!, propBasis[k]!, pr.sale.replacement * price, status)
+      realizedGain += r.gain
+      const taxable = accounts.find((x) => x.kind === 'taxable')
+      if (r.netProceeds > 0 && taxable) addToTaxable(taxable, r.netProceeds)
+      else if (r.netProceeds < 0) saleShortfall -= r.netProceeds
+      propValue[k] = r.newValue
+      propBasis[k] = r.newBasis
+      owned[k] = r.stillOwned ? 1 : 0
+      // A sold home's mortgage is paid off from the proceeds; a downsized home is not resold.
+      if (pr.mortgageLabel) endOverride.set(pr.mortgageLabel, m0 - 1)
+      if (r.stillOwned) soldOnce.add(k)
+    }
 
     // ---- inheritances received this year (a mid-year inflow) [FR-INH-1..4] ----
     let inheritedThisYear = 0
@@ -192,9 +235,8 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       const years = (d.month - prep.baseYM) / 12
       const parts = h.amounts
       const total = parts.traditionalIra + parts.rothIra + parts.nonIra
-      if (total <= 0) continue
-      const grown = grownAmount(total, h.growth.realRate, h.growth.annualSpendDown, years)
-      const nominal = (grown / total) * price
+      const grown = total > 0 ? grownAmount(total, h.growth.realRate, h.growth.annualSpendDown, years) : 0
+      const nominal = total > 0 ? (grown / total) * price : 0
       const deathDate = `${formatYM(d.month)}-15`
       for (const [flavor, amount, idx] of [
         ['traditional', parts.traditionalIra, h.accountIndex.traditional],
@@ -220,6 +262,20 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         const taxable = accounts.find((x) => x.kind === 'taxable')
         if (taxable) addToTaxable(taxable, parts.nonIra * nominal) // basis stepped up to value at death
         inheritedThisYear += parts.nonIra * nominal
+      }
+      // Inherited real estate: stepped-up basis; sold on receipt or kept [FR-INH-7].
+      for (const [k, pr] of props.entries()) {
+        if (pr.inheritance !== h.index || pr.value <= 0) continue
+        const v = pr.value * price
+        inheritedThisYear += v
+        if (pr.sellOnReceipt) {
+          const taxable = accounts.find((x) => x.kind === 'taxable')
+          if (taxable) addToTaxable(taxable, v * (1 - pr.sale.costPct))
+        } else {
+          owned[k] = 1
+          propValue[k] = v
+          propBasis[k] = v
+        }
       }
     }
 
@@ -437,14 +493,28 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
 
     // ---- expenses ----
     const survivorFrom = firstDeath <= m11 ? firstDeath + 1 : null
-    const ectx = { ...ictx, survivorFrom, survivorFraction: sc.expenses.survivorFraction, scale: asm.expenseScale }
+    const ectx = {
+      ...ictx,
+      survivorFrom,
+      survivorFraction: sc.expenses.survivorFraction,
+      scale: asm.expenseScale,
+      endOverride,
+    }
     let expenses: number
-    if (cache && !Number.isNaN(cache.expenses[yi]!)) expenses = cache.expenses[yi]!
+    if (shareExpenses && cache && !Number.isNaN(cache.expenses[yi]!)) expenses = cache.expenses[yi]!
     else {
       expenses = 0
       for (const item of prep.expenses) expenses += expenseForYear(item, y, ectx)
-      if (cache) cache.expenses[yi] = expenses
+      if (shareExpenses && cache) cache.expenses[yi] = expenses
     }
+    // Property carrying costs and rent while owned.
+    let propertyIncome = 0
+    for (const [k, pr] of props.entries()) {
+      if (!owned[k]) continue
+      expenses += pr.carrying * price
+      propertyIncome += pr.rent * price
+    }
+    expenses += saleShortfall
     const spending = expenses + healthTotal - hsaMedical
 
     // ---- tax function ----
@@ -463,9 +533,9 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         wagesByPerson: [eP.wages, eS.wages],
         seByPerson: [eP.selfEmployment, eS.selfEmployment],
         ordinary: reqOrdinaryByPerson[0] + reqOrdinaryByPerson[1] + otherOrdinary,
-        investmentOrdinary: interest,
+        investmentOrdinary: interest + propertyIncome,
         qualifiedDividends: dividends,
-        ltcg: 0,
+        ltcg: realizedGain,
         taxExemptInterest: 0,
         socialSecurity: ssP + ssS,
       },
@@ -481,7 +551,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       const fed = fedEval(d.ordinaryByPerson[0] + d.ordinaryByPerson[1], d.ltcg, fedScratch)
       retScratch[0] = retirementByPerson[0] + d.ordinaryByPerson[0]
       retScratch[1] = retirementByPerson[1] + d.ordinaryByPerson[1]
-      const st = scEval(fed.agi, fed.taxableSocialSecurity, d.ltcg, retScratch, scScratch)
+      const st = scEval(fed.agi, fed.taxableSocialSecurity, d.ltcg + realizedGain, retScratch, scScratch)
       outScratch.total = fed.total + st.tax + d.penalty
       outScratch.ordinaryTaxable = fed.ordinaryTaxable
       outScratch.magi = fed.magi
@@ -511,7 +581,16 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       penaltyRate: a.kind === 'hsa' && (a.owner === 0 ? y - P.birthYear : y - S.birthYear) < 65 ? 0.2 : 0,
     }))
     const inflows =
-      ssP + ssS + eP.wages + eP.selfEmployment + eS.wages + eS.selfEmployment + otherOrdinary + otherTaxFree + reqCash
+      ssP +
+      ssS +
+      eP.wages +
+      eP.selfEmployment +
+      eS.wages +
+      eS.selfEmployment +
+      otherOrdinary +
+      otherTaxFree +
+      propertyIncome +
+      reqCash
     const solved = solveWithdrawals({ accounts: solverAccounts, strategy, inflows, spending, tax })
 
     // ---- apply withdrawals and surplus ----
@@ -539,7 +618,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     totalShortfallReal += solved.shortfall / price
     const finalDelta = taxDelta(solverAccounts, solved.withdrawals)
     const fedRes = fedEval(finalDelta.ordinaryByPerson[0] + finalDelta.ordinaryByPerson[1], finalDelta.ltcg)
-    const scRes = scEval(fedRes.agi, fedRes.taxableSocialSecurity, finalDelta.ltcg, [
+    const scRes = scEval(fedRes.agi, fedRes.taxableSocialSecurity, finalDelta.ltcg + realizedGain, [
       retirementByPerson[0] + finalDelta.ordinaryByPerson[0],
       retirementByPerson[1] + finalDelta.ordinaryByPerson[1],
     ])
@@ -553,6 +632,14 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       const flow = a.balance - startBal[i]!
       if (a.kind === 'taxable') a.basis += startBal[i]! * a.dividendYield
       a.balance = Math.max(0, startBal[i]! * (1 + r) + flow * Math.sqrt(Math.max(0, 1 + r)))
+    }
+
+    // ---- property appreciation ----
+    let homeEquity = 0
+    for (const [k, pr] of props.entries()) {
+      if (!owned[k]) continue
+      propValue[k] = propValue[k]! * (1 + (draws.propertyReturns?.[k]?.[yi] ?? pr.mean))
+      homeEquity += propValue[k]! * (1 - pr.sale.costPct)
     }
 
     // ---- deaths: the survivor takes over the decedent's accounts at year end ----
@@ -607,6 +694,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         liquid,
         monthsWithheld,
         inheritances: inheritedThisYear,
+        homeEquity,
       })
     }
     price *= 1 + inflAt(y)
@@ -620,6 +708,13 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     terminalNominal += a.balance
     const taxed = a.kind === 'traditional' || a.kind === 'inherited_traditional' || a.kind === 'hsa'
     afterTax += taxed ? a.balance * (1 - asm.heirTaxRate) : a.balance
+  }
+  // Property passes to heirs with a stepped-up basis: net of selling costs, no income tax.
+  for (const [k, pr] of props.entries()) {
+    if (!owned[k]) continue
+    const net = propValue[k]! * (1 - pr.sale.costPct)
+    terminalNominal += net
+    afterTax += net
   }
   const terminalRealAfterTax = afterTax / lastPrice
   return {
