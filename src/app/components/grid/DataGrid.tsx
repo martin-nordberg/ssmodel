@@ -397,7 +397,7 @@ export function DataGrid<R>({
         onKeyDown={onGridKey}
         onCopy={onCopy}
         onPaste={onPaste}
-        className="overflow-auto rounded-md border font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="group overflow-auto rounded-md border font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         style={{ maxHeight }}
       >
         <table className="w-max min-w-full border-collapse">
@@ -432,7 +432,8 @@ export function DataGrid<R>({
                       className={cn(
                         'h-6 border-b border-r',
                         inSel && 'bg-accent',
-                        isActive && 'outline outline-2 -outline-offset-2 outline-primary',
+                        isActive &&
+                          'outline outline-2 -outline-offset-2 outline-muted-foreground/30 group-focus-within:outline-primary',
                         columns[ci]?.readOnly && 'text-muted-foreground',
                       )}
                       onMouseDown={(e) => {
