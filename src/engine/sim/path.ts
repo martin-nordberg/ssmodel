@@ -64,6 +64,12 @@ export type YearRow = {
   endBalances: number[]
   liquid: number
   monthsWithheld: number
+  /** Inheritances received (nominal) [FR-INH-5]. */
+  inheritances?: number
+  /** Roth conversions [FR-WD-4]. */
+  conversions?: number
+  /** Home and kept real estate, net of selling costs. */
+  homeEquity?: number
 }
 
 export type PathSummary = {

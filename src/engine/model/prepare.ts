@@ -84,6 +84,24 @@ export function accountKind(a: ScenarioT['accounts'][number]): SolverKind {
   }
 }
 
+const TYPE_LABELS: Record<ScenarioT['accounts'][number]['type'], string> = {
+  traditional_ira: 'Traditional IRA',
+  traditional_401k: 'Traditional 401(k)',
+  roth_ira: 'Roth IRA',
+  roth_401k: 'Roth 401(k)',
+  inherited_ira: 'Inherited IRA',
+  hsa: 'HSA',
+  taxable: 'Taxable',
+  cash: 'Cash',
+}
+
+function defaultLabel(acc: ScenarioT['accounts'][number]): string {
+  const who = 'owner' in acc ? acc.owner : acc.beneficiary
+  const name =
+    acc.type === 'inherited_ira' ? `Inherited ${acc.flavor === 'roth' ? 'Roth' : 'IRA'}` : TYPE_LABELS[acc.type]
+  return who === 'joint' ? name : `${name} (${who === 'primary' ? 'Primary' : 'Spouse'})`
+}
+
 const personIndex = (p: 'primary' | 'spouse' | 'joint'): PersonIndex => (p === 'spouse' ? 1 : 0)
 
 export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
@@ -160,7 +178,7 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     }
     return {
       index,
-      label: acc.label ?? `${acc.type}${'owner' in acc ? ` (${acc.owner})` : ''}`,
+      label: acc.label ?? defaultLabel(acc),
       kind,
       owner,
       joint: 'owner' in acc && acc.owner === 'joint',
