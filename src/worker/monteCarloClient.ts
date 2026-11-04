@@ -1,4 +1,8 @@
 // Main-thread orchestration of Monte Carlo runs across the worker pool [FR-MC-1, NFR-SIM-1, FR-UI-9].
+
+import { coarseCandidates, refineCandidates } from '@/engine/recommend/grid.ts'
+import { type CandidateMetrics, candidateMetrics } from '@/engine/recommend/metrics.ts'
+import { type ObjectiveSettings, type Recommendation, recommend } from '@/engine/recommend/recommend.ts'
 import { type CandidateSamples, concatSamples, type DetailShard } from '@/engine/sim/monteCarlo.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
 import type { HouseholdFile } from '@/schema/model.ts'
@@ -89,4 +93,43 @@ export async function runDetail(
     { signal: o.signal },
   )
   return { years, paths: o.paths, liquid, byAccount, terminal, medianPath, medianRows }
+}
+
+export type RecommendationRun = {
+  metrics: CandidateMetrics[]
+  recommendation: Recommendation | null
+  /** Candidates evaluated (all of them unless the coarse→fine grid skipped some). */
+  evaluated: number[]
+}
+
+/**
+ * Evaluates candidates and recommends a claiming date [FR-REC-2]. With `refine`, yearly candidates run first and
+ * only the quarterly ones within a year of the best follow.
+ */
+export async function runRecommendation(
+  pool: WorkerPool,
+  file: HouseholdFile,
+  scenarioId: string,
+  o: McOptions & { fra: number; objective: ObjectiveSettings; refine: boolean },
+): Promise<RecommendationRun> {
+  const first = o.refine ? coarseCandidates(o.candidates, o.fra) : o.candidates
+  const total = o.refine ? first.length + Math.min(8, o.candidates.length - first.length) : first.length
+  const metrics: CandidateMetrics[] = []
+  const phase = async (cands: number[], done: number) => {
+    const samples = await runMonteCarlo(pool, file, scenarioId, {
+      ...o,
+      candidates: cands,
+      onProgress: (f) => o.onProgress?.((done + f * cands.length) / Math.max(1, total)),
+    })
+    metrics.push(...samples.map(candidateMetrics))
+  }
+  await phase(first, 0)
+  if (o.refine) {
+    const best = recommend(metrics, o.objective)?.best.claim
+    const more = best === undefined ? [] : refineCandidates(o.candidates, new Set(first), best)
+    if (more.length) await phase(more, first.length)
+  }
+  metrics.sort((a, b) => a.claim - b.claim)
+  o.onProgress?.(1)
+  return { metrics, recommendation: recommend(metrics, o.objective), evaluated: metrics.map((m) => m.claim) }
 }

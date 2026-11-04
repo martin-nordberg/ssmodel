@@ -68,3 +68,35 @@ test('cancellation rejects', async () => {
   setTimeout(() => ac.abort(), 50)
   await expect(run).rejects.toThrow(/abort/i)
 })
+
+import { runRecommendation } from '@/worker/monteCarloClient.ts'
+
+test('recommendation run: refined grid finds the same best date as the full grid', async () => {
+  const pool = new WorkerPool(() => new Worker(workerUrl), 3)
+  pools.push(pool)
+  const objective = { successFloor: 0.9, bequestFloor: 0.5, runnerUpTolerance: 0.02, bequestTarget: 0 }
+  const fra = prep.people[0].age.fraMonth
+  const full = await runRecommendation(pool, file, 'base', {
+    paths: 120,
+    seed: 4,
+    candidates: prep.candidates,
+    fra,
+    objective,
+    refine: false,
+  })
+  const fine = await runRecommendation(pool, file, 'base', {
+    paths: 120,
+    seed: 4,
+    candidates: prep.candidates,
+    fra,
+    objective,
+    refine: true,
+  })
+  expect(full.metrics.length).toBe(prep.candidates.length)
+  expect(fine.metrics.length).toBeLessThan(prep.candidates.length)
+  expect(fine.recommendation?.best.claim).toBe(full.recommendation?.best.claim)
+  // Shared candidates have identical metrics (common random numbers).
+  const fraFull = full.metrics.find((m) => m.claim === fra)!
+  const fraFine = fine.metrics.find((m) => m.claim === fra)!
+  expect(fraFine.terminal.p50).toBe(fraFull.terminal.p50)
+})
