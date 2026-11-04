@@ -79,3 +79,17 @@ test('add a Setup field to the Console', async ({ page }) => {
   // The fixture's own promoted lever has a readable label.
   await expect(page.getByRole('slider', { name: 'Medical inflation spread' })).toBeVisible()
 })
+
+test('pin a baseline and see deltas after a what-if', async ({ page }) => {
+  await openConsole(page)
+  const pin = page.getByRole('button', { name: 'Pin baseline' })
+  await expect(pin).toBeEnabled({ timeout: 60_000 })
+  await pin.click()
+  await expect(page.getByText(/^Baseline: Base case/)).toBeVisible()
+  const field = page.locator('[data-lever="Expense scale"] input')
+  await field.fill('120%')
+  await field.press('Enter')
+  await expect(page.getByTestId('kpi-tiles')).toContainText('vs baseline', { timeout: 60_000 })
+  await page.getByRole('button', { name: 'Clear' }).click()
+  await expect(page.getByTestId('kpi-tiles')).not.toContainText('vs baseline')
+})

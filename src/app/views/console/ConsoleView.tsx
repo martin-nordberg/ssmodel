@@ -98,6 +98,7 @@ function ConsoleBody() {
                   {c.result?.preview ? `preview, ${c.result.paths} paths` : `${c.result?.paths} paths`}
                   {!rec.floorsMet && ' — no date meets the success floor'}
                 </span>
+                <BaselineControls scenarioName={saved.name} />
               </div>
               <ul className="grid gap-0.5 text-xs" data-testid="explanation">
                 {lines.map((l) => (
@@ -142,5 +143,39 @@ function RunStatus() {
         </Button>
       )}
     </div>
+  )
+}
+
+/** Pin the current results as a baseline [FR-UI-10]; charts then draw it dashed and tiles show deltas. */
+function BaselineControls({ scenarioName }: { scenarioName: string }) {
+  const baseline = useConsole((s) => s.baseline)
+  const result = useConsole((s) => s.result)
+  const detail = useConsole((s) => s.detail)
+  const set = useConsole((s) => s.set)
+  return (
+    <span className="ml-auto flex items-center gap-1 text-xs">
+      {baseline && <span className="text-muted-foreground">Baseline: {baseline.label}</span>}
+      <Button
+        size="xs"
+        variant="outline"
+        disabled={!result || result.preview}
+        onClick={() =>
+          set({
+            baseline: {
+              label: `${scenarioName}, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+              result: result!,
+              detail,
+            },
+          })
+        }
+      >
+        Pin baseline
+      </Button>
+      {baseline && (
+        <Button size="xs" variant="ghost" onClick={() => set({ baseline: null })}>
+          Clear
+        </Button>
+      )}
+    </span>
   )
 }
