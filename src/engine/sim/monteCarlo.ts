@@ -1,6 +1,7 @@
 // Monte Carlo [FR-MC-1, FR-MC-4, FR-SIM-5]. Each path's draws depend only on (seed, path index), so every claiming
 // candidate sees the same paths (common random numbers) and results do not depend on how paths are sharded.
 import { type YM, ym } from '../core/dates.ts'
+import type { YearTrace } from '../explain/trace.ts'
 import type { EnginePerson, Prepared } from '../model/prepare.ts'
 import { BootstrapMarket } from './bootstrap.ts'
 import { fixedDeathMonth } from './deterministic.ts'
@@ -214,6 +215,6 @@ export function runDetailShard(
 }
 
 /** Full rows for one path (e.g. the median-terminal path). */
-export function pathRows(prep: Prepared, seed: number, path: number, claim: YM): YearRow[] {
-  return runPath(prep, claim, drawPath(drawContext(prep), seed, path), { recordRows: true }).rows!
+export function pathRows(prep: Prepared, seed: number, path: number, claim: YM, trace?: YearTrace): YearRow[] {
+  return runPath(prep, claim, drawPath(drawContext(prep), seed, path), { recordRows: true, trace }).rows!
 }

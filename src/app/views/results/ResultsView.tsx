@@ -1,11 +1,15 @@
 import { Download } from 'lucide-react'
 import { useDeferredValue, useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { ExplainDialog, type ExplainState } from '@/app/components/ExplainDialog.tsx'
 import { SelectField } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { formatCurrency } from '@/app/components/grid/parse.ts'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
+import { explainValue } from '@/engine/explain/explain.ts'
+import type { YearTrace } from '@/engine/explain/trace.ts'
 import { runDeterministic } from '@/engine/sim/deterministic.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
 import { useEffectivePrepared } from '@/state/scenario.ts'
@@ -49,6 +53,7 @@ export function ResultsView() {
     [prep, claim],
   )
   const [table, setTable] = useState<'years' | 'schedule' | 'sensitivity'>('years')
+  const [explain, setExplain] = useState<ExplainState>(null)
   const cols = useMemo(
     () => (prep ? (table === 'years' ? yearColumns(prep.accounts) : scheduleColumns(prep.accounts)) : []),
     [prep, table],
@@ -134,8 +139,26 @@ export function ResultsView() {
           onChange={() => {}}
           readOnly
           maxHeight={600}
+          onCellActivate={(ri, colId) => {
+            const year = rows[ri]?.year
+            if (year === undefined) return
+            // Re-run the same path, capturing that year [FR-UI-14].
+            const trace: YearTrace = { year }
+            runDeterministic(prep, claim, false, trace)
+            const e = trace.data && explainValue(trace.data, colId)
+            if (!e) {
+              toast.info('No breakdown for this column.')
+              return
+            }
+            setExplain({
+              explanation: e,
+              price: trace.data!.price,
+              source: `Deterministic path, claiming ${formatYM(claim)}`,
+            })
+          }}
         />
       )}
+      <ExplainDialog state={explain} real={real} onClose={() => setExplain(null)} />
     </div>
   )
 }

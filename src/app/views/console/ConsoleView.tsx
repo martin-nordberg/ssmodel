@@ -1,13 +1,20 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { ExplainDialog, type ExplainState } from '@/app/components/ExplainDialog.tsx'
 import { Button } from '@/components/ui/button'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
+import { explainValue } from '@/engine/explain/explain.ts'
+import type { YearTrace } from '@/engine/explain/trace.ts'
+import type { Prepared } from '@/engine/model/prepare.ts'
 import { prepare } from '@/engine/model/prepare.ts'
 import { explain, inheritanceNote } from '@/engine/recommend/recommend.ts'
 import { runDeterministic } from '@/engine/sim/deterministic.ts'
+import { pathRows } from '@/engine/sim/monteCarlo.ts'
 import { cn } from '@/lib/utils'
 import { pinBaseline, shownClaim, useConsole } from '@/state/consoleStore.ts'
 import { useDocument, withOverrides } from '@/state/documentStore.ts'
 import { useActiveScenario, useEffectiveFile, useEffectivePrepared, useFile } from '@/state/scenario.ts'
+import { useSettings } from '@/state/settingsStore.ts'
 import { useUi } from '@/state/uiStore.ts'
 import { completeness, isComplete } from '../setup/completeness.ts'
 import { ChartArea } from './ChartArea.tsx'
@@ -45,11 +52,14 @@ function ConsoleBody() {
   const claim = shownClaim(c)
   const effective = effFile.scenarios.find((s) => s.id === id) ?? effFile.scenarios[0]!
 
+  const real = useSettings((s) => s.dollars) === 'real'
+  const [explainState, setExplain] = useState<ExplainState>(null)
+
   // Deterministic preview: updates on every lever tick (draft) [FR-UI-9, NFR-UI-2].
   const preview = useMemo(() => {
     if (!prep || claim === null) return null
     try {
-      const p =
+      const p: Prepared =
         c.draft === null
           ? prep
           : prepare(
@@ -61,11 +71,12 @@ function ConsoleBody() {
               },
               effective.id,
             )
-      return runDeterministic(p, claim)
+      return { prep: p, result: runDeterministic(p, claim) }
     } catch {
       return null
     }
   }, [prep, claim, c.draft, effFile, effective.id])
+  const showMedian = c.draft === null && !!c.detail && c.detailClaim === claim
 
   if (!prep) return <p className="p-4 text-muted-foreground">The household could not be prepared; check Setup.</p>
   if (prep.candidates.length === 0)
@@ -120,9 +131,27 @@ function ConsoleBody() {
         </section>
         <ChartArea prep={prep} claim={claim} dim={dim} />
         <DetailStrip
-          rows={c.draft === null && c.detail && c.detailClaim === claim ? c.detail.medianRows : (preview?.rows ?? [])}
-          label={c.draft === null && c.detail && c.detailClaim === claim ? 'Median path' : 'Deterministic path'}
+          rows={showMedian ? c.detail!.medianRows : (preview?.result.rows ?? [])}
+          label={showMedian ? 'Median path' : 'Deterministic path'}
+          onExplain={(year, col) => {
+            if (claim === null) return
+            // Re-run the path shown (the median Monte Carlo path or the deterministic one), capturing that year.
+            const trace: YearTrace = { year }
+            if (showMedian) pathRows(prep, prep.scenario.simulation.seed, c.detail!.medianPath, claim, trace)
+            else if (preview) runDeterministic(preview.prep, claim, false, trace)
+            const e = trace.data && explainValue(trace.data, col)
+            if (!e) {
+              toast.info('No breakdown for this column.')
+              return
+            }
+            setExplain({
+              explanation: e,
+              price: trace.data!.price,
+              source: `${showMedian ? 'Median path' : 'Deterministic path'}, claiming ${formatYM(claim)}`,
+            })
+          }}
         />
+        <ExplainDialog state={explainState} real={real} onClose={() => setExplain(null)} />
       </div>
     </div>
   )

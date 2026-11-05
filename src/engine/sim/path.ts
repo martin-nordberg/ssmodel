@@ -7,15 +7,16 @@ import { lifetimeRmd, rmdStartYear } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
 import { annuityForYear } from '../cashflow/annuities.ts'
 import { earningsForYear, expenseForYear, incomeForYear } from '../cashflow/expenses.ts'
-import { healthcareCost } from '../cashflow/healthcare.ts'
+import { type HealthcareCost, healthcareCost } from '../cashflow/healthcare.ts'
 import { formatYM, type YM, ym, ymYear } from '../core/dates.ts'
+import type { Amount, TraceData, YearTrace } from '../explain/trace.ts'
 import type { EngineAccount, Prepared } from '../model/prepare.ts'
 import { type FilingStatus, federalRules, medicareRules, scRules, ssaRules } from '../rules/tables.ts'
 import { earningsTest } from '../ss/earningsTest.ts'
 import { monthlyBenefit, ownBenefitFactor } from '../ss/ownBenefit.ts'
 import { truncDime } from '../ss/pia.ts'
 import { spousalExcess, survivorBenefit } from '../ss/spouse.ts'
-import { bracketTop, federalEvaluator, type federalTax } from '../tax/federal.ts'
+import { bracketTop, type FederalTaxInput, federalEvaluator, type federalTax } from '../tax/federal.ts'
 import { irmaaTier } from '../tax/irmaa.ts'
 import { deductibleInterestShare, type ItemizedInput } from '../tax/itemized.ts'
 import { scEvaluator, type scTax } from '../tax/sc.ts'
@@ -120,7 +121,12 @@ export function newPathCache(years: number): PathCache {
   }
 }
 
-export type RunOptions = { recordRows: boolean; cache?: PathCache }
+export type RunOptions = {
+  recordRows: boolean
+  cache?: PathCache
+  /** Capture one year's inputs and intermediate results for "explain a number" [FR-UI-14]. */
+  trace?: YearTrace
+}
 
 const REAL_DISCOUNT = 0.02
 
@@ -201,6 +207,8 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     if (deathP < m0 && deathS < m0) break
     lastYear = y
     const yi = y - prep.baseYear
+    // Trace capture for one year (explain a number); null in every other year and in Monte Carlo runs.
+    const td: Partial<TraceData> | null = opts.trace?.year === y ? { year: y, price, status: 'mfj' } : null
     if (y > prep.baseYear) colaIndex *= 1 + colaFn(y)
     const status: FilingStatus = deathP >= m0 && deathS >= m0 ? 'mfj' : 'single'
     const medical = price * (1 + spread) ** yi
@@ -416,6 +424,19 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       ssP += monthlyP[k]! * hc
       ssS += (monthlyS[k]! + excessS[k]!) * hc
     }
+    if (td) {
+      const haircut = Array.from({ length: 12 }, (_, k) => prep.haircutByMonth[m0 + k - ym(prep.baseYear, 1)] ?? 1)
+      td.ss = {
+        people: [
+          { pia: piaP, monthly: Array.from(monthlyP), excess: new Array(12).fill(0), claim },
+          { pia: piaS, monthly: Array.from(monthlyS), excess: Array.from(excessS), claim: prep.spouse.claimed },
+        ],
+        haircut,
+        monthsWithheld,
+        total: [ssP, ssS],
+      }
+      td.earnings = [eP, eS]
+    }
 
     // ---- other income ----
     const ictx = { baseYear: prep.baseYear, price, medical }
@@ -488,6 +509,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     const magiLookback = magiHistory.get(y - 2) ?? 0
     const tier = irmaaTier(magiLookback, status, medicare)
     let healthTotal = 0
+    const traceHealth: [HealthcareCost | null, HealthcareCost | null] | null = td ? [null, null] : null
     let irmaaTotal = 0
     let hsaQualified = 0
     for (const [idx, person] of [P, S].entries()) {
@@ -509,6 +531,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         medicareCosts: sc.healthcare.medicare,
       })
       healthTotal += hc.total
+      if (traceHealth) traceHealth[idx] = hc
       irmaaTotal += hc.irmaaSurcharge
       hsaQualified += hc.hsaQualified
     }
@@ -585,21 +608,24 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     const tmax = prep.taxableMaxByYear[yi]!
     const scFactor = price * (1 + meanInfl) ** (prep.baseYear - scRules.latestYear)
     const scParams = scRules.params(y, scFactor).value
+    const fedInputBase: FederalTaxInput = {
+      year: y,
+      status,
+      priceFactor: fedFactor,
+      count65,
+      taxableMax: tmax,
+      wagesByPerson: [eP.wages, eS.wages],
+      seByPerson: [eP.selfEmployment, eS.selfEmployment],
+      ordinary: reqOrdinaryByPerson[0] + reqOrdinaryByPerson[1] + otherOrdinary - hsaContrib,
+      investmentOrdinary: interest + propertyIncome,
+      qualifiedDividends: dividends,
+      ltcg: realizedGain,
+      taxExemptInterest: 0,
+      socialSecurity: ssP + ssS,
+    }
     const fedEval = federalEvaluator(
       {
-        year: y,
-        status,
-        priceFactor: fedFactor,
-        count65,
-        taxableMax: tmax,
-        wagesByPerson: [eP.wages, eS.wages],
-        seByPerson: [eP.selfEmployment, eS.selfEmployment],
-        ordinary: reqOrdinaryByPerson[0] + reqOrdinaryByPerson[1] + otherOrdinary - hsaContrib,
-        investmentOrdinary: interest + propertyIncome,
-        qualifiedDividends: dividends,
-        ltcg: realizedGain,
-        taxExemptInterest: 0,
-        socialSecurity: ssP + ssS,
+        ...fedInputBase,
         itemized: itemizable,
         // SC tax (computed from federal AGI) is itemizable as SALT; `curDelta` is the delta being evaluated.
         stateIncomeTax: (agi, tss) => {
@@ -660,6 +686,63 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       propertyIncome +
       reqCash
     const solved = solveWithdrawals({ accounts: solverAccounts, strategy, inflows, spending, tax })
+    if (td) {
+      td.status = status
+      td.accounts = accounts.map((a) => ({ label: a.label, kind: a.kind }))
+      td.otherOrdinary = otherOrdinary
+      td.otherTaxFree = otherTaxFree
+      td.dividends = dividends
+      td.interest = interest
+      td.propertyIncome = propertyIncome
+      td.inheritances = inheritedThisYear
+      td.required = Array.from(required)
+      td.rmd = rmdTotal
+      td.inheritedDistributions = inheritedTotal
+      td.expenses = {
+        items: prep.expenses
+          .map((item) => ({ label: item.label, amount: expenseForYear(item, y, ectx) }))
+          .filter((x) => x.amount !== 0),
+        housing: props.flatMap((pr, k) => {
+          if (!owned[k]) return []
+          const out: Amount[] = []
+          const carrying = (soldOnce.has(k) ? pr.carryingReplacement : pr.carrying) * price
+          if (carrying > 0) out.push({ label: `${pr.label}: carrying costs`, amount: carrying })
+          if (pr.mortgage && !loanClosed[k]) {
+            const pay = pr.mortgage.payment * mortgagePaymentsInYear(pr.mortgage, y, prep.baseYM)
+            if (pay > 0) out.push({ label: `${pr.label}: mortgage principal + interest`, amount: pay })
+          }
+          return out
+        }),
+        hsaContributions: hsaContrib,
+        saleShortfall,
+        total: expenses,
+      }
+      td.health = {
+        people: traceHealth!,
+        irmaaTier: tier,
+        lookbackYear: y - 2,
+        lookbackMagi: magiLookback,
+        hsaMedical,
+        total: healthTotal,
+      }
+      td.spending = spending
+      td.inflows = [
+        { label: 'Social Security', amount: ssP + ssS },
+        { label: 'Wages and self-employment', amount: eP.wages + eP.selfEmployment + eS.wages + eS.selfEmployment },
+        { label: 'Other income and annuities', amount: otherOrdinary + otherTaxFree },
+        { label: 'Rent', amount: propertyIncome },
+        { label: 'Required distributions (RMDs, inherited IRAs)', amount: reqCash },
+      ].filter((x) => x.amount !== 0)
+      td.solver = {
+        withdrawals: Array.from(solved.withdrawals),
+        surplus: solved.surplus,
+        shortfall: solved.shortfall,
+        tax: solved.tax.total,
+        strategy: st.withdrawal,
+      }
+      td.bracketAware = []
+      td.conversions = []
+    }
 
     // ---- apply withdrawals and surplus ----
     for (let i = 0; i < nAcc; i++) {
@@ -707,6 +790,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       withdrawalsRow[a.index] = withdrawalsRow[a.index]! + x
       extraTax += dt
       extraSurplus += x - dt
+      td?.bracketAware?.push({ account: a.index, amount: x, tax: dt })
       if (taxableAcc) addToTaxable(taxableAcc, x - dt)
       else if (cashAcc) cashAcc.balance += x - dt
     }
@@ -760,6 +844,14 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         roth.balance += x
         conversions += x
         extraTax += f.tax
+        td?.conversions?.push({
+          owner,
+          amount: x,
+          tax: f.tax,
+          fromCash: f.fromFreeCash + f.fromReserve,
+          sold: f.sold,
+          gain: f.gain,
+        })
         if (cashAcc && f.fromFreeCash + f.fromReserve > 0) {
           const paid = Math.min(cashAcc.balance, f.fromFreeCash + f.fromReserve)
           cashAcc.balance -= paid
@@ -780,6 +872,32 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     ])
     const finalTax = { total: solved.tax.total + extraTax, magi: fedRes.magi }
     magiHistory.set(y, finalTax.magi)
+    const beforeReturns = td ? accounts.map((a) => a.balance) : null
+    if (td) {
+      const scTaxValue = scRes.tax
+      td.withdrawals = withdrawalsRow.slice()
+      td.tax = {
+        fedInput: { ...fedInputBase, itemized: { ...itemizable }, stateIncomeTax: () => scTaxValue },
+        fedParams,
+        extraOrdinary: finalDelta.ordinaryByPerson[0] + finalDelta.ordinaryByPerson[1],
+        extraLtcg: finalDelta.ltcg,
+        itemizable: { ...itemizable },
+        fed: { ...fedRes },
+        sc: {
+          agi: fedRes.agi,
+          tss: fedRes.taxableSocialSecurity,
+          ltcg: finalDelta.ltcg + realizedGain,
+          retirement: [
+            retirementByPerson[0] + finalDelta.ordinaryByPerson[0],
+            retirementByPerson[1] + finalDelta.ordinaryByPerson[1],
+          ],
+          is65,
+        },
+        scParams,
+        scResult: { ...scRes },
+        total: finalTax.total,
+      }
+    }
 
     // ---- returns (mid-year convention) and dividend basis ----
     for (let i = 0; i < nAcc; i++) {
@@ -791,6 +909,10 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
 
     for (const [a, amt] of hsaDeposits) a.balance += amt
+    if (td && opts.trace) {
+      td.balances = { start: Array.from(startBal), beforeReturns: beforeReturns!, end: accounts.map((a) => a.balance) }
+      opts.trace.data = td as TraceData
+    }
 
     // ---- property appreciation ----
     let homeEquity = 0

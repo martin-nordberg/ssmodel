@@ -5,7 +5,16 @@ import { useSettings } from '@/state/settingsStore.ts'
 import { useUi } from '@/state/uiStore.ts'
 
 /** Compact year-by-year strip for the date shown [§8.2]; hovering a row highlights that year in charts. */
-export function DetailStrip({ rows, label }: { rows: YearRow[]; label: string }) {
+export function DetailStrip({
+  rows,
+  label,
+  onExplain,
+}: {
+  rows: YearRow[]
+  label: string
+  /** Click (or Enter) on a value: explain it [FR-UI-14]. */
+  onExplain?: (year: number, columnId: string) => void
+}) {
   const real = useSettings((s) => s.dollars) === 'real'
   const hoverYear = useUi((s) => s.hoverYear)
   const columns = useMemo<GridColumn<YearRow>[]>(() => {
@@ -59,6 +68,14 @@ export function DetailStrip({ rows, label }: { rows: YearRow[]; label: string })
         maxHeight={260}
         highlightRow={rows.findIndex((r) => r.year === hoverYear)}
         onRowHover={(i) => useUi.getState().setHoverYear(i === null ? null : (rows[i]?.year ?? null))}
+        onCellActivate={
+          onExplain
+            ? (ri, col) => {
+                const year = rows[ri]?.year
+                if (year !== undefined) onExplain(year, col)
+              }
+            : undefined
+        }
       />
     </section>
   )

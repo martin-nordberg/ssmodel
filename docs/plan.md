@@ -595,8 +595,8 @@ green, goldens regenerated only with the change explained in the commit message.
 
 ## Implementation status (2026-11-05)
 
-M0–M4 (v1) are implemented, with one commit per task. v1.1 (T5.1 command palette, T5.2 tax on conversion funding,
-T5.3 itemized deductions, T5.4 explain-a-number) is not started.
+M0–M4 (v1) and v1.1 (T5.1 command palette, T5.2 tax on conversion funding, T5.3 itemized deductions, T5.4
+explain-a-number) are implemented, with one commit per task.
 
 Deviations and notes:
 - **NFR-SIM-1 (5 s for 33 × 5,000):** not met on the development machine (4-core i7-7700). This household's 18
@@ -609,6 +609,13 @@ Deviations and notes:
 - **Rule data:** ssa.gov blocks automated downloads. The AWI series was checked against SSA's published bend
   points and taxable maximums (1995–2027). IRS and CMS 2027 values were not yet published and are projected.
 - **T3.2/T3.6** share one property model: the home and inherited real estate.
+
+v1.1 notes:
+- **T5.3:** the reference engine covers the itemized deduction through SC tax, medical and charitable items. It has no
+  home model, so property tax and mortgage interest have unit tests only. Property tax inside the carrying costs of
+  kept inherited real estate is not itemized (it is not split out).
+- **T5.4:** explanations cover the year-table and detail-strip money columns. They are built from a one-year trace
+  of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
 - **Mortgage and home costs (Q-HOME-1, schema version 2):** the home carries its mortgage (balance as of a month,

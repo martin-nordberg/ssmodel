@@ -63,6 +63,8 @@ export type DataGridProps<R> = {
   highlightRow?: number
   /** Pointer or keyboard focus moved to a row (null when leaving the grid). */
   onRowHover?: (index: number | null) => void
+  /** A read-only cell was clicked or Enter was pressed on it (e.g. to explain the value) [FR-UI-14]. */
+  onCellActivate?: (rowIndex: number, columnId: string) => void
 }
 
 type Cell = { r: number; c: number }
@@ -162,6 +164,7 @@ export function DataGrid<R>({
   maxHeight,
   highlightRow,
   onRowHover,
+  onCellActivate,
 }: DataGridProps<R>) {
   const [active, setActive] = useState<Cell>({ r: 0, c: 0 })
   const [anchor, setAnchor] = useState<Cell | null>(null)
@@ -256,6 +259,8 @@ export function DataGrid<R>({
     else if (k === 'ArrowLeft') move(0, -1, e.shiftKey)
     else if (k === 'ArrowRight') move(0, 1, e.shiftKey)
     else if (k === 'Tab') move(0, e.shiftKey ? -1 : 1)
+    else if ((k === 'Enter' || k === 'F2') && !isEditable(active.c) && onCellActivate && rows[active.r])
+      onCellActivate(active.r, columns[active.c]!.id)
     else if (k === 'Enter' || k === 'F2') startEdit()
     else if (k === ' ' && columns[active.c]?.type === 'boolean') startEdit()
     else if ((k === 'Delete' || k === 'Backspace') && !readOnly) {
@@ -456,7 +461,8 @@ export function DataGrid<R>({
                         inSel && 'bg-accent',
                         isActive &&
                           'outline outline-2 -outline-offset-2 outline-muted-foreground/30 group-focus-within:outline-primary',
-                        columns[ci]?.readOnly && 'text-muted-foreground',
+                        columns[ci]?.readOnly && !onCellActivate && 'text-muted-foreground',
+                        onCellActivate && !isEditable(ci) && 'cursor-pointer hover:bg-muted',
                       )}
                       onMouseDown={(e) => {
                         if (isEditing) return
@@ -470,7 +476,9 @@ export function DataGrid<R>({
                         setActive({ r: ri, c: ci })
                       }}
                       onClick={(e) => {
-                        if (!e.shiftKey && !isEditing) startEdit(undefined, { r: ri, c: ci })
+                        if (e.shiftKey || isEditing) return
+                        if (!isEditable(ci) && onCellActivate) onCellActivate(ri, columns[ci]!.id)
+                        else startEdit(undefined, { r: ri, c: ci })
                       }}
                     >
                       {/* Called directly: flexRender would mount this inline function as a component type that changes every render, remounting the cell (and its editor) on each update. */}

@@ -1,5 +1,6 @@
 // Deterministic path [FR-MC-3 deterministic]: mean inflation and returns every year, fixed death ages.
 import type { YM } from '../core/dates.ts'
+import type { YearTrace } from '../explain/trace.ts'
 import type { EnginePerson, Prepared } from '../model/prepare.ts'
 import { drawInheritances } from './inheritance.ts'
 import { type PathDraws, type PathResult, runPath } from './path.ts'
@@ -22,6 +23,6 @@ export function deterministicDraws(prep: Prepared): PathDraws {
   }
 }
 
-export function runDeterministic(prep: Prepared, claim: YM, recordRows = true): PathResult {
-  return runPath(prep, claim, deterministicDraws(prep), { recordRows })
+export function runDeterministic(prep: Prepared, claim: YM, recordRows = true, trace?: YearTrace): PathResult {
+  return runPath(prep, claim, deterministicDraws(prep), { recordRows, trace })
 }
