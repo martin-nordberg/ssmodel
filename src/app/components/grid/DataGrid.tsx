@@ -1,9 +1,10 @@
 // Spreadsheet-like editable grid [FR-UI-3, FR-UI-4] built on TanStack Table's row/column model.
+// Mouse: a click edits the cell (text selected; drop-downs open); Shift+click selects a range.
 // Keyboard: arrows/Tab/Enter move; Enter, F2 or typing edits; Esc cancels; Delete clears optional cells;
 // Shift+arrows select a range; Ctrl+C / Ctrl+V copy and paste TSV (Excel/Sheets compatible).
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
-import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -65,6 +66,8 @@ export type DataGridProps<R> = {
 }
 
 type Cell = { r: number; c: number }
+/** An open cell editor; it carries its own cell so a commit never lands in a newly clicked cell. */
+type Edit = Cell & { text: string; error?: string; selectAll?: boolean }
 
 // Cells of an ARIA grid table; focus stays on the grid container (aria-activedescendant).
 const gridCellProps = (selected: boolean) => ({ role: 'gridcell', 'aria-selected': selected }) as const
@@ -162,7 +165,13 @@ export function DataGrid<R>({
 }: DataGridProps<R>) {
   const [active, setActive] = useState<Cell>({ r: 0, c: 0 })
   const [anchor, setAnchor] = useState<Cell | null>(null)
-  const [editing, setEditing] = useState<{ text: string; error?: string } | null>(null)
+  const [editing, setEditingState] = useState<Edit | null>(null)
+  // Mirrors `editing` synchronously: blur events fire before React re-renders.
+  const editRef = useRef<Edit | null>(null)
+  const setEditing = (e: Edit | null) => {
+    editRef.current = e
+    setEditingState(e)
+  }
   const [message, setMessage] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const gridId = useId()
@@ -199,32 +208,44 @@ export function DataGrid<R>({
 
   const isEditable = (c: number) => !readOnly && !columns[c]?.readOnly
 
+  /** Commits the open editor (if any) to its own cell; false keeps it open with an error. */
   const commit = (text: string): boolean => {
-    const col = columns[active.c]!
-    const row = rows[active.r]
-    if (!row) return true
+    const ed = editRef.current
+    if (!ed) return true
+    const col = columns[ed.c]
+    const row = rows[ed.r]
+    if (!col || !row) {
+      setEditing(null)
+      return true
+    }
     const r = parseCell(col as GridColumn<unknown>, text)
     if (!r.ok) {
-      setEditing({ text, error: r.error })
+      setEditing({ ...ed, text, error: r.error })
       return false
     }
-    const next = rows.slice()
-    next[active.r] = col.set(row, r.value)
-    onChange(next)
     setEditing(null)
+    const next = rows.slice()
+    next[ed.r] = col.set(row, r.value)
+    onChange(next)
     return true
   }
 
-  const startEdit = (initial?: string) => {
-    if (!isEditable(active.c) || !rows[active.r]) return
-    const col = columns[active.c]!
+  const cancelEdit = () => {
+    setEditing(null)
+    focusGrid()
+  }
+
+  const startEdit = (initial?: string, at: Cell = active, selectAll = initial === undefined) => {
+    if (!isEditable(at.c) || !rows[at.r]) return
+    const col = columns[at.c]!
     if (col.type === 'boolean') {
       const next = rows.slice()
-      next[active.r] = col.set(rows[active.r]!, !col.get(rows[active.r]!))
+      next[at.r] = col.set(rows[at.r]!, !col.get(rows[at.r]!))
       onChange(next)
       return
     }
-    setEditing({ text: initial ?? formatCell(col.type, col.get(rows[active.r]!), col.options).replace(/^\$/, '') })
+    const text = initial ?? formatCell(col.type, col.get(rows[at.r]!), col.options).replace(/^\$/, '')
+    setEditing({ ...at, text, selectAll })
   }
 
   const onGridKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -325,47 +346,27 @@ export function DataGrid<R>({
         cell: (ctx) => {
           const ri = ctx.row.index
           const row = ctx.row.original
-          const isActive = active.r === ri && active.c === ci
           const err = rowErrors[ri]?.[col.id]
-          if (isActive && editing) {
+          if (editing && editing.r === ri && editing.c === ci) {
             return col.type === 'select' ? (
-              <select
-                // biome-ignore lint/a11y/noAutofocus: the cell editor must take focus when opened
-                autoFocus
-                aria-label={col.header}
-                className="h-6 w-full bg-background text-xs outline-none"
-                defaultValue={String(col.get(row) ?? '')}
-                onChange={(e) => {
-                  if (commit(e.target.value)) focusGrid()
+              <CellSelect
+                label={col.header}
+                value={String(col.get(row) ?? '')}
+                options={col.options ?? []}
+                onPick={(v) => {
+                  if (commit(v)) focusGrid()
                 }}
-                onBlur={() => setEditing(null)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setEditing(null)
-                    focusGrid()
-                  }
+                onCancel={cancelEdit}
+                onBlur={() => {
+                  if (editRef.current?.r === ri && editRef.current.c === ci) setEditing(null)
                 }}
-              >
-                {col.options?.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              />
             ) : (
-              <input
-                // biome-ignore lint/a11y/noAutofocus: the cell editor must take focus when opened
-                autoFocus
-                aria-label={col.header}
-                aria-invalid={!!editing.error}
-                title={editing.error}
-                className={cn(
-                  'h-6 w-full bg-background px-1 text-xs outline-none',
-                  editing.error && 'text-destructive',
-                )}
-                value={editing.text}
-                onChange={(e) => setEditing({ text: e.target.value })}
-                onBlur={(e) => commit(e.target.value)}
+              <CellInput
+                label={col.header}
+                edit={editing}
+                onText={(text) => setEditing({ ...editing, text, error: undefined })}
+                onBlur={(text) => commit(text)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
@@ -381,8 +382,7 @@ export function DataGrid<R>({
                     }
                   } else if (e.key === 'Escape') {
                     e.preventDefault()
-                    setEditing(null)
-                    focusGrid()
+                    cancelEdit()
                   }
                 }}
               />
@@ -443,8 +443,10 @@ export function DataGrid<R>({
                 {row.getVisibleCells().map((cell, ci) => {
                   const ri = row.index
                   const isActive = active.r === ri && active.c === ci
+                  const isEditing = editing?.r === ri && editing.c === ci
                   const inSel = ri >= sel.r0 && ri <= sel.r1 && ci >= sel.c0 && ci <= sel.c1
                   return (
+                    // biome-ignore lint/a11y/useKeyWithClickEvents: the grid container handles the keyboard (Enter/F2/typing edit)
                     <td
                       key={cell.id}
                       id={`${gridId}-${ri}-${ci}`}
@@ -457,14 +459,24 @@ export function DataGrid<R>({
                         columns[ci]?.readOnly && 'text-muted-foreground',
                       )}
                       onMouseDown={(e) => {
-                        if (editing && isActive) return
+                        if (isEditing) return
+                        // Finish an edit in another cell first; an invalid value keeps its editor open.
+                        if (editRef.current && !commit(editRef.current.text)) {
+                          e.preventDefault()
+                          return
+                        }
                         if (e.shiftKey) setAnchor((a) => a ?? active)
                         else setAnchor(null)
                         setActive({ r: ri, c: ci })
                       }}
-                      onDoubleClick={() => startEdit()}
+                      onClick={(e) => {
+                        if (!e.shiftKey && !isEditing) startEdit(undefined, { r: ri, c: ci })
+                      }}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {/* Called directly: flexRender would mount this inline function as a component type that changes every render, remounting the cell (and its editor) on each update. */}
+                      {(cell.column.columnDef.cell as (ctx: ReturnType<typeof cell.getContext>) => ReactNode)(
+                        cell.getContext(),
+                      )}
                     </td>
                   )
                 })}
@@ -511,5 +523,95 @@ export function DataGrid<R>({
         {message && <span className="text-destructive text-xs">{message}</span>}
       </div>
     </div>
+  )
+}
+
+function CellInput({
+  label,
+  edit,
+  onText,
+  onBlur,
+  onKeyDown,
+}: {
+  label: string
+  edit: Edit
+  onText: (text: string) => void
+  onBlur: (text: string) => void
+  onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+  // Focus once on open: select the whole value (click, Enter, F2) or put the caret after a typed character.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs only when the editor opens
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    if (edit.selectAll) el.select()
+    else el.setSelectionRange(el.value.length, el.value.length)
+  }, [])
+  return (
+    <input
+      ref={ref}
+      aria-label={label}
+      aria-invalid={!!edit.error}
+      title={edit.error}
+      className={cn('h-6 w-full bg-background px-1 text-xs outline-none', edit.error && 'text-destructive')}
+      value={edit.text}
+      onChange={(e) => onText(e.target.value)}
+      onBlur={(e) => onBlur(e.target.value)}
+      onKeyDown={onKeyDown}
+    />
+  )
+}
+
+function CellSelect({
+  label,
+  value,
+  options,
+  onPick,
+  onCancel,
+  onBlur,
+}: {
+  label: string
+  value: string
+  options: { value: string; label: string }[]
+  onPick: (value: string) => void
+  onCancel: () => void
+  onBlur: () => void
+}) {
+  const ref = useRef<HTMLSelectElement>(null)
+  // Open the option list straight away, so a click (or Enter) drops it down.
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    try {
+      el.showPicker()
+    } catch {
+      // Unsupported (e.g. Safari) or no user activation: the focused select still opens on click or Alt+Down.
+    }
+  }, [])
+  return (
+    <select
+      ref={ref}
+      aria-label={label}
+      className="h-6 w-full bg-background text-xs outline-none"
+      defaultValue={value}
+      onChange={(e) => onPick(e.target.value)}
+      onBlur={onBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onCancel()
+        else if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault()
+          onPick(e.currentTarget.value)
+        }
+      }}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   )
 }

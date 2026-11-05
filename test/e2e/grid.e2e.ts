@@ -82,3 +82,38 @@ test('copy produces TSV of the selection', async ({ page }) => {
   })
   expect(text).toBe('2020\t$50,000\n2021\t$52,000')
 })
+
+test('a click edits the cell with its text selected', async ({ page }) => {
+  await page.getByRole('gridcell', { name: '$50,000' }).click()
+  const input = page.getByRole('textbox', { name: 'Amount' })
+  await expect(input).toBeFocused()
+  expect(await input.evaluate((el: HTMLInputElement) => [el.selectionStart, el.selectionEnd])).toEqual([0, 6])
+  await page.keyboard.type('70000') // replaces the selection
+  await page.keyboard.press('Enter')
+  expect((await json(page))[0].amount).toBe(70000)
+})
+
+test('clicking another cell commits the edit to its own cell', async ({ page }) => {
+  await page.getByRole('gridcell', { name: '$50,000' }).click()
+  await page.keyboard.type('61000')
+  await page.getByRole('gridcell', { name: '2021' }).click()
+  const rows = await json(page)
+  expect(rows[0].amount).toBe(61000)
+  expect(rows[1].year).toBe(2021)
+  await expect(page.getByRole('textbox', { name: 'Year' })).toHaveValue('2021')
+})
+
+test('Escape discards the edit', async ({ page }) => {
+  await page.getByRole('gridcell', { name: '$50,000' }).click()
+  await page.keyboard.type('99')
+  await page.keyboard.press('Escape')
+  expect((await json(page))[0].amount).toBe(50000)
+})
+
+test('a click opens a drop-down editor', async ({ page }) => {
+  await page.getByRole('gridcell', { name: 'Wages' }).first().click()
+  const select = page.getByRole('combobox', { name: 'Kind' })
+  await expect(select).toBeFocused()
+  await select.selectOption('se')
+  expect((await json(page))[0].kind).toBe('se')
+})
