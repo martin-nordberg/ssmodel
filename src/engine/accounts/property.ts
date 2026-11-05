@@ -24,6 +24,9 @@ export type EngineProperty = {
   carrying: number
   /** Carrying costs after downsizing to the replacement home. */
   carryingReplacement: number
+  /** Property tax within the carrying costs (itemizable as SALT), before and after downsizing [FR-TAX-6]. */
+  propertyTax: number
+  propertyTaxReplacement: number
   rent: number
   sale: { mode: SaleMode; month: number | null; floor: number; costPct: number; replacement: number }
   /** Index of the inheritance that delivers it, or null for the home owned today. */

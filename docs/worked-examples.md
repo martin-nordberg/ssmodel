@@ -143,3 +143,23 @@ value as gain (g = 0.5).
   at 15%.
 - With S = T: T = 3,100 + 0.15 × 0.5 × T, so T = 3,100 / 0.925 = **3,351.35**
 - Shares sold 3,351.35, gain 1,675.68, tax on the gain 251.35
+
+## 10. Itemized deductions (2026)
+
+**Rule** (FR-TAX-6): the federal deduction is the larger of the standard deduction (with the 65+ additions) and
+itemized deductions. The senior deduction applies either way.
+
+The household from example 4 (AGI 137,500; SC tax 1,445.19), plus property tax 6,000, mortgage interest 20,000,
+medical costs 15,000 and charitable gifts 5,000.
+
+- SALT = SC tax 1,445.19 + property tax 6,000 = **7,445.19**, under the 40,400 cap
+- Medical = 15,000 − 7.5% × 137,500 = 15,000 − 10,312.50 = **4,687.50**
+- Charity = 5,000 − 0.5% × 137,500 = 5,000 − 687.50 = **4,312.50**
+- Itemized = 7,445.19 + 20,000 + 4,687.50 + 4,312.50 = **36,445.19**. The 2/37 limit does not apply (far below the
+  37% bracket).
+- Standard = 32,200 + 2 × 1,650 = 35,500, so the household **itemizes**.
+- Deduction = 36,445.19 + senior deduction 12,000 = **48,445.19**
+- Taxable income = 137,500 − 48,445.19 = 89,054.81, of which 74,054.81 is ordinary
+- Ordinary tax = 2,480 + 12% × (74,054.81 − 24,800) = **8,390.58**. Capital gains tax is still 0 (under 98,900).
+
+With mortgage interest of 14,000 instead, itemized deductions would be 30,445.19 and the standard 35,500 would win.

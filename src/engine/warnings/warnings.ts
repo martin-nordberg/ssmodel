@@ -45,6 +45,13 @@ export function collectWarnings(
       level: 'warn',
       text: `IRMAA surcharges in ${irmaa.length} year(s), first in ${irmaa[0]!.year} (from income two years earlier).`,
     })
+  // Itemized deductions [FR-TAX-6].
+  const itemizing = rows.filter((r) => r.itemizing)
+  if (itemizing.length > 0)
+    w.push({
+      level: 'info',
+      text: `Itemizes deductions in ${itemizing.length} year(s), first in ${itemizing[0]!.year}; the standard deduction is used otherwise.`,
+    })
   // Forced inherited-IRA lump sums at the 10-year deadline.
   for (const a of prep.accounts) {
     if (a.kind !== 'inherited_traditional') continue

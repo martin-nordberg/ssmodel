@@ -141,6 +141,17 @@ type TaxIn = {
   divs: number
   ltcg: number
   ss: number
+  /** Itemizable medical costs (out of pocket) and charitable gifts [FR-TAX-6]. */
+  medical: number
+  charity: number
+}
+
+/** OBBBA SALT cap written from the statute: $40,000 and $500,000 in 2025, each 101% of the prior year to 2029. */
+function saltCapRef(y: number, magi: number): number {
+  if (y < 2025 || y > 2029) return 10000
+  const cap = Math.round(40000 * 1.01 ** (y - 2025))
+  const threshold = Math.round(500000 * 1.01 ** (y - 2025))
+  return Math.max(10000, cap - 0.3 * Math.max(0, magi - threshold))
 }
 
 function taxRef(t: TaxIn) {
@@ -173,19 +184,7 @@ function taxRef(t: TaxIn) {
   let senior = 0
   if (t.y >= 2025 && t.y <= 2028)
     senior = t.n65 * Math.max(0, 6000 - 0.06 * Math.max(0, agi - (t.st === 'mfj' ? 150000 : 75000)))
-  const ti = Math.max(0, agi - fp.standardDeduction[t.st] - fp.additional65[t.st] * t.n65 - senior)
-  const prefT = Math.min(pref, ti)
-  const ordT = ti - prefT
-  const [z, f15] = fp.ltcg[t.st]
-  let cg = 0
-  for (let x = 0; x < 1; x++) {
-    const a0 = Math.max(0, Math.min(ti, z) - ordT)
-    const a15 = Math.max(0, Math.min(ti, f15) - Math.max(ordT, z))
-    cg = 0.15 * a15 + 0.2 * Math.max(0, prefT - a0 - a15)
-  }
-  const niit = 0.038 * Math.max(0, Math.min(t.interest + pref, agi - (t.st === 'mfj' ? 250000 : 200000)))
-  const fed = brackets(ordT, fp.brackets[t.st]) + cg + niit
-  // SC
+  // SC first: it starts from AGI, and its tax is itemizable as SALT.
   const sp = scRules.params(t.y, t.scF).value
   let personal = 0
   for (const k of [0, 1] as const) {
@@ -200,6 +199,27 @@ function taxRef(t: TaxIn) {
     0,
     scTi < sp.rates.bracket ? scTi * sp.rates.lowRate : scTi * sp.rates.highRate - sp.rates.highSubtract,
   )
+  const std = fp.standardDeduction[t.st] + fp.additional65[t.st] * t.n65
+  let itemized =
+    Math.min(saltCapRef(t.y, agi), scTax) +
+    Math.max(0, t.medical - 0.075 * agi) +
+    Math.max(0, t.charity - (t.y >= 2026 ? 0.005 * agi : 0))
+  if (t.y >= 2026) {
+    const top37 = fp.brackets[t.st][fp.brackets[t.st].length - 1]![0]
+    itemized -= (2 / 37) * Math.min(itemized, Math.max(0, agi - senior - top37))
+  }
+  const ti = Math.max(0, agi - Math.max(std, itemized) - senior)
+  const prefT = Math.min(pref, ti)
+  const ordT = ti - prefT
+  const [z, f15] = fp.ltcg[t.st]
+  let cg = 0
+  for (let x = 0; x < 1; x++) {
+    const a0 = Math.max(0, Math.min(ti, z) - ordT)
+    const a15 = Math.max(0, Math.min(ti, f15) - Math.max(ordT, z))
+    cg = 0.15 * a15 + 0.2 * Math.max(0, prefT - a0 - a15)
+  }
+  const niit = 0.038 * Math.max(0, Math.min(t.interest + pref, agi - (t.st === 'mfj' ? 250000 : 200000)))
+  const fed = brackets(ordT, fp.brackets[t.st]) + cg + niit
   return { total: fed + pay + scTax, ordT, magi: agi }
 }
 
@@ -507,7 +527,10 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
     const first = Math.min(deathP, deathS)
     const survFrom = first <= m0 + 11 ? first + 1 : null
     let exp = 0
+    let charity = 0
+    let medicalItems = 0
     for (const e of sc.expenses.items) {
+      const before = exp
       const idx =
         (e.indexing === 'inflation'
           ? P
@@ -520,14 +543,16 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
       if (e.oneTime) {
         if (Math.floor(s / 12) === y)
           exp += e.annual * idx * (e.perPerson && survFrom !== null && s >= survFrom ? sc.expenses.survivorFraction : 1)
-        continue
+      } else {
+        for (let k = 0; k < 12; k++) {
+          const m = m0 + k
+          if (m < s || (e.end && m > mi(e.end))) continue
+          const sf = e.perPerson && survFrom !== null && m >= survFrom ? sc.expenses.survivorFraction : 1
+          exp += (e.annual * idx * sf) / 12
+        }
       }
-      for (let k = 0; k < 12; k++) {
-        const m = m0 + k
-        if (m < s || (e.end && m > mi(e.end))) continue
-        const sf = e.perPerson && survFrom !== null && m >= survFrom ? sc.expenses.survivorFraction : 1
-        exp += (e.annual * idx * sf) / 12
-      }
+      if (e.deductible === 'charity') charity += exp - before
+      else if (e.deductible === 'medical') medicalItems += exp - before
     }
     const spending = exp + health - hsaUsed
 
@@ -550,6 +575,8 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
         divs,
         ltcg,
         ss: ssP + ssS,
+        medical: health - hsaUsed + medicalItems,
+        charity,
       })
       return { ...r, total: r.total + pen }
     }

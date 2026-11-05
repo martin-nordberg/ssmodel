@@ -103,6 +103,7 @@ export const federalRules = {
   niit: federalJson.unindexed.niit,
   seniorDeduction: federalJson.unindexed.seniorDeduction,
   payroll: federalJson.unindexed.payroll,
+  itemized: federalJson.unindexed.itemized,
 }
 
 // ---------- Medicare ----------

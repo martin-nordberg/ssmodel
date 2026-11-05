@@ -162,3 +162,32 @@ describe('9. Paying a Roth conversion tax by selling shares', () => {
     expect(f.gain).toBeCloseTo(1675.68, 1)
   })
 })
+
+describe('10. Itemized deductions', () => {
+  const input = (mortgageInterest: number) => ({
+    ...emptyFederalInput(2026, 'mfj' as const),
+    count65: 2,
+    taxableMax: 184500,
+    socialSecurity: 50000,
+    ordinary: 80000,
+    qualifiedDividends: 5000,
+    ltcg: 10000,
+    itemized: { propertyTax: 6000, mortgageInterest, medical: 15000, charity: 5000 },
+    stateIncomeTax: () => 1445.19,
+  })
+  test('itemizes when it beats the standard deduction', () => {
+    const fed = federalTax(input(20000))
+    expect(fed.itemized).toBeCloseTo(36445.19, 2)
+    expect(fed.itemizing).toBe(true)
+    expect(fed.deduction).toBeCloseTo(48445.19, 2)
+    expect(fed.taxableIncome).toBeCloseTo(89054.81, 2)
+    expect(fed.ordinaryTax).toBeCloseTo(8390.58, 2)
+    expect(fed.capitalGainsTax).toBe(0)
+  })
+  test('standard wins with less interest', () => {
+    const fed = federalTax(input(14000))
+    expect(fed.itemized).toBeCloseTo(30445.19, 2)
+    expect(fed.itemizing).toBe(false)
+    expect(fed.deduction).toBe(47500)
+  })
+})

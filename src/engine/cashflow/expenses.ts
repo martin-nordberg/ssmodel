@@ -37,6 +37,7 @@ export type ExpenseItem = {
   indexing: Indexing
   oneTime: boolean
   perPerson: boolean
+  deductible?: 'charity' | 'medical'
 }
 
 export type ExpenseContext = IndexContext & {

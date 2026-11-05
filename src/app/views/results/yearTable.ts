@@ -49,6 +49,8 @@ export function yearColumns(accounts: EngineAccount[]): YearColumn[] {
     ),
     money('conv', 'Roth conversions', 'Withdrawals', (r) => r.conversions ?? 0),
     money('agi', 'AGI', 'Tax', (r) => r.agi),
+    money('deduction', 'Deduction', 'Tax', (r) => r.deduction),
+    { id: 'itemized', header: 'Itemized', group: 'Tax', money: false, value: (r) => (r.itemizing ? 'Yes' : 'No') },
     money('ti', 'Taxable income', 'Tax', (r) => r.taxableIncome),
     money('fed', 'Federal tax', 'Tax', (r) => r.federalTax),
     money('sc', 'SC tax', 'Tax', (r) => r.scTax),

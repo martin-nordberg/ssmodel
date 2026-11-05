@@ -1,7 +1,8 @@
 // Federal income and payroll tax for one household-year [§3.7, FR-TAX-1, FR-TAX-2, FR-TAX-4].
 // Sources: Rev. Proc. 2025-32 (2026 amounts); Pub 915 (taxation of benefits); P.L. 119-21 sec. 70103 (senior
-// deduction); IRC 1411 (NIIT); IRC 1401/3101 (SE and FICA).
+// deduction); IRC 1411 (NIIT); IRC 1401/3101 (SE and FICA); itemized deductions in ./itemized.ts.
 import { type FederalParams, type FilingStatus, federalRules } from '../rules/tables.ts'
+import { type ItemizedInput, type ItemizedResult, itemizedDeduction, NO_ITEMIZED } from './itemized.ts'
 
 export type FederalTaxInput = {
   year: number
@@ -26,6 +27,13 @@ export type FederalTaxInput = {
   taxExemptInterest: number
   /** Gross Social Security benefits received in the year. */
   socialSecurity: number
+  /** Itemizable amounts other than state income tax [FR-TAX-6]. */
+  itemized?: ItemizedInput
+  /**
+   * State income tax for the year given federal AGI and taxable Social Security (SC starts from AGI, so this does
+   * not depend on the federal deduction). Called on every evaluation; its value is reported as `stateTax`.
+   */
+  stateIncomeTax?: (agi: number, taxableSocialSecurity: number) => number
 }
 
 export type FederalTaxResult = {
@@ -34,8 +42,14 @@ export type FederalTaxResult = {
   magi: number
   provisionalIncome: number
   taxableSocialSecurity: number
+  /** Deduction used: the larger of standard (with 65+ additions) and itemized, plus the senior deduction. */
   deduction: number
   seniorDeduction: number
+  /** Itemized deductions after limits (0 when none), and whether they beat the standard deduction. */
+  itemized: number
+  itemizing: boolean
+  /** From `stateIncomeTax` (0 when not given). */
+  stateTax: number
   taxableIncome: number
   ordinaryTaxable: number
   ordinaryTax: number
@@ -128,6 +142,8 @@ export function federalEvaluator(i: FederalTaxInput, params?: FederalParams): Fe
   for (const x of i.seByPerson) se += x
   const pay = payroll(i)
   const baseDeduction = fp.standardDeduction[st] + fp.additional65[st] * i.count65
+  const topBracketStart = brackets[brackets.length - 1]![0]
+  const itemizedScratch = {} as ItemizedResult
   const niitRate = federalRules.niit.rate
   const niitThreshold = federalRules.niit.threshold[st]
   const fixedAgi = wages + se - pay.halfSe + i.ordinary + i.investmentOrdinary + i.qualifiedDividends
@@ -138,7 +154,22 @@ export function federalEvaluator(i: FederalTaxInput, params?: FederalParams): Fe
     const agi = agiExSs + taxableSs
     const magi = agi + i.taxExemptInterest
     const senior = seniorDeduction(i.year, i.count65, magi, st)
-    const deduction = baseDeduction + senior
+    const stateTax = i.stateIncomeTax ? i.stateIncomeTax(agi, taxableSs) : 0
+    const itemized =
+      i.itemized || stateTax > 0
+        ? itemizedDeduction(
+            i.year,
+            agi,
+            magi,
+            stateTax,
+            i.itemized ?? NO_ITEMIZED,
+            topBracketStart,
+            senior,
+            itemizedScratch,
+          ).total
+        : 0
+    const itemizing = itemized > baseDeduction
+    const deduction = (itemizing ? itemized : baseDeduction) + senior
     const taxableIncome = Math.max(0, agi - deduction)
     const prefTaxable = Math.min(pref, taxableIncome)
     const ordinaryTaxable = taxableIncome - prefTaxable
@@ -157,6 +188,9 @@ export function federalEvaluator(i: FederalTaxInput, params?: FederalParams): Fe
     r.taxableSocialSecurity = taxableSs
     r.deduction = deduction
     r.seniorDeduction = senior
+    r.itemized = itemized
+    r.itemizing = itemizing
+    r.stateTax = stateTax
     r.taxableIncome = taxableIncome
     r.ordinaryTaxable = ordinaryTaxable
     r.ordinaryTax = ordinaryTax

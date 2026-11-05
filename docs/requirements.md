@@ -573,7 +573,7 @@ Setup panels:
 | Home | Value, basis, appreciation; mortgage (balance as of a month, rate, payoff; derived payment shown); property tax, insurance, maintenance; sale plan/backstop; replacement home and its cost reductions |
 | Inheritances | Grid: label, heir, decedent birth date/sex, timing, amounts by type, growth, probability, if-heir-predeceases; sub-grid for real estate (keep/sell, carrying costs, rent) |
 | Income | Annuities and other streams |
-| Expenses | Grid of items; survivor step-down %; bequest target |
+| Expenses | Grid of items (with a tax-deductible flag: charity or medical); survivor step-down %; bequest target |
 | Healthcare | COBRA premium and start date per person, Medicare/Medigap/Part D, out-of-pocket, medical inflation spread |
 | Assumptions | Inflation, return model, mortality, simulation settings, seed |
 | Strategy | Withdrawal strategy, inherited-IRA schedules, Roth conversion settings, objective floors |

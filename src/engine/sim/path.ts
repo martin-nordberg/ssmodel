@@ -1,7 +1,7 @@
 // One simulated path for one claiming date [FR-SIM-1..4]. Annual steps with monthly precision for benefits,
 // earnings test, deaths and dated items. Order within a year follows FR-SIM-3.
 import { inheritedRules, inheritedScheduled } from '../accounts/inheritedIra.ts'
-import { mortgageBalance, mortgagePaymentsInYear } from '../accounts/mortgage.ts'
+import { mortgageBalance, mortgageInterestInYear, mortgagePaymentsInYear } from '../accounts/mortgage.ts'
 import { sellProperty } from '../accounts/property.ts'
 import { lifetimeRmd, rmdStartYear } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
@@ -17,6 +17,7 @@ import { truncDime } from '../ss/pia.ts'
 import { spousalExcess, survivorBenefit } from '../ss/spouse.ts'
 import { bracketTop, federalEvaluator, type federalTax } from '../tax/federal.ts'
 import { irmaaTier } from '../tax/irmaa.ts'
+import { deductibleInterestShare, type ItemizedInput } from '../tax/itemized.ts'
 import { scEvaluator, type scTax } from '../tax/sc.ts'
 import { type FundingSources, fundConversionTax, fundingCapacity } from '../withdraw/conversionFunding.ts'
 import {
@@ -64,6 +65,9 @@ export type YearRow = {
   agi: number
   magi: number
   taxableIncome: number
+  /** Federal deduction used (standard or itemized, plus the senior deduction) [FR-TAX-6]. */
+  deduction: number
+  itemizing: boolean
   federalTax: number
   scTax: number
   payrollTax: number
@@ -185,6 +189,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
   const soldOnce = new Set<number>()
   // Mortgage paid off at a sale (no new mortgage on a replacement home).
   const loanClosed = new Uint8Array(props.length)
+  const deductibleExpenses = prep.expenses.filter((e) => e.deductible)
   const loanBalance = (k: number, m: YM): number => {
     const mg = props[k]!.mortgage
     return mg && !loanClosed[k] ? mortgageBalance(mg, m) : 0
@@ -532,14 +537,27 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       if (cache) cache.expenses[yi] = expenses
     }
     // Housing while owned: mortgage principal and interest (nominal, level) and carrying costs; rent received.
+    // Property tax and mortgage interest are also itemizable [FR-TAX-6].
     let propertyIncome = 0
     let housing = 0
+    const itemizable: ItemizedInput = { propertyTax: 0, mortgageInterest: 0, medical: 0, charity: 0 }
     for (const [k, pr] of props.entries()) {
       if (!owned[k]) continue
-      housing += (soldOnce.has(k) ? pr.carryingReplacement : pr.carrying) * price
-      if (pr.mortgage && !loanClosed[k])
+      const downsized = soldOnce.has(k)
+      housing += (downsized ? pr.carryingReplacement : pr.carrying) * price
+      itemizable.propertyTax += (downsized ? pr.propertyTaxReplacement : pr.propertyTax) * price
+      if (pr.mortgage && !loanClosed[k]) {
         housing += pr.mortgage.payment * mortgagePaymentsInYear(pr.mortgage, y, prep.baseYM)
+        itemizable.mortgageInterest +=
+          mortgageInterestInYear(pr.mortgage, y, prep.baseYM) *
+          deductibleInterestShare(mortgageBalance(pr.mortgage, m0 - 1))
+      }
       propertyIncome += pr.rent * price
+    }
+    for (const item of deductibleExpenses) {
+      const amt = expenseForYear(item, y, ectx)
+      if (item.deductible === 'charity') itemizable.charity += amt
+      else itemizable.medical += amt
     }
     expenses += housing + saleShortfall
     // HSA contributions before Medicare: deductible, paid from cash flow, deposited to the HSA [FR-ACC-6].
@@ -558,6 +576,8 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     }
     expenses += hsaContrib
     const spending = expenses + healthTotal - hsaMedical
+    // Medical costs paid out of pocket (the HSA's share is not deductible).
+    itemizable.medical += healthTotal - hsaMedical
 
     // ---- tax function ----
     const count65 = (deathP >= m0 && y - P.birthYear >= 65 ? 1 : 0) + (deathS >= m0 && y - S.birthYear >= 65 ? 1 : 0)
@@ -580,6 +600,13 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         ltcg: realizedGain,
         taxExemptInterest: 0,
         socialSecurity: ssP + ssS,
+        itemized: itemizable,
+        // SC tax (computed from federal AGI) is itemizable as SALT; `curDelta` is the delta being evaluated.
+        stateIncomeTax: (agi, tss) => {
+          retScratch[0] = retirementByPerson[0] + curDelta.ordinaryByPerson[0]
+          retScratch[1] = retirementByPerson[1] + curDelta.ordinaryByPerson[1]
+          return scEval(agi, tss, curDelta.ltcg + realizedGain, retScratch, scScratch).tax
+        },
       },
       fedParams,
     )
@@ -587,14 +614,13 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     const fedScratch = {} as ReturnType<typeof federalTax>
     const scScratch = {} as ReturnType<typeof scTax>
     const retScratch: [number, number] = [0, 0]
+    let curDelta: TaxDelta = { ordinaryByPerson: [0, 0], ltcg: 0, penalty: 0 }
     const outScratch: TaxOutcome = { total: 0, ordinaryTaxable: 0, magi: 0 }
     // Solver calls reuse scratch objects; the recorded row uses a fresh evaluation below.
     const tax = (d: TaxDelta): TaxOutcome => {
+      curDelta = d
       const fed = fedEval(d.ordinaryByPerson[0] + d.ordinaryByPerson[1], d.ltcg, fedScratch)
-      retScratch[0] = retirementByPerson[0] + d.ordinaryByPerson[0]
-      retScratch[1] = retirementByPerson[1] + d.ordinaryByPerson[1]
-      const st = scEval(fed.agi, fed.taxableSocialSecurity, d.ltcg + realizedGain, retScratch, scScratch)
-      outScratch.total = fed.total + st.tax + d.penalty
+      outScratch.total = fed.total + fed.stateTax + d.penalty
       outScratch.ordinaryTaxable = fed.ordinaryTaxable
       outScratch.magi = fed.magi
       return outScratch
@@ -746,6 +772,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         }
       }
     }
+    curDelta = finalDelta
     const fedRes = fedEval(finalDelta.ordinaryByPerson[0] + finalDelta.ordinaryByPerson[1], finalDelta.ltcg)
     const scRes = scEval(fedRes.agi, fedRes.taxableSocialSecurity, finalDelta.ltcg + realizedGain, [
       retirementByPerson[0] + finalDelta.ordinaryByPerson[0],
@@ -815,6 +842,8 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         agi: fedRes.agi,
         magi: finalTax.magi,
         taxableIncome: fedRes.taxableIncome,
+        deduction: fedRes.deduction,
+        itemizing: fedRes.itemizing,
         federalTax: fedRes.incomeTax,
         scTax: scRes.tax,
         payrollTax: fedRes.payrollTax,

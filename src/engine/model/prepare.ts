@@ -366,6 +366,8 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
         c.propertyTax * (1 - cut.propertyTax) +
         c.insurance * (1 - cut.insurance) +
         c.maintenance * (1 - cut.maintenance),
+      propertyTax: c.propertyTax,
+      propertyTaxReplacement: c.propertyTax * (1 - cut.propertyTax),
       rent: 0,
       sale: saleOf(h.sale),
       inheritance: null,
@@ -385,6 +387,9 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
         sd: re.appreciation.sd,
         carrying: re.carryingCosts,
         carryingReplacement: re.carryingCosts,
+        // Carrying costs of inherited real estate are not split out, so none is itemized as property tax.
+        propertyTax: 0,
+        propertyTaxReplacement: 0,
         rent: re.rentalIncome,
         sale: saleOf(re.sale),
         inheritance: index,

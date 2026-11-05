@@ -11,6 +11,8 @@ test('results table, dollars toggle and CSV export', async ({ page }) => {
   await page.getByRole('tab', { name: 'Results' }).click()
   const grid = page.getByRole('grid', { name: 'Year-by-year results' })
   await expect(grid).toContainText('2027')
+  await expect(grid.getByRole('columnheader', { name: 'Deduction' })).toBeVisible()
+  await expect(grid.getByRole('columnheader', { name: 'Itemized' })).toBeAttached()
   // Spouse's 2027 benefit: 12 x $1,400 in base-year dollars.
   await expect(grid.getByRole('row').nth(1)).toContainText('$16,800')
   await expect(page.getByTestId('path-summary')).toContainText('Never')

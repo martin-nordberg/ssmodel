@@ -82,6 +82,20 @@ const columns: GridColumn<ExpenseItemT>[] = [
     get: (r) => r.perPerson,
     set: (r, v) => ({ ...r, perPerson: v as boolean }),
   },
+  {
+    // Itemized deduction [FR-TAX-6]: charitable gifts above 0.5% of AGI, medical costs above 7.5% of AGI.
+    id: 'deductible',
+    header: 'Tax-deductible',
+    type: 'select',
+    width: 110,
+    options: [
+      { value: 'none', label: 'No' },
+      { value: 'charity', label: 'Charity' },
+      { value: 'medical', label: 'Medical' },
+    ],
+    get: (r) => r.deductible ?? 'none',
+    set: (r, v) => ({ ...r, deductible: v === 'none' ? undefined : (v as 'charity' | 'medical') }),
+  },
 ]
 
 export function ExpensesPanel() {
@@ -91,7 +105,7 @@ export function ExpensesPanel() {
   return (
     <Panel
       title="Expenses"
-      description="After-tax spending. Per-person items drop to the survivor fraction after the first death. The mortgage, property tax, homeowners insurance and maintenance belong on the Home screen, not here."
+      description="After-tax spending. Per-person items drop to the survivor fraction after the first death. The mortgage, property tax, homeowners insurance and maintenance belong on the Home screen, not here. Mark charitable gifts and medical costs (such as long-term care) as tax-deductible: they count if itemizing beats the standard deduction."
     >
       <FieldRow>
         <Field

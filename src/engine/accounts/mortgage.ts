@@ -38,3 +38,12 @@ export function mortgagePaymentsInYear(mg: EngineMortgage, year: number, from: Y
   const last = Math.min(year * 12 + 11, mg.payoff)
   return Math.max(0, last - first + 1)
 }
+
+/** Interest in the payments of `year` from month `from` on: each payment's interest is the prior balance × i. */
+export function mortgageInterestInYear(mg: EngineMortgage, year: number, from: YM): number {
+  const first = Math.max(year * 12, from)
+  const last = Math.min(year * 12 + 11, mg.payoff)
+  let interest = 0
+  for (let m = first; m <= last; m++) interest += mortgageBalance(mg, m - 1) * mg.i
+  return interest
+}

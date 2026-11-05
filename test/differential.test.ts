@@ -74,6 +74,9 @@ describe('production vs reference engine', () => {
       deathP: fc.integer({ min: 72, max: 100 }),
       deathS: fc.integer({ min: 72, max: 100 }),
       schedule: fc.constantFrom('even', 'back_loaded'),
+      // Itemized deductions [FR-TAX-6]: medical and charitable items, often zero.
+      medicalItem: fc.oneof(fc.constant(0), money(60)),
+      charity: fc.oneof(fc.constant(0), money(40)),
     })
     .map((h) => {
       const pY = Number(h.pBirth.slice(0, 4))
@@ -116,7 +119,25 @@ describe('production vs reference engine', () => {
                 schedule: h.schedule,
               },
             ],
-            expenses: { items: [{ label: 'Living', annual: h.living, start: '2027-01', perPerson: true }] },
+            expenses: {
+              items: [
+                { label: 'Living', annual: h.living, start: '2027-01', perPerson: true },
+                ...(h.medicalItem > 0
+                  ? [
+                      {
+                        label: 'Care',
+                        annual: h.medicalItem,
+                        start: '2029-01',
+                        indexing: 'medical',
+                        deductible: 'medical',
+                      },
+                    ]
+                  : []),
+                ...(h.charity > 0
+                  ? [{ label: 'Gifts', annual: h.charity, start: '2027-01', deductible: 'charity' }]
+                  : []),
+              ],
+            },
             healthcare: {
               pre65: { spouse: { cobraMonthly: 900 } },
               medicare: { medigapAnnual: 2000, outOfPocket: 1000 },

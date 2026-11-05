@@ -255,6 +255,8 @@ export const ExpenseItem = z.object({
   oneTime: z.boolean().default(false),
   /** Scaled by survivorFraction after the first death [FR-EXP-2]. */
   perPerson: z.boolean().default(false),
+  /** Counts as an itemized deduction: a charitable gift or a medical cost [FR-TAX-6]. */
+  deductible: z.enum(['charity', 'medical']).optional(),
 })
 
 export const Pre65 = z.object({

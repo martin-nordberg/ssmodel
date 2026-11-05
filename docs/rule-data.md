@@ -19,6 +19,7 @@ published bend points and taxable maximums, so a mistyped AWI value fails the te
 | January | Damodaran (NYU Stern) + BLS CPI-U | Append last year's S&P 500, T-bill, 10-year Treasury returns and Dec/Dec CPI-U to `data/history/us-annual.csv`, then run `bun scripts/genHistory.ts` | `data/history/us-annual.csv` |
 | As needed | IRS Pub 590-B | Life expectancy tables (changed in 2022 only) and RMD ages | `rmd.json` |
 | Law changes | Congress / SC General Assembly | Senior deduction (2025–2028), NIIT, SS taxation thresholds (unindexed) | `federalTax.json` `unindexed` |
+| Law changes | Congress (P.L. 119-21 and later) | Itemized deductions: SALT cap and MAGI threshold by year (2025–2029; $10,000 from 2030), phase-down rate and floor, $750,000 mortgage-debt limit, 7.5% medical floor, 0.5% charitable floor, 2/37 top-bracket limit | `federalTax.json` `unindexed.itemized` |
 
 ## Status (2026-11-04)
 
