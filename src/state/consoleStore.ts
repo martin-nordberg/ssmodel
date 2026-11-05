@@ -52,6 +52,15 @@ export const useConsole = create<ConsoleState>()((set) => ({
   set: (patch) => set(patch),
 }))
 
+/** Pins the current full (non-preview) results as the baseline [FR-UI-10]; false if there is nothing to pin. */
+export function pinBaseline(scenarioName: string): boolean {
+  const { result, detail, set } = useConsole.getState()
+  if (!result || result.preview) return false
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  set({ baseline: { label: `${scenarioName}, ${time}`, result, detail } })
+  return true
+}
+
 /** The claiming date the Console shows: the inspected one, else the recommendation. */
 export function shownClaim(s: { inspect: YM | null; result: RunResult | null }): YM | null {
   return s.inspect ?? s.result?.recommendation?.best.claim ?? null

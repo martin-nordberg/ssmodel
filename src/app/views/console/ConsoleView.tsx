@@ -5,7 +5,7 @@ import { prepare } from '@/engine/model/prepare.ts'
 import { explain, inheritanceNote } from '@/engine/recommend/recommend.ts'
 import { runDeterministic } from '@/engine/sim/deterministic.ts'
 import { cn } from '@/lib/utils'
-import { shownClaim, useConsole } from '@/state/consoleStore.ts'
+import { pinBaseline, shownClaim, useConsole } from '@/state/consoleStore.ts'
 import { useDocument, withOverrides } from '@/state/documentStore.ts'
 import { useActiveScenario, useEffectiveFile, useEffectivePrepared, useFile } from '@/state/scenario.ts'
 import { useUi } from '@/state/uiStore.ts'
@@ -155,7 +155,6 @@ function RunStatus() {
 function BaselineControls({ scenarioName }: { scenarioName: string }) {
   const baseline = useConsole((s) => s.baseline)
   const result = useConsole((s) => s.result)
-  const detail = useConsole((s) => s.detail)
   const set = useConsole((s) => s.set)
   return (
     <span className="ml-auto flex items-center gap-1 text-xs">
@@ -164,15 +163,7 @@ function BaselineControls({ scenarioName }: { scenarioName: string }) {
         size="xs"
         variant="outline"
         disabled={!result || result.preview}
-        onClick={() =>
-          set({
-            baseline: {
-              label: `${scenarioName}, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-              result: result!,
-              detail,
-            },
-          })
-        }
+        onClick={() => pinBaseline(scenarioName)}
       >
         Pin baseline
       </Button>

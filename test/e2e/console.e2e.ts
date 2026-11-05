@@ -98,3 +98,22 @@ test('the explanation reports the recommendation without inheritances', async ({
   await openConsole(page)
   await expect(page.getByTestId('explanation')).toContainText('Without the expected inheritances', { timeout: 60_000 })
 })
+
+test('Console commands in the palette: pin baseline and reset levers', async ({ page }) => {
+  await openConsole(page)
+  await expect(page.getByRole('button', { name: 'Pin baseline' })).toBeEnabled({ timeout: 60_000 })
+  const palette = async (name: string) => {
+    await page.keyboard.press('Control+k')
+    const dialog = page.getByRole('dialog', { name: 'Command palette' })
+    await dialog.getByRole('combobox').fill(name)
+    await dialog.getByRole('option', { name }).click()
+  }
+  await palette('Pin baseline')
+  await expect(page.getByText(/^Baseline: Base case/)).toBeVisible()
+  const field = page.locator('[data-lever="Inflation (mean)"] input')
+  await field.fill('4%')
+  await field.press('Enter')
+  await expect(page.getByRole('tablist', { name: 'Scenarios' })).toContainText('1 what-if')
+  await palette('Reset levers')
+  await expect(page.getByRole('tablist', { name: 'Scenarios' })).not.toContainText('what-if')
+})

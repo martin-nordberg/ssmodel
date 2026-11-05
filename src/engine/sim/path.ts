@@ -239,7 +239,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     let inheritedThisYear = 0
     for (const h of prep.inheritances) {
       const d = draws.inheritances?.[h.index]
-      if (!d || !d.received || ymYear(d.month) !== y) continue
+      if (!d?.received || ymYear(d.month) !== y) continue
       let heir = h.heir
       const heirDeath = heir === 0 ? deathP : deathS
       if (heirDeath < d.month) {

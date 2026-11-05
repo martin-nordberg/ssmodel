@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDocument } from '@/state/documentStore.ts'
 import { useSettings } from '@/state/settingsStore.ts'
 import { useUi, type View } from '@/state/uiStore.ts'
+import { CommandPalette } from './CommandPalette.tsx'
 import { FileMenu } from './FileMenu.tsx'
 import { NewHouseholdDialog } from './NewHouseholdDialog.tsx'
 import { ScenarioTabs } from './ScenarioTabs.tsx'
@@ -58,6 +59,14 @@ export function AppShell() {
           </TabsList>
         </Tabs>
         <h1 className="ml-auto font-semibold text-sm">Social Security Claiming Model</h1>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => useUi.getState().setPaletteOpen(true)}
+        >
+          Commands <kbd className="font-mono text-[10px]">Ctrl+K</kbd>
+        </Button>
         <SettingsMenu />
       </header>
       {hasFile && <ScenarioTabs />}
@@ -65,6 +74,7 @@ export function AppShell() {
       <div className="min-h-0 flex-1 overflow-auto">{hasFile ? <ViewHost /> : <Welcome />}</div>
       <StatusBar />
       <NewHouseholdDialog />
+      <CommandPalette />
     </div>
   )
 }

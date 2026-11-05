@@ -1,7 +1,7 @@
 import { CircleCheck, CircleDashed } from 'lucide-react'
-import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useActiveScenario, useFile } from '@/state/scenario.ts'
+import { useUi } from '@/state/uiStore.ts'
 import { completeness, type SectionId } from './completeness.ts'
 import { AccountsPanel } from './panels/AccountsPanel.tsx'
 import { AssumptionsPanel } from './panels/AssumptionsPanel.tsx'
@@ -35,7 +35,8 @@ export const SECTIONS: Section[] = [
 export function SetupView() {
   const file = useFile()
   const scenario = useActiveScenario()
-  const [section, setSection] = useState<SectionId>('household')
+  const section = useUi((s) => s.setupSection)
+  const setSection = useUi((s) => s.setSetupSection)
   if (!file || !scenario) return null
   const checks = completeness(file, scenario)
   const done = (id: SectionId) => checks.filter((c) => c.section === id).every((c) => c.done)

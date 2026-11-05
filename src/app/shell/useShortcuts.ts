@@ -1,20 +1,25 @@
 import { useEffect } from 'react'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
 import { useDocument } from '@/state/documentStore.ts'
+import { useUi } from '@/state/uiStore.ts'
 
 function inTextField(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
 }
 
-/** Global keyboard shortcuts [FR-FILE-1, FR-UI-13]. Browsers reserve Ctrl+N, so New is Ctrl+Alt+N. */
+/** Global keyboard shortcuts [FR-FILE-1, FR-UI-12, FR-UI-13]. Browsers reserve Ctrl+N, so New is Ctrl+Alt+N. */
 export function useShortcuts() {
   const cmd = useFileCommands()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return
       const key = e.key.toLowerCase()
-      if (key === 's') {
+      if (key === 'k') {
+        e.preventDefault()
+        const ui = useUi.getState()
+        ui.setPaletteOpen(!ui.paletteOpen)
+      } else if (key === 's') {
         e.preventDefault()
         void (e.shiftKey ? cmd.saveAs() : cmd.save())
       } else if (key === 'o') {
