@@ -6,7 +6,15 @@ import { CURRENT_SCHEMA_VERSION, HouseholdFile } from './model.ts'
 export type FileError = { path: string; line?: number; message: string }
 
 export type ParseResult =
-  | { ok: true; value: HouseholdFile; doc: Document }
+  | {
+      ok: true
+      value: HouseholdFile
+      doc: Document
+      /** The file was on an older schema version and was migrated; saving writes the new version. */
+      migrated: boolean
+      /** Messages from migrations about anything that needs the user's attention. */
+      notes: string[]
+    }
   | { ok: false; errors: FileError[]; doc?: Document }
 
 /** Parse, migrate and validate a household YAML file [FR-FILE-2..4]. */
@@ -41,13 +49,14 @@ export function parseHouseholdYaml(text: string): ParseResult {
       doc,
     }
   }
-  const migrated = migrate(raw as Record<string, unknown>, version)
+  const notes: string[] = []
+  const migrated = migrate(raw as Record<string, unknown>, version, notes)
   const parsed = HouseholdFile.safeParse(migrated)
   if (!parsed.success) {
     return { ok: false, errors: zodErrors(parsed.error, doc, lineOf), doc }
   }
-  // A migrated file no longer matches its original document; start a fresh one so comments are not misplaced.
-  return { ok: true, value: parsed.data, doc: version === CURRENT_SCHEMA_VERSION ? doc : new Document(parsed.data) }
+  // A migrated file keeps its original document: saving merges the new structure into it, so comments survive.
+  return { ok: true, value: parsed.data, doc, migrated: version < CURRENT_SCHEMA_VERSION, notes }
 }
 
 function zodErrors(error: ZodError, doc: Document, lineOf: (o: number | undefined) => number | undefined) {

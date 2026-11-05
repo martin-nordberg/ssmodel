@@ -1,16 +1,33 @@
 import { Field, FieldRow, Panel, SelectField, SwitchField } from '@/app/components/fields.tsx'
-import { Home } from '@/schema/model.ts'
-import { updateScenario, useActiveScenario } from '@/state/scenario.ts'
+import { makeMortgage } from '@/engine/accounts/mortgage.ts'
+import { formatYM, parseYM } from '@/engine/core/dates.ts'
+import { Home, type ScenarioT } from '@/schema/model.ts'
+import { updateScenario, useActiveScenario, useFile } from '@/state/scenario.ts'
 
-/** Home equity [FR-ACC-7]: value, appreciation, mortgage link, and an optional planned or backstop sale. */
+type CostKey = keyof NonNullable<ScenarioT['home']>['costs']
+const COSTS: { key: CostKey; label: string }[] = [
+  { key: 'propertyTax', label: 'Property tax' },
+  { key: 'insurance', label: 'Homeowners insurance' },
+  { key: 'maintenance', label: 'Maintenance' },
+]
+const money2 = (x: number) => `$${x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+/**
+ * Home [FR-ACC-7]: value, appreciation, the mortgage (from a statement), carrying costs, and an optional planned or
+ * backstop sale, possibly downsizing to a replacement home with lower costs.
+ */
 export function HomePanel() {
   const s = useActiveScenario()
-  if (!s) return null
+  const file = useFile()
+  if (!s || !file) return null
   const h = s.home
+  const mg = h?.mortgage
+  const mgBad = mg && mg.payoff <= mg.asOf
+  const payment = mg && !mgBad ? makeMortgage(mg.balance, mg.rate, parseYM(mg.asOf), parseYM(mg.payoff)).payment : null
   return (
     <Panel
       title="Home"
-      description="Home equity is not counted as liquid savings. It counts toward terminal wealth net of selling costs, and can be sold on a planned date or as a backstop when savings run low."
+      description="Home equity is not counted as liquid savings. It counts toward terminal wealth net of selling costs and any mortgage balance, and can be sold on a planned date or as a backstop when savings run low. Enter the mortgage, property tax, insurance and maintenance here, not under Expenses."
     >
       <SwitchField
         label="We own a home"
@@ -70,19 +87,101 @@ export function HomePanel() {
                 })
               }
             />
-            <SelectField
-              label="Mortgage expense (stops on sale)"
-              value={h.mortgageExpense ?? ''}
-              options={[
-                { value: '', label: 'None' },
-                ...s.expenses.items.filter((e) => !e.oneTime).map((e) => ({ value: e.label, label: e.label })),
-              ]}
+          </FieldRow>
+          <h3 className="font-medium text-xs">Mortgage</h3>
+          <FieldRow>
+            <SwitchField
+              label="We have a mortgage"
+              checked={!!mg}
               onChange={(v) =>
                 updateScenario((d) => {
-                  d.home!.mortgageExpense = v || undefined
+                  const base = parseYM(file.household.baseDate)
+                  d.home!.mortgage = v
+                    ? { balance: 200_000, asOf: formatYM(base - 1), rate: 0.065, payoff: formatYM(base + 299) }
+                    : undefined
                 })
               }
             />
+            {mg && (
+              <>
+                <Field
+                  label="Balance (from a statement)"
+                  type="currency"
+                  min={0}
+                  value={mg.balance}
+                  onCommit={(v) =>
+                    updateScenario((d) => {
+                      d.home!.mortgage!.balance = v as number
+                    })
+                  }
+                />
+                <Field
+                  label="Balance as of (month)"
+                  type="yearMonth"
+                  value={mg.asOf}
+                  hint="Balance after that month's payment"
+                  onCommit={(v) =>
+                    updateScenario((d) => {
+                      d.home!.mortgage!.asOf = v as string
+                    })
+                  }
+                />
+                <Field
+                  label="Interest rate"
+                  type="percent"
+                  min={0}
+                  max={0.2}
+                  value={mg.rate}
+                  onCommit={(v) =>
+                    updateScenario((d) => {
+                      d.home!.mortgage!.rate = v as number
+                    })
+                  }
+                />
+                <Field
+                  label="Payoff month (last payment)"
+                  type="yearMonth"
+                  value={mg.payoff}
+                  hint={mgBad ? undefined : `Principal + interest: ${money2(payment ?? 0)}/month`}
+                  onCommit={(v) =>
+                    updateScenario((d) => {
+                      d.home!.mortgage!.payoff = v as string
+                    })
+                  }
+                />
+              </>
+            )}
+          </FieldRow>
+          {mgBad && (
+            <p className="text-destructive text-xs" role="alert">
+              The payoff month must be after the balance date.
+            </p>
+          )}
+          {payment !== null && (
+            <p className="text-muted-foreground text-xs" data-testid="mortgage-note">
+              Compare the principal + interest above with your statement (excluding escrow). The payment is fixed in
+              dollars and stops at the payoff month or a sale; the balance is paid from the sale proceeds. Interest is
+              not deducted (the model uses the standard deduction).
+            </p>
+          )}
+          <h3 className="font-medium text-xs">Annual costs (today's $, rise with inflation; end when sold)</h3>
+          <FieldRow>
+            {COSTS.map((c) => (
+              <Field
+                key={c.key}
+                leverPath={`home.costs.${c.key}`}
+                label={c.label}
+                type="currency"
+                min={0}
+                value={h.costs[c.key]}
+                hint={c.key === 'insurance' ? 'Escrowed or not' : undefined}
+                onCommit={(v) =>
+                  updateScenario((d) => {
+                    d.home!.costs[c.key] = v as number
+                  })
+                }
+              />
+            ))}
           </FieldRow>
           <h3 className="font-medium text-xs">Sale</h3>
           <FieldRow>
@@ -150,6 +249,29 @@ export function HomePanel() {
               }
             />
           </FieldRow>
+          {h.sale.replacementCost > 0 && (
+            <>
+              <h3 className="font-medium text-xs">Replacement home (bought with cash, no mortgage)</h3>
+              <FieldRow>
+                {COSTS.map((c) => (
+                  <Field
+                    key={c.key}
+                    label={`${c.label} reduction`}
+                    type="percent"
+                    min={0}
+                    max={1}
+                    value={h.replacementCostCuts[c.key]}
+                    hint={`${money2(h.costs[c.key] * (1 - h.replacementCostCuts[c.key])).replace(/\.00$/, '')}/yr after the move`}
+                    onCommit={(v) =>
+                      updateScenario((d) => {
+                        d.home!.replacementCostCuts[c.key] = v as number
+                      })
+                    }
+                  />
+                ))}
+              </FieldRow>
+            </>
+          )}
         </>
       )}
     </Panel>

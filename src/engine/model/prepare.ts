@@ -2,6 +2,7 @@
 // on random draws or the claiming date is resolved once here.
 import type { HouseholdFile, ScenarioT } from '../../schema/model.ts'
 import { type InheritedRules, inheritedRules } from '../accounts/inheritedIra.ts'
+import { makeMortgage } from '../accounts/mortgage.ts'
 import type { EngineProperty } from '../accounts/property.ts'
 import { type EngineAnnuity, toEngineAnnuity } from '../cashflow/annuities.ts'
 import type { ExpenseItem, IncomeStream } from '../cashflow/expenses.ts'
@@ -348,15 +349,23 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
   })
   if (scenario.home) {
     const h = scenario.home
+    const c = h.costs
+    const cut = h.replacementCostCuts
     properties.push({
       label: 'Home',
       primaryResidence: true,
-      mortgageLabel: h.mortgageExpense ?? null,
+      mortgage: h.mortgage
+        ? makeMortgage(h.mortgage.balance, h.mortgage.rate, parseYM(h.mortgage.asOf), parseYM(h.mortgage.payoff))
+        : null,
       value: h.value,
       basis: h.basis,
       mean: h.appreciation.mean,
       sd: h.appreciation.sd,
-      carrying: 0,
+      carrying: c.propertyTax + c.insurance + c.maintenance,
+      carryingReplacement:
+        c.propertyTax * (1 - cut.propertyTax) +
+        c.insurance * (1 - cut.insurance) +
+        c.maintenance * (1 - cut.maintenance),
       rent: 0,
       sale: saleOf(h.sale),
       inheritance: null,
@@ -369,12 +378,13 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
       properties.push({
         label: re.label,
         primaryResidence: false,
-        mortgageLabel: null,
+        mortgage: null,
         value: enabled ? re.value * a.inheritanceScale : 0,
         basis: 0,
         mean: re.appreciation.mean,
         sd: re.appreciation.sd,
         carrying: re.carryingCosts,
+        carryingReplacement: re.carryingCosts,
         rent: re.rentalIncome,
         sale: saleOf(re.sale),
         inheritance: index,

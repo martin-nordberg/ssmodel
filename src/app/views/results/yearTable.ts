@@ -34,6 +34,7 @@ export function yearColumns(accounts: EngineAccount[]): YearColumn[] {
     money('invest', 'Dividends + interest', 'Income', (r) => r.investmentIncome),
     money('inherited', 'Inheritances', 'Income', (r) => r.inheritances ?? 0),
     money('expenses', 'Expenses', 'Spending', (r) => r.expenses),
+    money('housing', 'of which housing', 'Spending', (r) => r.housing ?? 0),
     money('health', 'Healthcare', 'Spending', (r) => r.healthcare),
     money('irmaa', 'of which IRMAA', 'Spending', (r) => r.irmaa),
     money('rmd', 'RMDs', 'Withdrawals', (r) => r.rmd),

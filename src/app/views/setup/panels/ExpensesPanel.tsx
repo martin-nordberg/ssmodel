@@ -91,7 +91,7 @@ export function ExpensesPanel() {
   return (
     <Panel
       title="Expenses"
-      description="After-tax spending. Per-person items drop to the survivor fraction after the first death; a mortgage is usually nominal (no indexing) with an end month."
+      description="After-tax spending. Per-person items drop to the survivor fraction after the first death. The mortgage, property tax, homeowners insurance and maintenance belong on the Home screen, not here."
     >
       <FieldRow>
         <Field

@@ -232,12 +232,22 @@ Annuities are income streams (FR-INC-3), not accounts. All asset types above are
   Inherited IRAs are handled under FR-ACC-3.
 - **FR-ACC-6** HSA inputs: balance, optional annual contribution until Medicare enrollment, and whether the HSA pays
   qualified medical costs first (default yes).
-- **FR-ACC-7** Home equity inputs: current value, appreciation (mean/volatility), mortgage link (Section 3.6), and an
-  optional **sale**. The sale can be on a planned date (downsizing), or a **backstop**: sell when liquid assets fall
-  below a threshold. Downsizing inputs: replacement-home cost and selling costs (%). Net proceeds go to the taxable
-  account. Gain above the Section 121 exclusion ($500k MFJ, $250k single) is a capital gain. Home equity is **not**
-  counted as liquid when testing for depletion. It is reported separately and included in terminal wealth net of
-  selling costs.
+- **FR-ACC-7** Home equity inputs: current value, cost basis, appreciation (mean/volatility), an optional
+  **mortgage**, annual **home costs**, and an optional **sale** *(D: Q-HOME-1)*.
+  - Mortgage (fixed rate, from a statement): principal balance **as of a given month** (after that month's payment),
+    interest rate and payoff month. The principal-and-interest payment is derived by standard amortization, so
+    escrow is not part of it. The payment is fixed in dollars and runs to the payoff month while the home is owned.
+  - Home costs: property tax, homeowners insurance and maintenance, per year in base-date dollars and
+    inflation-indexed. They are paid every year the home is owned (also after the loan is paid off) and end at a sale.
+  - Sale: on a planned date, or a **backstop** (sell when liquid assets fall below a threshold). Inputs: selling costs
+    (%) and an optional replacement-home cost (downsizing). The mortgage balance is paid from the proceeds; the rest,
+    less any replacement cost, goes to the taxable account. Gain above the Section 121 exclusion ($500k MFJ, $250k
+    single) is a capital gain; the loan does not change the gain.
+  - Downsizing: the replacement home is bought with cash (no new mortgage). Its property tax, insurance and
+    maintenance are the old home's reduced by a percentage entered for each.
+  - Home equity is **not** counted as liquid when testing for depletion. It is reported separately and included in
+    terminal wealth net of selling costs and any mortgage balance still owed.
+  - Mortgage interest and property tax are not itemized; the model uses the standard deduction.
 - **FR-ACC-8** Cash reserve: balance, interest rate, and target months of expenses. The withdrawal logic refills it
   first (optional).
 
@@ -256,13 +266,13 @@ Annuities are income streams (FR-INC-3), not accounts. All asset types above are
 - **FR-EXP-1** Expenses are entered as **after-tax spending**. The engine solves for the gross withdrawals needed to
   cover spending plus taxes *(D: Q-EXP-1)*. Expense items: `{ label, annualAmount (base-date dollars), startDate,
   endDate | null, indexing: 'inflation' | 'none' | fixed rate, oneTime: bool }`.
-  - Mortgage: a nominal, **not inflation-indexed** payment that stops on its end date. It also stops if the home is
-    sold.
+  - The home's mortgage, property tax, insurance and maintenance are entered with the home (FR-ACC-7), not as expense
+    items. A fixed nominal payment unrelated to the home can use `indexing: none`.
   - One-time item (e.g. a home improvement): one date, one amount.
   - Ongoing living expenses: inflation-indexed, no end date.
 - **FR-EXP-2** After the first death, spending drops to **75%** of the couple's level by default, editable per
   scenario *(D: Q-EXP-2)*. The fraction applies to items flagged `perPerson: true` (default: living expenses). It does
-  not apply to fixed items such as the mortgage or property tax.
+  not apply to fixed items or to home costs (FR-ACC-7).
 - **FR-EXP-3** **Healthcare is modeled separately** *(D: Q-EXP-3)*, for each person:
   - Before Medicare (under 65): **COBRA at a fixed premium** *(D: Q-EXP-5)*, entered as a monthly premium per person
     with a start date, plus out-of-pocket costs. COBRA is assumed to last **until each person reaches 65**, so there
@@ -548,7 +558,7 @@ Setup panels:
 | Earnings *(shared)* | Primary's past earnings record (pasted from SSA statement); projected wages/self-employment per spouse by year; computed PIA vs. statement estimate |
 | Social Security | Primary's FRA estimate + as-of date; Spouse's current benefit and claim month; haircut schedule |
 | Accounts | Grid: type, owner, balance, basis, return preset/mean/vol, fee, inherited-IRA fields |
-| Home | Value, appreciation, mortgage link, sale plan/backstop |
+| Home | Value, basis, appreciation; mortgage (balance as of a month, rate, payoff; derived payment shown); property tax, insurance, maintenance; sale plan/backstop; replacement home and its cost reductions |
 | Inheritances | Grid: label, heir, decedent birth date/sex, timing, amounts by type, growth, probability, if-heir-predeceases; sub-grid for real estate (keep/sell, carrying costs, rent) |
 | Income | Annuities and other streams |
 | Expenses | Grid of items; survivor step-down %; bequest target |
@@ -661,7 +671,7 @@ added without reworking it.
 ## 9. Data file format (illustrative)
 
 ```yaml
-schemaVersion: 1
+schemaVersion: 2
 household:
   baseDate: 2027-01
   state: SC
@@ -715,6 +725,9 @@ scenarios:
       value: 450000
       appreciation: { mean: 0.03, sd: 0.06 }
       basis: 280000
+      mortgage: { balance: 92340, asOf: 2026-12, rate: 0.0375, payoff: 2031-08 }   # P&I derived: ~$1,800/month
+      costs: { propertyTax: 3200, insurance: 2400, maintenance: 4500 }              # today's $, per year
+      replacementCostCuts: { propertyTax: 0.4, insurance: 0.3, maintenance: 0.5 }  # used when downsizing
       sale: { mode: backstop, liquidFloor: 50000, sellingCostPct: 0.07, replacementCost: 0 }
     inheritances:
       - label: Mother's estate
@@ -745,7 +758,6 @@ scenarios:
       bequestTarget: 200000
       items:
         - { label: Living, annual: 72000, start: 2027-01, indexing: inflation, perPerson: true }
-        - { label: Mortgage, annual: 21600, start: 2027-01, end: 2031-08, indexing: none }
         - { label: Roof + kitchen, annual: 60000, start: 2028-06, oneTime: true, indexing: inflation }
     healthcare:
       medicalInflationSpread: 0.015
@@ -840,6 +852,7 @@ A blank answer meant "accept the recommendation".
 | Q-IMP-8 | Long-term care | Expense items in v1 | 1.3 |
 | Q-IMP-9 | Plan format | `docs/plan.md`, session-sized tasks with requirement IDs and tests | plan.md |
 | Q-UX-7 | Visual style | Left blank (no Rec) → compact console style, system theme, tabular numerals | FR-UI-18 |
+| Q-HOME-1 | Mortgage and home costs (after v1) | Mortgage from a statement: balance as of a month, rate, payoff month (payment derived). Property tax, insurance, maintenance with the home, ending at a sale. Downsizing: no new mortgage; each cost reduced by a percentage. Schema version 2; v1 files lose the expense link with a note | FR-ACC-7, FR-EXP-1 |
 
 ---
 

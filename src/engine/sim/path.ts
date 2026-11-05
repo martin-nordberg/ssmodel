@@ -1,6 +1,7 @@
 // One simulated path for one claiming date [FR-SIM-1..4]. Annual steps with monthly precision for benefits,
 // earnings test, deaths and dated items. Order within a year follows FR-SIM-3.
 import { inheritedRules, inheritedScheduled } from '../accounts/inheritedIra.ts'
+import { mortgageBalance, mortgagePaymentsInYear } from '../accounts/mortgage.ts'
 import { sellProperty } from '../accounts/property.ts'
 import { lifetimeRmd, rmdStartYear } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
@@ -75,8 +76,10 @@ export type YearRow = {
   inheritances?: number
   /** Roth conversions [FR-WD-4]. */
   conversions?: number
-  /** Home and kept real estate, net of selling costs. */
+  /** Home and kept real estate, net of selling costs and the mortgage balance. */
   homeEquity?: number
+  /** Mortgage payments and carrying costs of the home and kept real estate (included in expenses). */
+  housing?: number
 }
 
 export type PathSummary = {
@@ -177,11 +180,14 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       propBasis[k] = pr.basis
     }
   }
-  const endOverride = new Map<string, YM>()
   const annuityRecovered = new Float64Array(prep.annuities.length)
   const soldOnce = new Set<number>()
-  // A home sale can end the mortgage at a candidate-dependent time, so expenses cannot be shared across candidates.
-  const shareExpenses = !props.some((pr) => pr.mortgageLabel !== null)
+  // Mortgage paid off at a sale (no new mortgage on a replacement home).
+  const loanClosed = new Uint8Array(props.length)
+  const loanBalance = (k: number, m: YM): number => {
+    const mg = props[k]!.mortgage
+    return mg && !loanClosed[k] ? mortgageBalance(mg, m) : 0
+  }
 
   for (let y = prep.baseYear; y <= prep.endYear; y++) {
     const m0 = ym(y, 1)
@@ -209,7 +215,15 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       const planned = pr.sale.mode === 'planned' && pr.sale.month !== null && ymYear(pr.sale.month) <= y
       const backstop = pr.sale.mode === 'backstop' && liquidStart < pr.sale.floor * price
       if (!planned && !backstop) continue
-      const r = sellProperty(pr, propValue[k]!, propBasis[k]!, pr.sale.replacement * price, status)
+      const r = sellProperty(
+        pr,
+        propValue[k]!,
+        propBasis[k]!,
+        pr.sale.replacement * price,
+        status,
+        loanBalance(k, m0 - 1),
+      )
+      loanClosed[k] = 1
       realizedGain += r.gain
       const taxable = accounts.find((x) => x.kind === 'taxable')
       if (r.netProceeds > 0 && taxable) addToTaxable(taxable, r.netProceeds)
@@ -217,8 +231,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       propValue[k] = r.newValue
       propBasis[k] = r.newBasis
       owned[k] = r.stillOwned ? 1 : 0
-      // A sold home's mortgage is paid off from the proceeds; a downsized home is not resold.
-      if (pr.mortgageLabel) endOverride.set(pr.mortgageLabel, m0 - 1)
+      // A downsized home is not resold.
       if (r.stillOwned) soldOnce.add(k)
     }
 
@@ -509,23 +522,25 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       survivorFrom,
       survivorFraction: sc.expenses.survivorFraction,
       scale: asm.expenseScale,
-      endOverride,
     }
     let expenses: number
-    if (shareExpenses && cache && !Number.isNaN(cache.expenses[yi]!)) expenses = cache.expenses[yi]!
+    if (cache && !Number.isNaN(cache.expenses[yi]!)) expenses = cache.expenses[yi]!
     else {
       expenses = 0
       for (const item of prep.expenses) expenses += expenseForYear(item, y, ectx)
-      if (shareExpenses && cache) cache.expenses[yi] = expenses
+      if (cache) cache.expenses[yi] = expenses
     }
-    // Property carrying costs and rent while owned.
+    // Housing while owned: mortgage principal and interest (nominal, level) and carrying costs; rent received.
     let propertyIncome = 0
+    let housing = 0
     for (const [k, pr] of props.entries()) {
       if (!owned[k]) continue
-      expenses += pr.carrying * price
+      housing += (soldOnce.has(k) ? pr.carryingReplacement : pr.carrying) * price
+      if (pr.mortgage && !loanClosed[k])
+        housing += pr.mortgage.payment * mortgagePaymentsInYear(pr.mortgage, y, prep.baseYM)
       propertyIncome += pr.rent * price
     }
-    expenses += saleShortfall
+    expenses += housing + saleShortfall
     // HSA contributions before Medicare: deductible, paid from cash flow, deposited to the HSA [FR-ACC-6].
     let hsaContrib = 0
     const hsaDeposits: [EngineAccount, number][] = []
@@ -743,7 +758,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     for (const [k, pr] of props.entries()) {
       if (!owned[k]) continue
       propValue[k] = propValue[k]! * (1 + (draws.propertyReturns?.[k]?.[yi] ?? pr.mean))
-      homeEquity += propValue[k]! * (1 - pr.sale.costPct)
+      homeEquity += propValue[k]! * (1 - pr.sale.costPct) - loanBalance(k, m11)
     }
 
     // ---- deaths: the survivor takes over the decedent's accounts at year end ----
@@ -799,6 +814,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         monthsWithheld,
         inheritances: inheritedThisYear,
         homeEquity,
+        housing,
         conversions,
       })
     }
@@ -817,7 +833,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
   // Property passes to heirs with a stepped-up basis: net of selling costs, no income tax.
   for (const [k, pr] of props.entries()) {
     if (!owned[k]) continue
-    const net = propValue[k]! * (1 - pr.sale.costPct)
+    const net = propValue[k]! * (1 - pr.sale.costPct) - loanBalance(k, ym(lastYear, 12))
     terminalNominal += net
     afterTax += net
   }

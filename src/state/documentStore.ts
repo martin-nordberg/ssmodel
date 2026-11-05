@@ -21,6 +21,8 @@ export type DocumentState = {
   name: string
   dirty: boolean
   loadErrors: FileError[] | null
+  /** Migration notes from the last load (an older file version was upgraded). */
+  loadNotes: string[]
   activeScenarioId: string | null
   overrides: Overrides
   undoStack: Change[]
@@ -94,6 +96,7 @@ const initial = {
   name: 'Untitled.yaml',
   dirty: false,
   loadErrors: null,
+  loadNotes: [],
   activeScenarioId: null,
   overrides: {},
   undoStack: [],
@@ -135,6 +138,9 @@ export const useDocument = create<DocumentState>()((set, get) => {
         yamlDoc: r.doc,
         handle,
         name,
+        // An upgraded file is unsaved until written back in the new version.
+        dirty: r.migrated,
+        loadNotes: r.notes,
         activeScenarioId: r.value.scenarios[0]?.id ?? null,
       })
       return true

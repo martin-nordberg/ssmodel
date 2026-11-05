@@ -27,7 +27,13 @@ test('setup sections show the loaded household', async ({ page }) => {
   await expect(page.getByRole('grid', { name: 'Inherited IRAs' })).toContainText('1938-07-01')
   await page.screenshot({ path: 'test-results/setup-accounts.png', fullPage: true })
   await section(page, 'Expenses').click()
-  await expect(page.getByRole('grid', { name: 'Expenses' })).toContainText('Mortgage')
+  await expect(page.getByRole('grid', { name: 'Expenses' })).toContainText('Roof + kitchen')
+  await section(page, 'Home').click()
+  await expect(page.getByText(/Principal \+ interest: \$1,(799|800)\.\d\d\/month/)).toBeVisible()
+  await page.getByLabel('Interest rate').fill('6%')
+  await page.getByLabel('Interest rate').press('Enter')
+  await expect(page.getByText(/Principal \+ interest: \$1,894\.\d\d\/month/)).toBeVisible()
+  await expect(page.getByLabel('Property tax reduction')).toHaveCount(0) // no replacement home
 })
 
 test('enter a household by hand and save it', async ({ page }) => {

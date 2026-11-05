@@ -55,10 +55,6 @@ describe('expenseForYear', () => {
     expect(expenseForYear(living, 2041, c)).toBeCloseTo(54000, 6)
     expect(expenseForYear(mortgage, 2030, c)).toBe(21600)
   })
-  test('end override (home sold) stops the mortgage', () => {
-    const c = { ...ctx, endOverride: new Map([['Mortgage', parseYM('2029-03')]]) }
-    expect(expenseForYear(mortgage, 2029, c)).toBe(5400)
-  })
   test('fixed-rate and medical indexing', () => {
     expect(expenseForYear({ ...living, indexing: 0.1, perPerson: false }, 2029, ctx)).toBeCloseTo(72000 * 1.21, 6)
     expect(expenseForYear({ ...living, indexing: 'medical' }, 2029, ctx)).toBeCloseTo(72000 * 1.08, 6)

@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Input model for a household file (requirements §9). Facts live under `household`; plan and levers live per
 // scenario. Every nested object uses `.prefault({})` so minimal files parse with defaults filled in.
 
-export const CURRENT_SCHEMA_VERSION = 1
+export const CURRENT_SCHEMA_VERSION = 2
 
 export const YearMonth = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'expected YYYY-MM')
 export const DateStr = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'expected YYYY-MM-DD')
@@ -147,12 +147,38 @@ export const SalePlan = z
   })
   .prefault({})
 
+/** Fixed-rate mortgage from a statement: the payment (principal + interest) is derived [FR-ACC-7]. */
+export const Mortgage = z
+  .object({
+    /** Principal balance on the statement date (after that month's payment). */
+    balance: NonNegMoney,
+    asOf: YearMonth,
+    rate: z.number().finite().min(0).max(0.2),
+    /** Month of the last payment. */
+    payoff: YearMonth,
+  })
+  .refine((m) => m.payoff > m.asOf, { message: 'payoff must be after the balance date', path: ['payoff'] })
+
+/** Annual home costs in base-date dollars, inflation-indexed; paid while the home is owned, ending at a sale. */
+export const HomeCosts = z
+  .object({
+    propertyTax: NonNegMoney.default(0),
+    insurance: NonNegMoney.default(0),
+    maintenance: NonNegMoney.default(0),
+  })
+  .prefault({})
+
 export const Home = z.object({
   value: NonNegMoney,
   basis: NonNegMoney.default(0),
   appreciation: Volatile.prefault({ mean: 0.03, sd: 0.06 }),
-  /** Label of the expense item that is the mortgage; it stops when the home is sold. */
-  mortgageExpense: z.string().optional(),
+  /** No new mortgage is taken on a replacement home. */
+  mortgage: Mortgage.optional(),
+  costs: HomeCosts,
+  /** Fractions by which each cost falls after downsizing to the replacement home (sale.replacementCost > 0). */
+  replacementCostCuts: z
+    .object({ propertyTax: Fraction.default(0), insurance: Fraction.default(0), maintenance: Fraction.default(0) })
+    .prefault({}),
   sale: SalePlan,
 })
 

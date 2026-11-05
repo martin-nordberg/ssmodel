@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { mortgageBalance } from '@/engine/accounts/mortgage.ts'
 import { type EngineProperty, sellProperty } from '@/engine/accounts/property.ts'
+import { parseYM } from '@/engine/core/dates.ts'
 import { prepare } from '@/engine/model/prepare.ts'
 import { runDeterministic } from '@/engine/sim/deterministic.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
@@ -37,22 +39,96 @@ describe('sellProperty', () => {
     expect(r.stillOwned).toBe(true)
     expect(r.newValue).toBe(350_000)
   })
+  test('the mortgage is paid from the proceeds; the gain is unchanged', () => {
+    const r = sellProperty(home, 600_000, 200_000, 0, 'mfj', 150_000)
+    expect(r.netProceeds).toBeCloseTo(558_000 - 150_000, 6)
+    expect(r.gain).toBe(sellProperty(home, 600_000, 200_000, 0, 'mfj').gain)
+  })
 })
 
 describe('properties in the path', () => {
   test('home equity counts in terminal wealth but not liquid savings', () => {
+    // A home with no loan or costs: equity counts, liquid savings are untouched.
     const withHome = run((f) => {
-      f.scenarios[0]!.home!.sale.mode = 'none'
+      const h = f.scenarios[0]!.home!
+      h.sale.mode = 'none'
+      h.mortgage = undefined
+      h.costs = { propertyTax: 0, insurance: 0, maintenance: 0 }
     })
     const noHome = run((f) => {
       f.scenarios[0]!.home = undefined
     })
-    const r0 = withHome.rows[0]!
-    expect(r0.homeEquity).toBeCloseTo(450_000 * 1.03 * 0.93, 0)
+    expect(withHome.rows[0]!.homeEquity).toBeCloseTo(450_000 * 1.03 * 0.93, 0)
+    const withLoan = run((f) => {
+      f.scenarios[0]!.home!.sale.mode = 'none'
+    })
+    const mg = withLoan.prep.properties[0]!.mortgage!
+    expect(withLoan.rows[0]!.homeEquity).toBeCloseTo(450_000 * 1.03 * 0.93 - mortgageBalance(mg, parseYM('2027-12')), 0)
     expect(withHome.rows.at(-1)!.liquid).toBeCloseTo(noHome.rows.at(-1)!.liquid, -2)
   })
 
-  test('backstop sale when liquid savings are below the floor: mortgage stops, proceeds to taxable', () => {
+  test('housing: mortgage payments to the payoff month plus inflation-indexed costs', () => {
+    const { rows, prep } = run((f) => {
+      f.scenarios[0]!.home!.sale.mode = 'none'
+      f.scenarios[0]!.assumptions.inheritancesEnabled = false // no lake cabin costs
+    })
+    const pay = prep.properties[0]!.mortgage!.payment
+    expect(pay).toBeCloseTo(1800, 0)
+    const costs = 3200 + 2400 + 4500
+    expect(row(rows, 2027).housing).toBeCloseTo(12 * pay + costs, 6)
+    // Eight payments in the payoff year (through August 2031), none after.
+    const r31 = row(rows, 2031)
+    expect(r31.housing).toBeCloseTo(8 * pay + costs * r31.price, 6)
+    const r32 = row(rows, 2032)
+    expect(r32.housing).toBeCloseTo(costs * r32.price, 6)
+  })
+
+  test('downsizing: loan and replacement paid from proceeds, then reduced costs and no mortgage', () => {
+    const sale = (replacementCost: number) =>
+      run((f) => {
+        f.scenarios[0]!.home!.sale = {
+          mode: 'planned',
+          date: '2029-06',
+          liquidFloor: 0,
+          sellingCostPct: 0.07,
+          replacementCost,
+        }
+      })
+    const { rows, prep } = sale(250_000)
+    const r = row(rows, 2029)
+    const costs = 3200 * 0.6 + 2400 * 0.7 + 4500 * 0.5
+    expect(r.housing).toBeCloseTo(costs * r.price, 6)
+    expect(r.homeEquity).toBeCloseTo(250_000 * r.price * 1.03 * 0.93, 0)
+    // Cash from the sale: value net of selling costs, less the loan and the replacement home.
+    const keep = sale(0)
+    const taxable = prep.accounts.findIndex((a) => a.kind === 'taxable')
+    const extra = row(keep.rows, 2029).endBalances[taxable]! - r.endBalances[taxable]!
+    expect(extra).toBeGreaterThan(250_000 * r.price * 0.9)
+    const r28 = row(rows, 2028)
+    const value28 = (r28.homeEquity! + mortgageBalance(prep.properties[0]!.mortgage!, parseYM('2028-12'))) / 0.93
+    expect(value28).toBeGreaterThan(450_000)
+  })
+
+  test('a loan still owed at the end reduces home equity', () => {
+    const { rows, prep } = run((f) => {
+      const h = f.scenarios[0]!.home!
+      h.sale.mode = 'none'
+      h.mortgage = { balance: 300_000, asOf: '2026-12', rate: 0.06, payoff: '2070-12' }
+    })
+    const last = rows.at(-1)!
+    const owed = mortgageBalance(prep.properties[0]!.mortgage!, parseYM(`${last.year}-12`))
+    expect(owed).toBeGreaterThan(0)
+    const value = last.homeEquity! + owed
+    expect(value / 0.93).toBeGreaterThan(450_000)
+    const noLoan = run((f) => {
+      const h = f.scenarios[0]!.home!
+      h.sale.mode = 'none'
+      h.mortgage = undefined
+    })
+    expect(noLoan.rows.at(-1)!.homeEquity! - last.homeEquity!).toBeCloseTo(owed, 0)
+  })
+
+  test('backstop sale when liquid savings are below the floor: mortgage paid off, proceeds to taxable', () => {
     const { rows, prep } = run((f) => {
       f.scenarios[0]!.home!.sale = {
         mode: 'backstop',
@@ -64,8 +140,10 @@ describe('properties in the path', () => {
     const r = row(rows, 2027)
     expect(r.homeEquity).toBe(0)
     const taxable = prep.accounts.findIndex((a) => a.kind === 'taxable')
-    expect(r.endBalances[taxable]).toBeGreaterThan(300_000 + 400_000)
-    // The $21,600 mortgage is gone from 2027 on.
+    // Proceeds: 450,000 x 0.93 less the ~$92k loan.
+    expect(r.endBalances[taxable]).toBeGreaterThan(300_000 + 300_000)
+    // No mortgage or home costs from 2027 on.
+    expect(r.housing).toBe(0)
     expect(r.expenses).toBeLessThan(72_000 + 1)
   })
 

@@ -1,5 +1,5 @@
 # Full synthetic household (not real data). Exercises every section of the schema.
-schemaVersion: 1
+schemaVersion: 2
 household:
   baseDate: 2027-01
   state: SC
@@ -96,7 +96,9 @@ scenarios:
       value: 450000
       basis: 280000
       appreciation: { mean: 0.03, sd: 0.06 }
-      mortgageExpense: Mortgage
+      mortgage: { balance: 92340, asOf: 2026-12, rate: 0.0375, payoff: 2031-08 } # ~$1,800/month P&I
+      costs: { propertyTax: 3200, insurance: 2400, maintenance: 4500 }
+      replacementCostCuts: { propertyTax: 0.4, insurance: 0.3, maintenance: 0.5 }
       sale: { mode: backstop, liquidFloor: 50000, sellingCostPct: 0.07, replacementCost: 0 }
     inheritances:
       - label: Mother's estate
@@ -134,7 +136,6 @@ scenarios:
       bequestTarget: 200000
       items:
         - { label: Living, annual: 72000, start: 2027-01, indexing: inflation, perPerson: true }
-        - { label: Mortgage, annual: 21600, start: 2027-01, end: 2031-08, indexing: none }
         - { label: Roof + kitchen, annual: 60000, start: 2028-06, oneTime: true, indexing: inflation }
     healthcare:
       medicalInflationSpread: 0.015

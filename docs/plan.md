@@ -530,3 +530,9 @@ Deviations and notes:
 - **T3.2/T3.6** share one property model: the home and inherited real estate.
 - **Taxable sales that pay conversion tax** realize gains that are not themselves taxed in that year
   (second-order).
+
+Changes after v1:
+- **Mortgage and home costs (Q-HOME-1, schema version 2):** the home carries its mortgage (balance as of a month,
+  rate, payoff; payment derived), property tax, insurance and maintenance. A sale pays off the loan; downsizing has
+  no new mortgage and reduced costs. The v1→v2 migration drops the old mortgage-expense link and tells the user.
+  Saving a migrated file keeps its comments.

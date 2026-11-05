@@ -21,6 +21,7 @@ export function useFileCommands() {
     if (useDocument.getState().loadText(opened.text, opened.handle, opened.name)) {
       await rememberRecent(opened.handle)
       toast.success(`Opened ${opened.name}`)
+      for (const note of useDocument.getState().loadNotes) toast.warning(note, { duration: 30_000 })
     }
   }, [])
 

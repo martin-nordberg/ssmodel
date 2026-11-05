@@ -87,6 +87,51 @@ describe('parseHouseholdYaml', () => {
   })
 })
 
+describe('migration from schema version 1', () => {
+  const v1 = async () =>
+    (await fixture('full.yaml'))
+      .replace('schemaVersion: 2', 'schemaVersion: 1 # old format')
+      .replace(
+        / {6}mortgage: .*\n {6}costs: .*\n {6}replacementCostCuts: .*\n/,
+        '      mortgageExpense: Mortgage # linked row\n',
+      )
+
+  test('drops the mortgage-expense link with a note and marks the file migrated', async () => {
+    const r = mustParse(await v1())
+    expect(r.migrated).toBe(true)
+    expect(r.value.schemaVersion).toBe(2)
+    const home = r.value.scenarios[0]!.home!
+    expect(home.mortgage).toBeUndefined()
+    expect(home.costs).toEqual({ propertyTax: 0, insurance: 0, maintenance: 0 })
+    expect('mortgageExpense' in home).toBe(false)
+    expect(r.notes.length).toBe(1)
+    expect(r.notes[0]).toMatch(/Base case.*"Mortgage"/)
+  })
+
+  test('saving a migrated file keeps its comments and writes the new version', async () => {
+    const r = mustParse(await v1())
+    const out = serializeHouseholdYaml(r.value, r.doc)
+    expect(out).toMatch(/^schemaVersion: 2/m)
+    expect(out).not.toMatch(/mortgageExpense/)
+    expect(out).toMatch(/# from SSA statement/)
+    expect(mustParse(out).migrated).toBe(false)
+  })
+
+  test('a current file is not migrated', async () => {
+    const r = mustParse(await fixture('full.yaml'))
+    expect(r.migrated).toBe(false)
+    expect(r.notes).toEqual([])
+    expect(r.value.scenarios[0]!.home!.mortgage!.balance).toBe(92340)
+  })
+
+  test('payoff must follow the balance date', async () => {
+    const text = (await fixture('full.yaml')).replace('payoff: 2031-08', 'payoff: 2026-06')
+    const r = parseHouseholdYaml(text)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors[0]!.path).toBe('scenarios[0].home.mortgage.payoff')
+  })
+})
+
 describe('serializeHouseholdYaml', () => {
   test('full fixture round-trips with comments kept', async () => {
     const text = await fixture('full.yaml')
@@ -109,7 +154,7 @@ describe('serializeHouseholdYaml', () => {
     expect(out).toContain('# PIA derived from these')
     const again = mustParse(out)
     expect(again.value.household.people.spouse.ss.currentMonthly).toBe(1500)
-    expect(again.value.scenarios[0]!.expenses.items.length).toBe(2)
+    expect(again.value.scenarios[0]!.expenses.items.length).toBe(1)
   })
 
   test('serializes without a source document', async () => {

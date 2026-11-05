@@ -45,23 +45,18 @@ export type ExpenseContext = IndexContext & {
   survivorFraction: number
   /** Global spending scale lever. */
   scale: number
-  /** Per-item early end, e.g. the mortgage stops when the home is sold. */
-  endOverride?: Map<string, YM>
 }
 
 export function expenseForYear(item: ExpenseItem, year: number, ctx: ExpenseContext): number {
   const start = item.startYM ?? parseYM(item.start)
   const f = indexFactor(item.indexing, year, ctx) * ctx.scale
-  const override = ctx.endOverride?.get(item.label)
   if (item.oneTime) {
     if (Math.floor(start / 12) !== year) return 0
-    if (override !== undefined && start > override) return 0
     const survivorAdj =
       item.perPerson && ctx.survivorFrom !== null && start >= ctx.survivorFrom ? ctx.survivorFraction : 1
     return item.annual * f * survivorAdj
   }
-  let end = item.endYM ?? (item.end ? parseYM(item.end) : undefined)
-  if (override !== undefined) end = end === undefined ? override : Math.min(end, override)
+  const end = item.endYM ?? (item.end ? parseYM(item.end) : undefined)
   const months = monthsActive(year, start, end)
   if (months === 0) return 0
   let survivorMonths = 0

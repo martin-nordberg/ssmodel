@@ -5,7 +5,7 @@ import fc from 'fast-check'
 import { formatYM } from '@/engine/core/dates.ts'
 import { prepare } from '@/engine/model/prepare.ts'
 import { runDeterministic } from '@/engine/sim/deterministic.ts'
-import { HouseholdFile } from '@/schema/model.ts'
+import { CURRENT_SCHEMA_VERSION, HouseholdFile } from '@/schema/model.ts'
 import { parseHouseholdYaml } from '@/schema/yamlio.ts'
 import { referenceRun } from './reference/referenceEngine.ts'
 
@@ -80,7 +80,7 @@ describe('production vs reference engine', () => {
       const sY = Number(h.sBirth.slice(0, 4))
       const claimY = Math.min(Math.max(sY + 62, 2020), 2026)
       const raw = {
-        schemaVersion: 1,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
         household: {
           people: {
             primary: {
