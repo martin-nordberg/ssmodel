@@ -67,6 +67,46 @@ describe('Roth conversions [FR-WD-4]', () => {
   })
 })
 
+describe('paying the conversion tax [Q-TAX-6]', () => {
+  const conv = (basisFrac: number, cash?: number, off = false) =>
+    run((f) => {
+      const s = f.scenarios[0]!
+      const rc = s.strategy.rothConversions
+      rc.enabled = !off
+      rc.upToBracket = 0.22
+      rc.irmaaCapTier = 5
+      rc.until = 'claim'
+      for (const a of s.accounts) {
+        if (a.type === 'taxable') a.costBasis = a.balance * basisFrac
+        if (a.type === 'cash' && cash !== undefined) a.balance = cash
+      }
+    })
+  const extraTax = (basisFrac: number) =>
+    conv(basisFrac).rows[0]!.totalTax - conv(basisFrac, undefined, true).rows[0]!.totalTax
+
+  test('selling low-basis shares to pay it costs more tax than full-basis shares', () => {
+    const low = conv(0.2)
+    const full = conv(1)
+    expect(low.rows[0]!.conversions).toBeCloseTo(full.rows[0]!.conversions!, 0)
+    expect(extraTax(0.2)).toBeGreaterThan(extraTax(1) + 100)
+    // The realized gain shows up in AGI.
+    expect(low.rows[0]!.agi).toBeGreaterThan(full.rows[0]!.agi)
+  })
+
+  test('cash above the reserve target pays before taxable', () => {
+    const rich = conv(0.2, 2_000_000)
+    const richOff = conv(0.2, 2_000_000, true)
+    const taxable = rich.prep.accounts.findIndex((a) => a.kind === 'taxable')
+    const cash = rich.prep.accounts.findIndex((a) => a.kind === 'cash')
+    expect(rich.rows[0]!.conversions!).toBeGreaterThan(10_000)
+    expect(rich.rows[0]!.withdrawals[taxable]).toBeCloseTo(richOff.rows[0]!.withdrawals[taxable]!, 6)
+    expect(rich.rows[0]!.withdrawals[cash]! - richOff.rows[0]!.withdrawals[cash]!).toBeCloseTo(
+      rich.rows[0]!.totalTax - richOff.rows[0]!.totalTax,
+      0,
+    )
+  })
+})
+
 test('bracket-aware inherited schedule fills the target bracket and still empties by the deadline [FR-WD-2]', () => {
   const r = run((f) => {
     const s = f.scenarios[0]!

@@ -609,8 +609,6 @@ Deviations and notes:
 - **Rule data:** ssa.gov blocks automated downloads. The AWI series was checked against SSA's published bend
   points and taxable maximums (1995–2027). IRS and CMS 2027 values were not yet published and are projected.
 - **T3.2/T3.6** share one property model: the home and inherited real estate.
-- **Taxable sales that pay conversion tax** realize gains that are not themselves taxed in that year. To be fixed
-  in T5.2.
 
 Changes after v1:
 - **Mortgage and home costs (Q-HOME-1, schema version 2):** the home carries its mortgage (balance as of a month,

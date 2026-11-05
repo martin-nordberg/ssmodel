@@ -10,6 +10,7 @@ import { spousalExcess } from '@/engine/ss/spouse.ts'
 import { emptyFederalInput, federalTax } from '@/engine/tax/federal.ts'
 import { irmaaTier, monthlyPremiums } from '@/engine/tax/irmaa.ts'
 import { scTax } from '@/engine/tax/sc.ts'
+import { fundConversionTax } from '@/engine/withdraw/conversionFunding.ts'
 import { solveWithdrawals } from '@/engine/withdraw/solver.ts'
 
 const awi = projectedAwi(0.04)
@@ -143,4 +144,21 @@ test('8. One withdrawal solve', () => {
   })
   expect(r.withdrawals[0]).toBeCloseTo(41484.66, 0)
   expect(r.tax.total).toBeCloseTo(1484.66, 0)
+})
+
+describe('9. Paying a Roth conversion tax by selling shares', () => {
+  const fed = (ordinary: number, ltcg: number) =>
+    federalTax({ ...emptyFederalInput(2026, 'mfj'), taxableMax: 184500, ordinary, ltcg }).total
+  test('conversion tax, then the fixed point with the funding gain', () => {
+    expect(fed(140_000, 0) - fed(120_000, 0)).toBeCloseTo(3100, 6)
+    const f = fundConversionTax((g) => fed(140_000, g) - fed(120_000, 0), {
+      freeCash: 0,
+      taxableBalance: 100_000,
+      gainFrac: 0.5,
+      reserveCash: 0,
+    })
+    expect(f.tax).toBeCloseTo(3351.35, 1)
+    expect(f.sold).toBeCloseTo(3351.35, 1)
+    expect(f.gain).toBeCloseTo(1675.68, 1)
+  })
 })

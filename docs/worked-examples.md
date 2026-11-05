@@ -128,3 +128,18 @@ At W = 30,000: taxable SS is 11,100 and AGI is 41,100, below the 47,500 deductio
 - net = 70,000 + x − 0.10 × (1.85x − 6,400) = 70,640 + 0.815x = 80,000, so x = 11,484.66
 
 So **W = 41,484.66** with tax **1,484.66**. Check: 40,000 + 41,484.66 − 1,484.66 = 80,000.
+
+## 9. Paying a Roth conversion's tax by selling shares
+
+**Rule** (Q-TAX-6): gains realized by selling taxable shares to pay a conversion's tax are taxed in the same year.
+
+MFJ, under 65, 2026, federal tax only. Ordinary income 120,000, so taxable income is 120,000 − 32,200 = 87,800.
+Convert 20,000. There is no cash above the reserve target, so the tax is paid by selling shares with half their
+value as gain (g = 0.5).
+
+- Tax on the conversion alone: taxable income goes from 87,800 to 107,800, so
+  12% × (100,800 − 87,800) + 22% × (107,800 − 100,800) = 1,560 + 1,540 = **3,100**
+- Selling S of shares realizes 0.5 S of gain. It stacks above 107,800, past the 0% limit of 98,900, so it is taxed
+  at 15%.
+- With S = T: T = 3,100 + 0.15 × 0.5 × T, so T = 3,100 / 0.925 = **3,351.35**
+- Shares sold 3,351.35, gain 1,675.68, tax on the gain 251.35

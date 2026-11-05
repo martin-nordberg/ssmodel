@@ -18,6 +18,7 @@ import { spousalExcess, survivorBenefit } from '../ss/spouse.ts'
 import { bracketTop, federalEvaluator, type federalTax } from '../tax/federal.ts'
 import { irmaaTier } from '../tax/irmaa.ts'
 import { scEvaluator, type scTax } from '../tax/sc.ts'
+import { type FundingSources, fundConversionTax, fundingCapacity } from '../withdraw/conversionFunding.ts'
 import {
   ordinaryRoom,
   type SolverAccount,
@@ -697,20 +698,32 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         const before = tax(finalDelta).total
         let x = ordinaryRoom(tax, finalDelta, owner, top, capFor(rc.irmaaCapTier), available)
         if (x <= 1) continue
-        const taxAt = (amt: number) => {
+        const taxAt = (amt: number, gain: number) => {
           finalDelta.ordinaryByPerson[owner] += amt
+          finalDelta.ltcg += gain
           const t = tax(finalDelta).total - before
           finalDelta.ordinaryByPerson[owner] -= amt
+          finalDelta.ltcg -= gain
           return t
         }
-        // The conversion's tax is paid from taxable, then cash; convert less if they cannot cover it.
-        const payable = (taxableAcc?.balance ?? 0) + (cashAcc?.balance ?? 0)
-        let dt = taxAt(x)
-        if (dt > payable) {
-          x *= payable / dt
-          dt = taxAt(x)
+        // The tax is paid from cash above its reserve target, then taxable (whose realized gain is taxed too),
+        // then the reserve; convert less if they cannot cover it [Q-TAX-6].
+        const cashBal = cashAcc?.balance ?? 0
+        const freeCash = Math.max(0, cashBal - (cashAcc ? (cashAcc.cashTargetMonths * spending) / 12 : 0))
+        const taxBal = taxableAcc?.balance ?? 0
+        const src: FundingSources = {
+          freeCash,
+          taxableBalance: taxBal,
+          gainFrac: taxableAcc && taxBal > 0 ? Math.max(0, 1 - taxableAcc.basis / taxBal) : 0,
+          reserveCash: cashBal - freeCash,
         }
-        if (x <= 1) continue
+        const payable = fundingCapacity(src)
+        let f = fundConversionTax((g) => taxAt(x, g), src)
+        for (let k = 0; k < 5 && f.tax > payable + 0.01 && x > 1; k++) {
+          x *= payable / f.tax
+          f = fundConversionTax((g) => taxAt(x, g), src)
+        }
+        if (x <= 1 || f.tax > payable + 0.01) continue
         finalDelta.ordinaryByPerson[owner] += x
         let left = x
         for (const t of trads) {
@@ -720,17 +733,16 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         }
         roth.balance += x
         conversions += x
-        extraTax += dt
-        let due = dt
-        if (taxableAcc && due > 0) {
-          const sold = sellTaxable(taxableAcc, due).sold
-          withdrawalsRow[taxableAcc.index] = withdrawalsRow[taxableAcc.index]! + sold
-          due -= sold
-        }
-        if (cashAcc && due > 0) {
-          const paid = Math.min(cashAcc.balance, due)
+        extraTax += f.tax
+        if (cashAcc && f.fromFreeCash + f.fromReserve > 0) {
+          const paid = Math.min(cashAcc.balance, f.fromFreeCash + f.fromReserve)
           cashAcc.balance -= paid
           withdrawalsRow[cashAcc.index] = withdrawalsRow[cashAcc.index]! + paid
+        }
+        if (taxableAcc && f.sold > 0) {
+          const sale = sellTaxable(taxableAcc, f.sold)
+          withdrawalsRow[taxableAcc.index] = withdrawalsRow[taxableAcc.index]! + sale.sold
+          finalDelta.ltcg += sale.gain
         }
       }
     }
