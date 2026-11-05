@@ -92,7 +92,7 @@ export function HomePanel() {
               options={[
                 { value: 'none' as const, label: 'Keep' },
                 { value: 'planned' as const, label: 'Planned date' },
-                { value: 'backstop' as const, label: 'Backstop (sell if savings run low)' },
+                { value: 'backstop' as const, label: 'Backstop (low savings)' },
               ]}
               onChange={(v) =>
                 updateScenario((d) => {

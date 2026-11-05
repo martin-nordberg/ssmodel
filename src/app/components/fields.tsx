@@ -28,6 +28,11 @@ function addToConsole(path: string, label: string, type: CellType, value: number
   }, 'add lever')
 }
 
+// A field is label / control / help. Inside a FieldRow it takes three rows of the row's grid (subgrid), so a
+// two-line label or a hint in one field never shifts its neighbours' boxes.
+const FIELD = 'grid min-w-0 row-span-3 grid-rows-subgrid gap-1'
+const LABEL = 'self-end text-muted-foreground text-xs'
+
 type FieldProps = {
   /** Scenario-relative path; enables right-click "Add to Console" [FR-UI-7a]. */
   leverPath?: string
@@ -85,7 +90,7 @@ export function Field({
       aria-invalid={!!error}
       aria-describedby={error || hint ? `${id}-help` : undefined}
       className={cn(
-        'h-7 rounded-md border bg-background px-2 font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+        'h-7 w-full min-w-0 rounded-md border bg-background px-2 font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
         error && 'border-destructive',
       )}
       onFocus={() => setFocused(true)}
@@ -112,8 +117,8 @@ export function Field({
     />
   )
   return (
-    <div className={cn('grid gap-1', className)}>
-      <Label htmlFor={id} className="text-muted-foreground text-xs">
+    <div className={cn(FIELD, className)}>
+      <Label htmlFor={id} className={LABEL}>
         {label}
       </Label>
       {leverPath && typeof value === 'number' ? (
@@ -161,14 +166,14 @@ export function SelectField<T extends string | number>({
 }: SelectProps<T>) {
   const id = useId()
   return (
-    <div className={cn('grid gap-1', className)}>
-      <Label htmlFor={id} className="text-muted-foreground text-xs">
+    <div className={cn(FIELD, className)}>
+      <Label htmlFor={id} className={LABEL}>
         {label}
       </Label>
       <select
         id={id}
         value={String(value)}
-        className="h-7 rounded-md border bg-background px-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="h-7 w-full min-w-0 truncate rounded-md border bg-background px-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         onChange={(e) => {
           const o = options.find((x) => String(x.value) === e.target.value)
           if (o) onChange(o.value)
@@ -196,11 +201,14 @@ export function SwitchField({
 }) {
   const id = useId()
   return (
-    <div className="flex items-center gap-2 pt-4">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} size="sm" />
-      <Label htmlFor={id} className="text-xs">
-        {label}
-      </Label>
+    <div className={FIELD}>
+      <span aria-hidden />
+      <div className="flex h-7 items-center gap-2">
+        <Switch id={id} checked={checked} onCheckedChange={onChange} size="sm" />
+        <Label htmlFor={id} className="text-xs">
+          {label}
+        </Label>
+      </div>
     </div>
   )
 }
@@ -225,6 +233,9 @@ export function Panel({
   )
 }
 
+/** Lays fields out in columns; each field spans three shared rows so labels, boxes and hints line up. */
 export function FieldRow({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3">{children}</div>
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-x-3 gap-y-1 [&>*]:pb-2">{children}</div>
+  )
 }
