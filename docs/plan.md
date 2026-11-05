@@ -493,9 +493,90 @@ with/without-inheritance comparison is shown.
 
 ## v1.1
 
-- **T5.1 Command palette** [FR-UI-12]: a shadcn `Command`, with actions registered by the views.
-- **T5.2 Explain a number** [FR-UI-14]: wrap the engine's named functions to record their inputs and outputs for a
-  selected path/year. The breakdown opens from the year table and the detail strip.
+Order: the palette first (small and independent), then the two tax tasks, then explain-a-number last so its
+breakdowns cover the new deduction and conversion-funding steps. Same rules as v1: one commit per task, `check:all`
+green, goldens regenerated only with the change explained in the commit message.
+
+**T5.1 Command palette**
+- Covers: FR-UI-12.
+- Steps: a shadcn `Command` dialog on Ctrl/Cmd+K. Views register their actions: file commands, switch view and
+  scenario, jump to a Setup panel, pin baseline, reset levers, toggle real/nominal.
+- Done when: e2e opens the palette, filters by typing, and runs one action from each group.
+
+**T5.2 Tax on conversion funding**
+- Covers: FR-WD-4, FR-TAX-4. Removes the "taxable sales that pay conversion tax" deviation.
+- Problem: when taxable shares are sold to pay a conversion's tax (`src/engine/sim/path.ts`, Roth conversion block),
+  the realized gain is not added to that year's income, so the conversion looks cheaper than it is.
+- Steps:
+  - Pay the tax from cash above its reserve target first (no gain realized), then taxable, then the rest of cash.
+  - Size the conversion and its funding together. With sale S from taxable at gain fraction g, the tax due is
+    T(x, gS), the tax on ordinary income + x with gS more long-term gain, less the tax before the conversion. Solve
+    S = T(x, gS) by fixed-point iteration: it converges because the marginal rate on the gain is below 1, and stops
+    within $1.
+  - The cap "convert less if the tax cannot be paid" uses the full tax, including the gain.
+  - Add the gain to the year's long-term gains so the later steps see it: the withdrawal solver, NIIT, Social
+    Security taxation, MAGI for IRMAA two years later, and SC's 44% capital-gain deduction.
+- Tests:
+  - A low-basis taxable account owes more conversion tax than a full-basis one.
+  - The year's total tax equals the evaluator on ordinary income + x and LTCG + gS.
+  - A gain inside the 0% LTCG bracket adds no federal tax but does add SC tax.
+  - Cash above the reserve target is used before taxable.
+  - A worked example in `docs/worked-examples.md`.
+- Done when: the tests pass and the deviation note is removed from Implementation status.
+
+**T5.3 Itemized deductions**
+- Covers: FR-TAX-6 (new).
+- Each year the federal deduction is the larger of (a) the standard deduction with the 65+ additions and (b)
+  itemized deductions. The OBBBA senior deduction applies either way.
+- Itemized deductions (amounts and sources go in `data/rules/federalTax.json`, checked against IRS publications
+  when implemented):
+  - **State and local taxes (SALT):** the year's SC income tax plus the home's property tax. The cap is $40,000 for
+    2025, rising 1% a year through 2029, then $10,000 from 2030. Above $500,000 of MAGI (indexed 1% a year), the
+    cap shrinks by 30% of the excess, but not below $10,000 (P.L. 119-21, IRC 164(b)(7)).
+  - **Mortgage interest:** the interest part of each payment from the amortization in
+    `src/engine/accounts/mortgage.ts`, limited to interest on the first $750,000 of acquisition debt (IRC
+    163(h)(3)(F)).
+  - **Medical** costs above 7.5% of AGI (IRC 213): Medicare Part B and D premiums including IRMAA, Medigap, COBRA
+    and out-of-pocket costs, excluding anything the HSA pays.
+  - **Charitable gifts:** from expense items marked deductible (below), less the 0.5%-of-AGI floor from 2026.
+  - **Top-bracket limit** from 2026: the deduction's value is capped at 35% for households in the 37% bracket (the
+    2/37 reduction).
+- **South Carolina:** under Act 110, SC tax starts from federal AGI and uses the SCIAD, so itemizing on the federal
+  return does not change SC tax. Confirm this against the SC DOR instructions. It also avoids circularity: compute SC
+  tax first, then the SALT deduction, then federal tax.
+- **Engine:**
+  - `federalEvaluator` gets an itemized-deduction input: fixed amounts (property tax, mortgage interest, charitable
+    gifts, medical costs) plus SC tax as a function of AGI. The deduction is computed inside the evaluator, so the
+    withdrawal solver sees it.
+  - Itemizing adds kinks (the standard-vs-itemized switch, the 7.5% floor, the SALT phase-down). Add solver tests at
+    those kinks.
+- **Schema:** expense items get an optional `deductible: charity | medical`, so long-term care or other medical
+  costs entered as expenses also count. The default is none, so existing files load unchanged and no version bump
+  is needed.
+- **UI:**
+  - A "Tax-deductible" column in the Expenses grid.
+  - Year-table columns "Deduction" and "Itemized".
+  - An info note in the warnings panel: "Itemizes in N years (first YYYY)".
+- **Reference engine:** add an independent implementation of the deduction and extend the differential test with
+  random property tax, mortgage, medical costs and charitable gifts.
+- Tests:
+  - The SALT cap by year (2026, 2029, 2030) and the phase-down at $600,000 of MAGI.
+  - Mortgage interest equals the drop in balance subtracted from the payments.
+  - The medical 7.5% floor.
+  - The standard deduction wins with no home; itemized wins with a large property tax plus interest.
+  - The senior deduction is kept when itemizing.
+  - The 37% limit.
+  - A worked example.
+- Done when: the tests and differential checks pass, `docs/rule-data.md` lists the new parameters, and the goldens
+  are regenerated with the change explained.
+
+**T5.4 Explain a number** (was T5.2)
+- Covers: FR-UI-14.
+- Steps:
+  - Wrap the engine's named functions to record their inputs and outputs for a selected path and year.
+  - The breakdown opens from the year table and the detail strip. It includes the standard-vs-itemized comparison
+    and the gain realized to fund conversions.
+- Done when: e2e opens a breakdown of federal tax and of a withdrawal, and the parts add up to the shown value.
 
 ---
 
@@ -514,8 +595,8 @@ with/without-inheritance comparison is shown.
 
 ## Implementation status (2026-11-05)
 
-M0–M4 (v1) are implemented, with one commit per task. v1.1 (T5.1 command palette, T5.2 explain-a-number) is
-not started.
+M0–M4 (v1) are implemented, with one commit per task. v1.1 (T5.1 command palette, T5.2 tax on conversion funding,
+T5.3 itemized deductions, T5.4 explain-a-number) is not started.
 
 Deviations and notes:
 - **NFR-SIM-1 (5 s for 33 × 5,000):** not met on the development machine (4-core i7-7700). This household's 18
@@ -528,8 +609,8 @@ Deviations and notes:
 - **Rule data:** ssa.gov blocks automated downloads. The AWI series was checked against SSA's published bend
   points and taxable maximums (1995–2027). IRS and CMS 2027 values were not yet published and are projected.
 - **T3.2/T3.6** share one property model: the home and inherited real estate.
-- **Taxable sales that pay conversion tax** realize gains that are not themselves taxed in that year
-  (second-order).
+- **Taxable sales that pay conversion tax** realize gains that are not themselves taxed in that year. To be fixed
+  in T5.2.
 
 Changes after v1:
 - **Mortgage and home costs (Q-HOME-1, schema version 2):** the home carries its mortgage (balance as of a month,

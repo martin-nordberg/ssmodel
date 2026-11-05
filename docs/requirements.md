@@ -325,6 +325,17 @@ Full federal and South Carolina income tax is computed *(D: Q-TAX-1, Q-TAX-2)*.
 - **FR-TAX-5** **IRMAA** MUST be modeled *(D: Q-TAX-3)*. Each year's Part B and Part D surcharge uses the household's
   MAGI from two years earlier. Tier thresholds are inflation-indexed from data. For MAGI in 2025 and 2026 (before the
   model starts), the user enters the actual values.
+- **FR-TAX-6** **Itemized deductions** *(D: Q-TAX-5)*. Each year the federal deduction is the larger of the standard
+  deduction (with the 65+ additions) and itemized deductions; the senior deduction applies either way.
+  - Itemized deductions: SALT (SC income tax plus home property tax), capped at $40,000 in 2025, rising 1% a year
+    through 2029 and $10,000 from 2030, with the cap phased down above $500,000 of MAGI to a $10,000 floor.
+  - Mortgage interest on up to $750,000 of acquisition debt.
+  - Medical costs above 7.5% of AGI: Medicare premiums including IRMAA, Medigap, COBRA, out-of-pocket costs, and
+    expense items marked medical, excluding HSA-paid amounts.
+  - Charitable gifts (expense items marked charity) above 0.5% of AGI from 2026.
+  - The 2/37 top-bracket limitation from 2026.
+  - SC tax is unaffected (it starts from AGI with the SCIAD).
+  - The year table shows the deduction used.
 
 ### 3.8 Longevity
 
@@ -460,8 +471,9 @@ not the decedent's spouse:
 - **FR-WD-3** Being able to cover the gap years before claiming is part of the claiming decision. The model MUST show,
   for each candidate date, which accounts pay for the gap.
 - **FR-WD-4** **Roth conversions** (optional toggle): convert traditional to Roth up to a target bracket and/or IRMAA
-  tier during low-income years, with the tax paid from taxable. Settings: target bracket, IRMAA cap, start year, end
-  year (or "until SS claim" or "until RMD age").
+  tier during low-income years. The tax is paid from cash above its reserve target, then taxable, then the rest of
+  cash. Gains realized by selling taxable shares to pay the tax are taxed in the same year *(D: Q-TAX-6)*. Settings:
+  target bracket, IRMAA cap, start year, end year (or "until SS claim" or "until RMD age").
 - **FR-WD-5** Output a **recommended withdrawal schedule**: for the recommended claiming date, the median-path and
   deterministic-path withdrawal amounts per account per year, plus conversions.
 
@@ -852,6 +864,8 @@ A blank answer meant "accept the recommendation".
 | Q-IMP-8 | Long-term care | Expense items in v1 | 1.3 |
 | Q-IMP-9 | Plan format | `docs/plan.md`, session-sized tasks with requirement IDs and tests | plan.md |
 | Q-UX-7 | Visual style | Left blank (no Rec) → compact console style, system theme, tabular numerals | FR-UI-18 |
+| Q-TAX-5 | Itemized deductions (after v1) | Larger of standard and itemized each year: SALT (SC tax + property tax, OBBBA cap and phase-down), mortgage interest, medical over 7.5% of AGI, charity over 0.5% of AGI; 2/37 limit. SC unaffected | FR-TAX-6, plan T5.3 |
+| Q-TAX-6 | Gains from funding conversion tax (after v1) | Taxed in the same year; cash above its reserve target pays first | FR-WD-4, plan T5.2 |
 | Q-HOME-1 | Mortgage and home costs (after v1) | Mortgage from a statement: balance as of a month, rate, payoff month (payment derived). Property tax, insurance, maintenance with the home, ending at a sale. Downsizing: no new mortgage; each cost reduced by a percentage. Schema version 2; v1 files lose the expense link with a note | FR-ACC-7, FR-EXP-1 |
 
 ---
