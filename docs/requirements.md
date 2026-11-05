@@ -270,6 +270,9 @@ Annuities are income streams (FR-INC-3), not accounts. All asset types above are
     items. A fixed nominal payment unrelated to the home can use `indexing: none`.
   - One-time item (e.g. a home improvement): one date, one amount.
   - Ongoing living expenses: inflation-indexed, no end date.
+- **FR-EXP-1a** Expenses are entered in two tables with the same columns *(D: Q-EXP-6)*: **nondiscretionary** (needs)
+  and **discretionary** (wants: travel, gifts, hobbies). Each has its own scale (Assumptions and a Console slider).
+  Healthcare and home costs are scaled by neither.
 - **FR-EXP-2** After the first death, spending drops to **75%** of the couple's level by default, editable per
   scenario *(D: Q-EXP-2)*. The fraction applies to items flagged `perPerson: true` (default: living expenses). It does
   not apply to fixed items or to home costs (FR-ACC-7).
@@ -573,7 +576,7 @@ Setup panels:
 | Home | Value, basis, appreciation; mortgage (balance as of a month, rate, payoff; derived payment shown); property tax, insurance, maintenance; sale plan/backstop; replacement home and its cost reductions |
 | Inheritances | Grid: label, heir, decedent birth date/sex, timing, amounts by type, growth, probability, if-heir-predeceases; sub-grid for real estate (keep/sell, carrying costs, rent) |
 | Income | Annuities and other streams |
-| Expenses | Grid of items (with a tax-deductible flag: charity or medical); survivor step-down %; bequest target |
+| Expenses | Two grids, nondiscretionary and discretionary (with a tax-deductible flag: charity or medical); survivor step-down %; bequest target |
 | Healthcare | COBRA premium and start date per person, Medicare/Medigap/Part D, out-of-pocket, medical inflation spread |
 | Assumptions | Inflation, return model, mortality, simulation settings, seed |
 | Strategy | Withdrawal strategy, inherited-IRA schedules, Roth conversion settings, objective floors |
@@ -629,7 +632,8 @@ Setup panels:
   | Mortality | Toggle *Stochastic / Fixed* + two death-age sliders | 70–105 |
   | Trust-fund payable % and start year | Slider + stepper | 60–100%; 2030–2040 |
   | Survivor spending fraction | Slider | 50–100% |
-  | Living-expense scale | Slider | 70–130% |
+  | Nondiscretionary spending scale | Slider | 70–130% |
+  | Discretionary spending scale | Slider | 0–150% |
   | Roth conversion target | Segmented | Off / 12% / 22% / 24% |
   | Withdrawal strategy | Segmented | Conventional / Bracket-fill / Proportional |
   | Inheritances | Toggle + amount scale slider | 0–150% |
@@ -866,6 +870,7 @@ A blank answer meant "accept the recommendation".
 | Q-UX-7 | Visual style | Left blank (no Rec) → compact console style, system theme, tabular numerals | FR-UI-18 |
 | Q-TAX-5 | Itemized deductions (after v1) | Larger of standard and itemized each year: SALT (SC tax + property tax, OBBBA cap and phase-down), mortgage interest, medical over 7.5% of AGI, charity over 0.5% of AGI; 2/37 limit. SC unaffected | FR-TAX-6, plan T5.3 |
 | Q-TAX-6 | Gains from funding conversion tax (after v1) | Taxed in the same year; cash above its reserve target pays first | FR-WD-4, plan T5.2 |
+| Q-EXP-6 | Discretionary expenses (after v1) | Two expense tables, nondiscretionary and discretionary, each with its own scale (percent field and Console slider); healthcare unscaled. File keys: `expenses.items` / `assumptions.expenseScale` stay as the nondiscretionary ones, plus `expenses.discretionary` / `assumptions.discretionaryScale` | FR-EXP-1a, FR-UI-7 |
 | Q-HOME-1 | Mortgage and home costs (after v1) | Mortgage from a statement: balance as of a month, rate, payoff month (payment derived). Property tax, insurance, maintenance with the home, ending at a sale. Downsizing: no new mortgage; each cost reduced by a percentage. Schema version 2; v1 files lose the expense link with a note | FR-ACC-7, FR-EXP-1 |
 
 ---

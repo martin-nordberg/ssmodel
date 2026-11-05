@@ -551,6 +551,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       survivorFrom,
       survivorFraction: sc.expenses.survivorFraction,
       scale: asm.expenseScale,
+      discretionaryScale: asm.discretionaryScale,
     }
     let expenses: number
     if (cache && !Number.isNaN(cache.expenses[yi]!)) expenses = cache.expenses[yi]!
@@ -700,7 +701,10 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       td.inheritedDistributions = inheritedTotal
       td.expenses = {
         items: prep.expenses
-          .map((item) => ({ label: item.label, amount: expenseForYear(item, y, ectx) }))
+          .map((item) => ({
+            label: item.discretionary ? `${item.label} (discretionary)` : item.label,
+            amount: expenseForYear(item, y, ectx),
+          }))
           .filter((x) => x.amount !== 0),
         housing: props.flatMap((pr, k) => {
           if (!owned[k]) return []

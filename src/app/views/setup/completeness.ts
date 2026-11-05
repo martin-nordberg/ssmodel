@@ -35,7 +35,11 @@ export function completeness(file: HouseholdFile, s: ScenarioT): CheckItem[] {
       section: 'socialSecurity',
     },
     { label: 'At least one account', done: s.accounts.length > 0, section: 'accounts' },
-    { label: 'Living expenses', done: s.expenses.items.some((e) => !e.oneTime && e.annual > 0), section: 'expenses' },
+    {
+      label: 'Living expenses',
+      done: [...s.expenses.items, ...s.expenses.discretionary].some((e) => !e.oneTime && e.annual > 0),
+      section: 'expenses',
+    },
   ]
 }
 

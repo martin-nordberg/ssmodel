@@ -348,7 +348,10 @@ export const Assumptions = z
       .prefault({}),
     heirTaxRate: Fraction.default(0.22),
     realWageGrowth: z.number().finite().min(-0.05).max(0.05).default(0.011),
+    /** Scale on nondiscretionary expenses (expenses.items); healthcare and home costs are not scaled. */
     expenseScale: z.number().finite().min(0).max(3).default(1),
+    /** Scale on discretionary expenses (expenses.discretionary). */
+    discretionaryScale: z.number().finite().min(0).max(3).default(1),
     inheritancesEnabled: z.boolean().default(true),
     inheritanceScale: z.number().finite().min(0).max(3).default(1),
   })
@@ -393,7 +396,10 @@ export const Scenario = z.object({
     .object({
       survivorFraction: Fraction.default(0.75),
       bequestTarget: NonNegMoney.default(0),
+      /** Nondiscretionary expenses (needs), scaled by assumptions.expenseScale. */
       items: z.array(ExpenseItem).default([]),
+      /** Discretionary expenses (wants: travel, gifts, hobbies), scaled by assumptions.discretionaryScale. */
+      discretionary: z.array(ExpenseItem).default([]),
     })
     .prefault({}),
   healthcare: Healthcare,

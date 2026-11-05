@@ -417,7 +417,10 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     spouse: { claimed: spouseClaimed, currentMonthly: s.ss.currentMonthly, pia: spousePia },
     candidates: claimCandidates(people[0].age, baseYM),
     accounts,
-    expenses: scenario.expenses.items.map((e) => ({
+    expenses: [
+      ...scenario.expenses.items.map((e) => ({ ...e, discretionary: false })),
+      ...scenario.expenses.discretionary.map((e) => ({ ...e, discretionary: true })),
+    ].map((e) => ({
       ...e,
       startYM: parseYM(e.start),
       endYM: e.end ? parseYM(e.end) : undefined,

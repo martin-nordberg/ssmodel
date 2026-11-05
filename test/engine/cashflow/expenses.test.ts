@@ -2,7 +2,15 @@ import { describe, expect, test } from 'bun:test'
 import { earningsForYear, expenseForYear, incomeForYear, monthsActive } from '@/engine/cashflow/expenses.ts'
 import { parseYM } from '@/engine/core/dates.ts'
 
-const ctx = { baseYear: 2027, price: 1.05, medical: 1.08, survivorFrom: null, survivorFraction: 0.75, scale: 1 }
+const ctx = {
+  baseYear: 2027,
+  price: 1.05,
+  medical: 1.08,
+  survivorFrom: null,
+  survivorFraction: 0.75,
+  scale: 1,
+  discretionaryScale: 1,
+}
 
 describe('monthsActive', () => {
   test('partial years', () => {
@@ -60,6 +68,11 @@ describe('expenseForYear', () => {
     expect(expenseForYear({ ...living, indexing: 'medical' }, 2029, ctx)).toBeCloseTo(72000 * 1.08, 6)
   })
   test('scale lever', () => expect(expenseForYear(living, 2028, { ...ctx, scale: 0.9 })).toBeCloseTo(75600 * 0.9, 6))
+  test('discretionary items use their own scale; nondiscretionary items ignore it', () => {
+    const c = { ...ctx, scale: 0.9, discretionaryScale: 1.2 }
+    expect(expenseForYear({ ...living, discretionary: true }, 2028, c)).toBeCloseTo(75600 * 1.2, 6)
+    expect(expenseForYear(living, 2028, c)).toBeCloseTo(75600 * 0.9, 6)
+  })
 })
 
 describe('income and earnings', () => {

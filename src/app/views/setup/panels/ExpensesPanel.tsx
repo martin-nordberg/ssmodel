@@ -102,6 +102,14 @@ export function ExpensesPanel() {
   const s = useActiveScenario()
   const file = useFile()
   if (!s || !file) return null
+  const newRow = (): ExpenseItemT => ({
+    label: 'New expense',
+    annual: 0,
+    start: file.household.baseDate,
+    indexing: 'inflation',
+    oneTime: false,
+    perPerson: false,
+  })
   return (
     <Panel
       title="Expenses"
@@ -134,21 +142,33 @@ export function ExpensesPanel() {
           }
         />
       </FieldRow>
+      <h3 className="font-medium text-xs">Nondiscretionary expenses</h3>
+      <p className="text-muted-foreground text-xs">
+        Needs you would pay in any case (living costs, insurance, debts). Scaled by the nondiscretionary spending lever.
+      </p>
       <DataGrid
-        label="Expenses"
+        label="Nondiscretionary expenses"
         rows={s.expenses.items}
         columns={columns}
-        newRow={(): ExpenseItemT => ({
-          label: 'New expense',
-          annual: 0,
-          start: file.household.baseDate,
-          indexing: 'inflation',
-          oneTime: false,
-          perPerson: false,
-        })}
+        newRow={newRow}
         onChange={(rows) =>
           updateScenario((d) => {
             d.expenses.items = rows
+          })
+        }
+      />
+      <h3 className="font-medium text-xs">Discretionary expenses</h3>
+      <p className="text-muted-foreground text-xs">
+        Wants you could trim (travel, gifts, hobbies). Scaled by the discretionary spending lever.
+      </p>
+      <DataGrid
+        label="Discretionary expenses"
+        rows={s.expenses.discretionary}
+        columns={columns}
+        newRow={newRow}
+        onChange={(rows) =>
+          updateScenario((d) => {
+            d.expenses.discretionary = rows
           })
         }
       />

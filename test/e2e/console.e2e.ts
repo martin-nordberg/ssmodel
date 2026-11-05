@@ -86,7 +86,7 @@ test('pin a baseline and see deltas after a what-if', async ({ page }) => {
   await expect(pin).toBeEnabled({ timeout: 60_000 })
   await pin.click()
   await expect(page.getByText(/^Baseline: Base case/)).toBeVisible()
-  const field = page.locator('[data-lever="Expense scale"] input')
+  const field = page.locator('[data-lever="Nondiscretionary spending"] input')
   await field.fill('120%')
   await field.press('Enter')
   await expect(page.getByTestId('kpi-tiles')).toContainText('vs baseline', { timeout: 60_000 })

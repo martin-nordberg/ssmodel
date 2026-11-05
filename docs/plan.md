@@ -618,6 +618,8 @@ v1.1 notes:
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
+- **Discretionary expenses (Q-EXP-6):** a second expense table with its own scale; two Console sliders and percent
+  fields on Assumptions. Existing files load unchanged (new keys with defaults).
 - **Mortgage and home costs (Q-HOME-1, schema version 2):** the home carries its mortgage (balance as of a month,
   rate, payoff; payment derived), property tax, insurance and maintenance. A sale pays off the loan; downsizing has
   no new mortgage and reduced costs. The v1→v2 migration drops the old mortgage-expense link and tells the user.

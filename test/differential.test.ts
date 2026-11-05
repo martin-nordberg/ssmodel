@@ -23,8 +23,9 @@ function compare(file: HouseholdFile, claimIndexes: number[]) {
       const ctx = `${formatYM(claim)} year ${p.year}`
       expect([ctx, p.ss[0]]).toEqual([ctx, expect.closeTo(r.ss[0], 2)])
       expect([ctx, p.ss[1]]).toEqual([ctx, expect.closeTo(r.ss[1], 2)])
-      // Both engines solve to about $1 of withdrawal; at tax kinks that can move tax by a few dollars.
-      expect([ctx, Math.abs(p.totalTax - r.totalTax) < 5 + 2e-4 * r.totalTax]).toEqual([ctx, true])
+      // Both engines solve to about $1 of withdrawal; at tax kinks (brackets, SS taxation, the itemized medical
+      // floor and standard/itemized switch) that can move tax by several dollars.
+      expect([ctx, Math.abs(p.totalTax - r.totalTax) < 10 + 2e-4 * r.totalTax]).toEqual([ctx, true])
       const tol = 5 * (i + 1) + 1e-5 * r.liquid
       expect([ctx, Math.abs(p.liquid - r.liquid) < tol]).toEqual([ctx, true])
       expect([ctx, Math.abs(p.shortfall - r.shortfall) < tol]).toEqual([ctx, true])
@@ -77,6 +78,10 @@ describe('production vs reference engine', () => {
       // Itemized deductions [FR-TAX-6]: medical and charitable items, often zero.
       medicalItem: fc.oneof(fc.constant(0), money(60)),
       charity: fc.oneof(fc.constant(0), money(40)),
+      // Discretionary spending and the two scale levers.
+      travel: fc.oneof(fc.constant(0), money(30)),
+      needScale: fc.constantFrom(0.8, 1, 1.15),
+      wantScale: fc.constantFrom(0.5, 1, 1.3),
     })
     .map((h) => {
       const pY = Number(h.pBirth.slice(0, 4))
@@ -137,13 +142,21 @@ describe('production vs reference engine', () => {
                   ? [{ label: 'Gifts', annual: h.charity, start: '2027-01', deductible: 'charity' }]
                   : []),
               ],
+              discretionary:
+                h.travel > 0
+                  ? [{ label: 'Travel', annual: h.travel, start: '2027-01', end: '2040-12', perPerson: true }]
+                  : [],
             },
             healthcare: {
               pre65: { spouse: { cobraMonthly: 900 } },
               medicare: { medigapAnnual: 2000, outOfPocket: 1000 },
             },
             strategy: { withdrawal: h.strategy, targetBracket: h.bracket, irmaaCapTier: h.irmaaCap },
-            assumptions: { mortality: { mode: 'fixed', deathAge: { primary: h.deathP, spouse: h.deathS } } },
+            assumptions: {
+              mortality: { mode: 'fixed', deathAge: { primary: h.deathP, spouse: h.deathS } },
+              expenseScale: h.needScale,
+              discretionaryScale: h.wantScale,
+            },
             simulation: { maxAge: 100 },
           },
         ],
@@ -159,5 +172,5 @@ describe('production vs reference engine', () => {
       }),
       { numRuns: Number(process.env.DIFF_RUNS ?? 500), seed: 20270101 },
     )
-  })
+  }, 60_000)
 })

@@ -27,7 +27,8 @@ test('setup sections show the loaded household', async ({ page }) => {
   await expect(page.getByRole('grid', { name: 'Inherited IRAs' })).toContainText('1938-07-01')
   await page.screenshot({ path: 'test-results/setup-accounts.png', fullPage: true })
   await section(page, 'Expenses').click()
-  await expect(page.getByRole('grid', { name: 'Expenses' })).toContainText('Roof + kitchen')
+  await expect(page.getByRole('grid', { name: 'Nondiscretionary expenses' })).toContainText('Roof + kitchen')
+  await expect(page.getByRole('grid', { name: 'Discretionary expenses', exact: true })).toBeVisible()
   await section(page, 'Home').click()
   await expect(page.getByText(/Principal \+ interest: \$1,(799|800)\.\d\d\/month/)).toBeVisible()
   await page.getByLabel('Interest rate').fill('6%')
@@ -74,12 +75,19 @@ test('enter a household by hand and save it', async ({ page }) => {
 
   // Expenses.
   await section(page, 'Expenses').click()
-  await page.getByRole('button', { name: 'Add row' }).click()
-  const exp = page.getByRole('grid', { name: 'Expenses' })
+  await page.getByRole('button', { name: 'Add row' }).first().click()
+  const exp = page.getByRole('grid', { name: 'Nondiscretionary expenses' })
   await exp.focus()
   await page.keyboard.type('Living')
   await page.keyboard.press('Tab')
   await page.keyboard.type('72000')
+  await page.keyboard.press('Enter')
+  // A discretionary row in the second table.
+  await page.getByRole('button', { name: 'Add row' }).nth(1).click()
+  await page.getByRole('grid', { name: 'Discretionary expenses', exact: true }).focus()
+  await page.keyboard.type('Travel')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('15000')
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('completeness').locator('li:not(.line-through)')).toHaveCount(0)
 
@@ -90,6 +98,7 @@ test('enter a household by hand and save it', async ({ page }) => {
   expect(saved).toContain('amount: 160200')
   expect(saved).toContain('balance: 650000')
   expect(saved).toContain('label: Living')
+  expect(saved).toMatch(/discretionary:\n\s+- label: Travel/)
   expect(saved).toContain('annual: 72000')
 })
 

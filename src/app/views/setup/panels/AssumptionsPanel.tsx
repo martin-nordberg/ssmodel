@@ -208,14 +208,28 @@ export function AssumptionsPanel() {
         />
         <Field
           leverPath="assumptions.expenseScale"
-          label="Expense scale"
-          type="number"
+          label="Nondiscretionary spending scale"
+          type="percent"
           min={0}
           max={3}
           value={a.expenseScale}
+          hint="Healthcare and home costs are not scaled"
           onCommit={(v) =>
             updateScenario((d) => {
               d.assumptions.expenseScale = v as number
+            })
+          }
+        />
+        <Field
+          leverPath="assumptions.discretionaryScale"
+          label="Discretionary spending scale"
+          type="percent"
+          min={0}
+          max={3}
+          value={a.discretionaryScale}
+          onCommit={(v) =>
+            updateScenario((d) => {
+              d.assumptions.discretionaryScale = v as number
             })
           }
         />

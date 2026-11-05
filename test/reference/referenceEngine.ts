@@ -529,7 +529,11 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
     let exp = 0
     let charity = 0
     let medicalItems = 0
-    for (const e of sc.expenses.items) {
+    const tagged = [
+      ...sc.expenses.items.map((e) => ({ e, scale: asm.expenseScale })),
+      ...sc.expenses.discretionary.map((e) => ({ e, scale: asm.discretionaryScale })),
+    ]
+    for (const { e, scale } of tagged) {
       const before = exp
       const idx =
         (e.indexing === 'inflation'
@@ -538,7 +542,7 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
             ? med
             : e.indexing === 'none'
               ? 1
-              : (1 + e.indexing) ** yi) * asm.expenseScale
+              : (1 + e.indexing) ** yi) * scale
       const s = mi(e.start)
       if (e.oneTime) {
         if (Math.floor(s / 12) === y)

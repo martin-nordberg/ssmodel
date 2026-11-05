@@ -38,19 +38,22 @@ export type ExpenseItem = {
   oneTime: boolean
   perPerson: boolean
   deductible?: 'charity' | 'medical'
+  /** Discretionary items use the discretionary scale lever. */
+  discretionary?: boolean
 }
 
 export type ExpenseContext = IndexContext & {
   /** First month the household is a single survivor (null while both are alive). */
   survivorFrom: YM | null
   survivorFraction: number
-  /** Global spending scale lever. */
+  /** Spending scale levers: nondiscretionary and discretionary items. */
   scale: number
+  discretionaryScale: number
 }
 
 export function expenseForYear(item: ExpenseItem, year: number, ctx: ExpenseContext): number {
   const start = item.startYM ?? parseYM(item.start)
-  const f = indexFactor(item.indexing, year, ctx) * ctx.scale
+  const f = indexFactor(item.indexing, year, ctx) * (item.discretionary ? ctx.discretionaryScale : ctx.scale)
   if (item.oneTime) {
     if (Math.floor(start / 12) !== year) return 0
     const survivorAdj =
