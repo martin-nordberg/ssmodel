@@ -37,11 +37,11 @@ test('every setup input label and column heading has a tooltip', async ({ page }
   // Hovering a label shows its tip; so does a column heading.
   await nav.getByRole('button', { name: /^Home/ }).click()
   await page.getByText('Monthly principal + interest', { exact: true }).hover()
-  await expect(page.getByRole('tooltip')).toContainText('extra principal')
+  await expect(page.getByRole('tooltip')).toContainText('extra principal', { timeout: 10_000 })
   await page.screenshot({ path: 'test-results/tip-home.png' })
   await nav.getByRole('button', { name: /^Accounts/ }).click()
   await page.getByRole('grid', { name: 'Accounts' }).getByText('Return preset', { exact: true }).hover()
-  await expect(page.getByRole('tooltip')).toContainText('Moderate 6% / 11%')
+  await expect(page.getByRole('tooltip')).toContainText('Moderate 6% / 11%', { timeout: 10_000 })
   await page.screenshot({ path: 'test-results/tip-grid.png' })
 })
 
@@ -58,6 +58,8 @@ test('every Console lever has a tooltip', async ({ page }) => {
       els.filter((e) => !e.querySelector('[data-slot="tooltip-trigger"]')).map((e) => e.getAttribute('data-lever')),
     )
   expect(bare).toEqual([])
+  // Hold still on a settled page: the tip appears after 5 seconds.
+  await expect(page.getByText('Median path')).toBeVisible({ timeout: 60_000 })
   await rail.getByText('Volatility multiplier', { exact: true }).hover()
-  await expect(page.getByRole('tooltip')).toContainText('1.5 makes market swings 50% larger')
+  await expect(page.getByRole('tooltip')).toContainText('1.5 makes market swings 50% larger', { timeout: 10_000 })
 })

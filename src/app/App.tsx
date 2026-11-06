@@ -7,7 +7,7 @@ import { UnsupportedBrowser } from './shell/UnsupportedBrowser.tsx'
 export function App() {
   if (!isFileAccessSupported()) return <UnsupportedBrowser />
   return (
-    <TooltipProvider delayDuration={400}>
+    <TooltipProvider delayDuration={5000}>
       <AppShell />
       <Toaster position="bottom-right" />
     </TooltipProvider>
