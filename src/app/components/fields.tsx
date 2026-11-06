@@ -32,7 +32,7 @@ function addToConsole(path: string, label: string, type: CellType, value: number
 // A field is label / control / help. Inside a FieldRow it takes three rows of the row's grid (subgrid), so a
 // two-line label or a hint in one field never shifts its neighbours' boxes.
 const FIELD = 'grid min-w-0 row-span-3 grid-rows-subgrid gap-1'
-const LABEL = 'self-end text-muted-foreground text-xs'
+const LABEL = 'self-end text-brand text-xs'
 
 type FieldProps = {
   /** Scenario-relative path; enables right-click "Add to Console" [FR-UI-7a]. */

@@ -440,7 +440,7 @@ export function DataGrid<R>({
                     key={h.id}
                     aria-description={columns.find((c) => c.id === h.column.id)?.tip}
                     style={{ width: h.getSize() }}
-                    className="border-b px-1 py-1 text-left font-medium font-sans text-muted-foreground"
+                    className="border-b px-1 py-1 text-left font-medium font-sans text-brand"
                   >
                     {flexRender(h.column.columnDef.header, h.getContext())}
                   </th>

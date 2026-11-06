@@ -137,13 +137,13 @@ export function Lever({
             if (v !== undefined && v !== value) onCommit(v)
           }}
         >
-          <SliderPrimitive.Track className="relative h-1 grow overflow-hidden rounded-full bg-muted">
-            <SliderPrimitive.Range className="absolute h-full bg-primary/60" />
+          <SliderPrimitive.Track className="relative h-1 grow overflow-hidden rounded-full bg-brand-track">
+            <SliderPrimitive.Range className="absolute h-full bg-brand-range" />
           </SliderPrimitive.Track>
           <SliderPrimitive.Thumb
             aria-label={label}
             onDoubleClick={onReset}
-            className="block size-3 rounded-full border border-primary bg-background shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="block size-3 rounded-full border-2 border-brand-active bg-background shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           />
         </SliderPrimitive.Root>
         <span
@@ -181,7 +181,7 @@ export function SegmentedLever<T extends string>({
   return (
     <div className="grid min-w-0 gap-1" data-lever={label}>
       <div className="flex items-center gap-1 text-xs">
-        <span className={cn('flex-1', overridden && 'font-medium')}>
+        <span className={cn('flex-1 text-brand', overridden && 'font-medium')}>
           <Tip tip={tip}>
             <span className={tip ? TIP_TRIGGER : undefined}>{label}</span>
           </Tip>
@@ -212,7 +212,7 @@ export function SegmentedLever<T extends string>({
             key={o.value}
             value={o.value}
             className={cn(
-              'flex-1 px-1 text-[11px]',
+              'flex-1 px-1 text-[11px] data-[state=on]:border-brand-active data-[state=on]:bg-brand-active data-[state=on]:text-white data-[state=on]:hover:bg-brand-active/90 data-[state=on]:hover:text-white',
               o.value === saved && o.value !== value && 'underline decoration-dotted',
             )}
           >

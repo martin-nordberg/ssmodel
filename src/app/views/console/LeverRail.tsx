@@ -106,9 +106,7 @@ export function LeverRail({ saved, effective, prep }: { saved: ScenarioT; effect
           />
         ),
       )}
-      {saved.consoleLevers.length > 0 && (
-        <h3 className="mt-1 font-medium text-[11px] text-muted-foreground">Added from Setup</h3>
-      )}
+      {saved.consoleLevers.length > 0 && <h3 className="mt-1 font-medium text-[11px]">Added from Setup</h3>}
       {saved.consoleLevers.map((p) => {
         const f = promotedFormat(p.min, p.max)
         const cur = Number(getPath(effective, p.path) ?? p.min)
