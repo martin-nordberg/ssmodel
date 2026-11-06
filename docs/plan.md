@@ -618,6 +618,7 @@ v1.1 notes:
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
+- **Checklist hides when complete:** the "Needed for the Console" box in Setup appears only while something is missing.
 - **Brand blues:** labels, titles and column headings in dark blue (light blue in dark mode); tooltips and slider
   ranges use coordinating blues from the chart band ramp (`--brand*` tokens in `src/index.css`). Active Console
   toggles use the light slider-track blue with black text and a dark blue border.

@@ -533,7 +533,7 @@ Top-level views, chosen from the app shell:
 - **Compare** (FR-UI-2): scenarios side by side, as a metrics table (one column per scenario, shown first) and as
   overlaid charts, e.g. every scenario's claim-age curve on one chart *(D: Q-UX-6)*.
 
-A **completeness checklist** in Setup shows which required facts are missing. The Console stays disabled until the
+A **completeness checklist** in Setup shows which required facts are missing; it is hidden once nothing is. The Console stays disabled until the
 minimum set is entered: birth dates, earnings record or FRA estimate, Spouse's benefit, at least one account, and
 living expenses.
 

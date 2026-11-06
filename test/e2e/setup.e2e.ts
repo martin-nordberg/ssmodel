@@ -95,7 +95,8 @@ test('enter a household by hand and save it', async ({ page }) => {
   await page.keyboard.press('Tab')
   await page.keyboard.type('15000')
   await page.keyboard.press('Enter')
-  await expect(page.getByTestId('completeness').locator('li:not(.line-through)')).toHaveCount(0)
+  // Nothing left to enter: the checklist hides.
+  await expect(page.getByTestId('completeness')).toHaveCount(0)
 
   await page.keyboard.press('Control+Shift+S')
   await expect(page.getByTestId('status-file')).toHaveText('saved.yaml')
