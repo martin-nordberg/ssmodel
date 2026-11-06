@@ -294,7 +294,7 @@ export function InheritancesPanel() {
   return (
     <Panel
       title="Inheritances"
-      description="Amounts in today's dollars. Inherited IRAs follow the 10-year rule (with annual RMDs when the decedent had started them). Non-IRA means financial assets such as brokerage and bank accounts; they go to the taxable account with a stepped-up basis. Enter inherited real estate separately in the table below the selected row, not in Non-IRA. It arrives with that inheritance (same timing and probability) and can be sold on receipt or kept. The recommendation is also shown without inheritances."
+      description="Amounts in today's dollars. Inherited IRAs follow the 10-year rule (with annual RMDs when the decedent had started them). Non-IRA means financial assets such as brokerage and bank accounts; they go to the taxable account with a stepped-up basis. Enter inherited real estate separately in the table below the selected row, not in Non-IRA. It arrives with that inheritance (same timing and probability) and can be sold on receipt or kept. For mortality timing, the health offset uses the life table as if the decedent were that many years older: negative for healthier than average (−3 = mortality of someone 3 years younger), positive for poorer health. The recommendation is also shown without inheritances."
     >
       <DataGrid
         label="Inheritances"
