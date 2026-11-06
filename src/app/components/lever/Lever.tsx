@@ -212,7 +212,7 @@ export function SegmentedLever<T extends string>({
             key={o.value}
             value={o.value}
             className={cn(
-              'flex-1 px-1 text-[11px] data-[state=on]:border-brand-active data-[state=on]:bg-brand-active data-[state=on]:text-white data-[state=on]:hover:bg-brand-active/90 data-[state=on]:hover:text-white',
+              'flex-1 px-1 text-[11px] data-[state=on]:border-brand-active data-[state=on]:bg-brand-track data-[state=on]:text-foreground data-[state=on]:hover:bg-brand-track/80 data-[state=on]:hover:text-foreground',
               o.value === saved && o.value !== value && 'underline decoration-dotted',
             )}
           >

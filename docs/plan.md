@@ -618,9 +618,9 @@ v1.1 notes:
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
-- **Brand blues:** labels, titles and column headings in dark blue (light blue in dark mode); tooltips, slider
-  ranges and active Console toggles use coordinating blues from the chart band ramp (`--brand*` tokens in
-  `src/index.css`).
+- **Brand blues:** labels, titles and column headings in dark blue (light blue in dark mode); tooltips and slider
+  ranges use coordinating blues from the chart band ramp (`--brand*` tokens in `src/index.css`). Active Console
+  toggles use the light slider-track blue with black text and a dark blue border.
 - **Tooltips:** every data-input label, editable grid column heading and Console lever has a shadcn tooltip of 5–40
   words (longer for esoteric fields). The texts live in `src/app/tips.ts`, keyed by data path so promoted levers
   find theirs; a unit test checks the length and an e2e test checks that no label or heading lacks one.
