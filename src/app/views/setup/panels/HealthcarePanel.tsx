@@ -1,4 +1,5 @@
 import { Field, FieldRow, Panel } from '@/app/components/fields.tsx'
+import { TIPS } from '@/app/tips.ts'
 import { updateScenario, useActiveScenario, useFile } from '@/state/scenario.ts'
 
 export function HealthcarePanel() {
@@ -15,6 +16,7 @@ export function HealthcarePanel() {
         <Field
           leverPath="healthcare.medicalInflationSpread"
           label="Medical inflation above CPI"
+          tip={TIPS['healthcare.medicalInflationSpread']}
           type="percent"
           min={-0.05}
           max={0.1}
@@ -32,6 +34,7 @@ export function HealthcarePanel() {
           <FieldRow>
             <Field
               label="COBRA premium (monthly)"
+              tip={TIPS['healthcare.pre65.cobraMonthly']}
               type="currency"
               min={0}
               value={h.pre65[who].cobraMonthly}
@@ -43,6 +46,7 @@ export function HealthcarePanel() {
             />
             <Field
               label="COBRA starts (month)"
+              tip={TIPS['healthcare.pre65.start']}
               type="yearMonth"
               optional
               value={h.pre65[who].start}
@@ -55,6 +59,7 @@ export function HealthcarePanel() {
             />
             <Field
               label="Out-of-pocket (annual)"
+              tip={TIPS['healthcare.pre65.outOfPocket']}
               type="currency"
               min={0}
               value={h.pre65[who].outOfPocket}
@@ -72,6 +77,7 @@ export function HealthcarePanel() {
         <Field
           leverPath="healthcare.medicare.medigapAnnual"
           label="Medigap / Advantage premium (annual)"
+          tip={TIPS['healthcare.medicare.medigapAnnual']}
           type="currency"
           min={0}
           value={h.medicare.medigapAnnual}
@@ -84,6 +90,7 @@ export function HealthcarePanel() {
         <Field
           leverPath="healthcare.medicare.outOfPocket"
           label="Out-of-pocket (annual)"
+          tip={TIPS['healthcare.medicare.outOfPocket']}
           type="currency"
           min={0}
           value={h.medicare.outOfPocket}

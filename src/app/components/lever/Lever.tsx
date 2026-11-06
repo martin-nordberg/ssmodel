@@ -5,9 +5,12 @@ import { Slider as SliderPrimitive } from 'radix-ui'
 import { useEffect, useId, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
+import { TIP_TRIGGER, Tip } from '../Tip.tsx'
 
 export type LeverProps = {
   label: string
+  /** Tooltip on the label (5–40 words). */
+  tip?: string
   value: number
   saved: number
   min: number
@@ -29,6 +32,7 @@ const snap = (v: number, min: number, max: number, step: number) =>
 
 export function Lever({
   label,
+  tip,
   value,
   saved,
   min,
@@ -68,7 +72,9 @@ export function Lever({
     <div className="grid min-w-0 gap-1" data-lever={label}>
       <div className="flex items-center gap-1">
         <label htmlFor={`${id}-field`} className={cn('min-w-0 flex-1 truncate text-xs', overridden && 'font-medium')}>
-          {label}
+          <Tip tip={tip}>
+            <span className={tip ? TIP_TRIGGER : undefined}>{label}</span>
+          </Tip>
           {overridden && (
             <span
               className="ml-1 rounded bg-secondary px-1 text-[10px] text-secondary-foreground"
@@ -156,6 +162,7 @@ type Option<T extends string> = { value: T; label: string }
 /** Discrete lever as a segmented control. */
 export function SegmentedLever<T extends string>({
   label,
+  tip,
   value,
   saved,
   options,
@@ -163,6 +170,7 @@ export function SegmentedLever<T extends string>({
   onReset,
 }: {
   label: string
+  tip?: string
   value: T
   saved: T
   options: Option<T>[]
@@ -174,7 +182,9 @@ export function SegmentedLever<T extends string>({
     <div className="grid min-w-0 gap-1" data-lever={label}>
       <div className="flex items-center gap-1 text-xs">
         <span className={cn('flex-1', overridden && 'font-medium')}>
-          {label}
+          <Tip tip={tip}>
+            <span className={tip ? TIP_TRIGGER : undefined}>{label}</span>
+          </Tip>
           {overridden && <span className="ml-1 rounded bg-secondary px-1 text-[10px]">what-if</span>}
         </span>
         {overridden && (

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Panel, SelectField } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
+import { TIPS } from '@/app/tips.ts'
 import { Inheritance, type InheritanceT, InheritedRealEstate } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario } from '@/state/scenario.ts'
 
@@ -10,6 +11,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'label',
     header: 'Label',
+    tip: TIPS['inheritances.label'],
     type: 'text',
     width: 130,
     get: (r) => r.label,
@@ -18,6 +20,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'heir',
     header: 'Heir',
+    tip: TIPS['inheritances.heir'],
     type: 'select',
     width: 80,
     options: [
@@ -30,6 +33,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'dob',
     header: 'Decedent born',
+    tip: TIPS['inheritances.dob'],
     type: 'date',
     width: 100,
     get: (r) => r.decedentBirthDate,
@@ -38,6 +42,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'sex',
     header: 'Sex',
+    tip: TIPS['inheritances.sex'],
     type: 'select',
     width: 70,
     options: [
@@ -50,6 +55,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'timing',
     header: 'Timing',
+    tip: TIPS['inheritances.timing'],
     type: 'select',
     width: 110,
     options: [
@@ -63,6 +69,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'date',
     header: 'Date / from',
+    tip: TIPS['inheritances.date'],
     type: 'yearMonth',
     width: 90,
     optional: true,
@@ -78,6 +85,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'to',
     header: 'To',
+    tip: TIPS['inheritances.to'],
     type: 'yearMonth',
     width: 90,
     optional: true,
@@ -87,6 +95,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'offset',
     header: 'Health offset (yrs)',
+    tip: TIPS['inheritances.offset'],
     type: 'number',
     width: 100,
     min: -20,
@@ -97,6 +106,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'trad',
     header: 'Traditional IRA',
+    tip: TIPS['inheritances.trad'],
     type: 'currency',
     width: 110,
     min: 0,
@@ -106,6 +116,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'roth',
     header: 'Roth IRA',
+    tip: TIPS['inheritances.roth'],
     type: 'currency',
     width: 100,
     min: 0,
@@ -115,6 +126,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'non',
     header: 'Non-IRA',
+    tip: TIPS['inheritances.non'],
     type: 'currency',
     width: 100,
     min: 0,
@@ -124,6 +136,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'growth',
     header: 'Real growth',
+    tip: TIPS['inheritances.growth'],
     type: 'percent',
     width: 80,
     min: -0.2,
@@ -134,6 +147,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'spend',
     header: 'Spend-down / yr',
+    tip: TIPS['inheritances.spend'],
     type: 'currency',
     width: 100,
     min: 0,
@@ -143,6 +157,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'prob',
     header: 'Probability',
+    tip: TIPS['inheritances.prob'],
     type: 'percent',
     width: 80,
     min: 0,
@@ -153,6 +168,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'pre',
     header: 'If heir has died',
+    tip: TIPS['inheritances.pre'],
     type: 'select',
     width: 120,
     options: [
@@ -165,6 +181,7 @@ const columns: GridColumn<InheritanceT>[] = [
   {
     id: 'class',
     header: 'IRA rule',
+    tip: TIPS['inheritances.class'],
     type: 'select',
     width: 120,
     options: [
@@ -180,6 +197,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'label',
     header: 'Property',
+    tip: TIPS['realEstate.label'],
     type: 'text',
     width: 120,
     get: (r) => r.label,
@@ -188,6 +206,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'value',
     header: 'Value today',
+    tip: TIPS['realEstate.value'],
     type: 'currency',
     width: 110,
     min: 0,
@@ -197,6 +216,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'disp',
     header: 'On receipt',
+    tip: TIPS['realEstate.disp'],
     type: 'select',
     width: 100,
     options: [
@@ -209,6 +229,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'mean',
     header: 'Appreciation',
+    tip: TIPS['realEstate.mean'],
     type: 'percent',
     width: 90,
     get: (r) => r.appreciation.mean,
@@ -217,6 +238,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'sd',
     header: 'Volatility',
+    tip: TIPS['realEstate.sd'],
     type: 'percent',
     width: 80,
     min: 0,
@@ -226,6 +248,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'carry',
     header: 'Carrying costs / yr',
+    tip: TIPS['realEstate.carry'],
     type: 'currency',
     width: 120,
     min: 0,
@@ -235,6 +258,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'rent',
     header: 'Net rent / yr',
+    tip: TIPS['realEstate.rent'],
     type: 'currency',
     width: 100,
     min: 0,
@@ -244,6 +268,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'sale',
     header: 'Later sale',
+    tip: TIPS['realEstate.sale'],
     type: 'select',
     width: 100,
     options: [
@@ -257,6 +282,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'date',
     header: 'Sale month',
+    tip: TIPS['realEstate.date'],
     type: 'yearMonth',
     width: 90,
     optional: true,
@@ -266,6 +292,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'floor',
     header: 'Backstop floor',
+    tip: TIPS['realEstate.floor'],
     type: 'currency',
     width: 100,
     min: 0,
@@ -275,6 +302,7 @@ const reColumns: GridColumn<RealEstateT>[] = [
   {
     id: 'cost',
     header: 'Selling costs',
+    tip: TIPS['realEstate.cost'],
     type: 'percent',
     width: 90,
     min: 0,
@@ -311,6 +339,7 @@ export function InheritancesPanel() {
         <>
           <SelectField
             label="Real estate in"
+            tip={TIPS['view.realEstateFor']}
             value={idx}
             options={s.inheritances.map((h, i) => ({ value: i, label: h.label }))}
             onChange={setSel}

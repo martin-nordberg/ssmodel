@@ -1,6 +1,7 @@
 import { Field, FieldRow, Panel, SelectField } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { formatCurrency } from '@/app/components/grid/parse.ts'
+import { TIPS } from '@/app/tips.ts'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
 import { updateFile, updateScenario, useActiveScenario, useFile, usePrepared } from '@/state/scenario.ts'
 
@@ -9,6 +10,7 @@ const stepColumns: GridColumn<Step>[] = [
   {
     id: 'effective',
     header: 'From (month)',
+    tip: TIPS['trustFund.steps.effective'],
     type: 'yearMonth',
     width: 110,
     get: (r) => r.effective,
@@ -17,6 +19,7 @@ const stepColumns: GridColumn<Step>[] = [
   {
     id: 'pct',
     header: 'Payable %',
+    tip: TIPS['trustFund.steps.payablePercent'],
     type: 'number',
     width: 90,
     min: 0,
@@ -48,6 +51,7 @@ export function SocialSecurityPanel() {
       <FieldRow>
         <Field
           label="Current monthly benefit"
+          tip={TIPS['ss.spouse.currentMonthly']}
           type="currency"
           min={0}
           value={sp.ss.currentMonthly}
@@ -59,6 +63,7 @@ export function SocialSecurityPanel() {
         />
         <Field
           label="Month her benefit started"
+          tip={TIPS['ss.spouse.claimedDate']}
           type="yearMonth"
           value={sp.ss.claimedDate}
           onCommit={(v) =>
@@ -87,6 +92,7 @@ export function SocialSecurityPanel() {
       <FieldRow>
         <SelectField
           label="Benefit cut"
+          tip={TIPS['trustFund.preset']}
           value={s.trustFund.preset}
           options={presets}
           onChange={(v) =>

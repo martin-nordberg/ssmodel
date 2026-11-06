@@ -5,6 +5,7 @@ import { ExplainDialog, type ExplainState } from '@/app/components/ExplainDialog
 import { SelectField } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { formatCurrency } from '@/app/components/grid/parse.ts'
+import { TIPS } from '@/app/tips.ts'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
@@ -92,6 +93,7 @@ export function ResultsView() {
       <div className="flex flex-wrap items-end gap-3">
         <SelectField
           label="Claiming date (Primary)"
+          tip={TIPS['view.resultsClaim']}
           value={claim}
           options={prep.candidates.map((c) => ({
             value: c,

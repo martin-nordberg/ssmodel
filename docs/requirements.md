@@ -588,6 +588,8 @@ Setup panels:
   ranges from and to Excel/Sheets (TSV), add/delete/reorder rows, and per-cell validation messages.
 - **FR-UI-4** Inputs accept currency (`$1,234`, `1.2k`, `1.2M`), percentages (`3.5%`) and dates (`2032-01`,
   `Jan 2032`).
+  - Every input label, editable grid column heading and Console lever has a hover tooltip (5–40 words) explaining
+    the field; esoteric fields get longer tips.
 - **FR-UI-5** Recalculation is automatic after input changes, debounced, and a manual "Run" is also available. A
   deterministic preview SHOULD update instantly, and Monte Carlo SHOULD follow.
 

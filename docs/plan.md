@@ -618,6 +618,9 @@ v1.1 notes:
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
+- **Tooltips:** every data-input label, editable grid column heading and Console lever has a shadcn tooltip of 5–40
+  words (longer for esoteric fields). The texts live in `src/app/tips.ts`, keyed by data path so promoted levers
+  find theirs; a unit test checks the length and an e2e test checks that no label or heading lacks one.
 - **Mortgage payment instead of payoff month (Q-HOME-1, schema version 3):** the mortgage is entered as balance,
   as-of month, rate and the monthly P&I payment actually made, so extra principal payments shorten the loan; the
   payoff month is derived and the final payment is partial. The v2→v3 migration sets the level payment that meets

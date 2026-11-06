@@ -1,4 +1,5 @@
 import { Field, FieldRow, Panel, SelectField, SwitchField } from '@/app/components/fields.tsx'
+import { TIPS } from '@/app/tips.ts'
 import type { BracketT } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario } from '@/state/scenario.ts'
 
@@ -28,6 +29,7 @@ export function StrategyPanel() {
       <FieldRow>
         <SelectField
           label="Withdrawal strategy"
+          tip={TIPS['strategy.withdrawal']}
           value={st.withdrawal}
           options={[
             { value: 'bracket_fill' as const, label: 'Bracket-fill' },
@@ -43,6 +45,7 @@ export function StrategyPanel() {
         />
         <SelectField
           label="Target bracket"
+          tip={TIPS['strategy.targetBracket']}
           value={st.targetBracket}
           options={brackets}
           onChange={(v) =>
@@ -53,6 +56,7 @@ export function StrategyPanel() {
         />
         <SelectField
           label="IRMAA cap"
+          tip={TIPS['strategy.irmaaCapTier']}
           value={st.irmaaCapTier}
           options={tiers}
           onChange={(v) =>
@@ -63,6 +67,7 @@ export function StrategyPanel() {
         />
         <SelectField
           label="Inherited traditional schedule"
+          tip={TIPS['strategy.inheritedIraSchedule.traditional']}
           value={st.inheritedIraSchedule.traditional}
           options={schedules}
           onChange={(v) =>
@@ -73,6 +78,7 @@ export function StrategyPanel() {
         />
         <SelectField
           label="Inherited Roth schedule"
+          tip={TIPS['strategy.inheritedIraSchedule.roth']}
           value={st.inheritedIraSchedule.roth}
           options={schedules}
           onChange={(v) =>
@@ -86,6 +92,7 @@ export function StrategyPanel() {
       <FieldRow>
         <SwitchField
           label="Convert in low-income years"
+          tip={TIPS['strategy.rothConversions.enabled']}
           checked={st.rothConversions.enabled}
           onChange={(v) =>
             updateScenario((d) => {
@@ -95,6 +102,7 @@ export function StrategyPanel() {
         />
         <SelectField
           label="Up to bracket"
+          tip={TIPS['strategy.rothConversions.upToBracket']}
           value={st.rothConversions.upToBracket}
           options={brackets}
           onChange={(v) =>
@@ -105,6 +113,7 @@ export function StrategyPanel() {
         />
         <SelectField
           label="IRMAA cap"
+          tip={TIPS['strategy.rothConversions.irmaaCapTier']}
           value={st.rothConversions.irmaaCapTier}
           options={tiers}
           onChange={(v) =>
@@ -115,6 +124,7 @@ export function StrategyPanel() {
         />
         <Field
           label="Start year"
+          tip={TIPS['strategy.rothConversions.startYear']}
           type="integer"
           optional
           value={st.rothConversions.startYear}
@@ -126,6 +136,7 @@ export function StrategyPanel() {
         />
         <SelectField
           label="Until"
+          tip={TIPS['strategy.rothConversions.until']}
           value={typeof st.rothConversions.until === 'number' ? 'year' : st.rothConversions.until}
           options={[
             { value: 'claim', label: 'Social Security claim' },
@@ -142,6 +153,7 @@ export function StrategyPanel() {
           <Field
             leverPath="strategy.rothConversions.until"
             label="Until year"
+            tip={TIPS['strategy.rothConversions.untilYear']}
             type="integer"
             value={st.rothConversions.until}
             onCommit={(v) =>
@@ -157,6 +169,7 @@ export function StrategyPanel() {
         <Field
           leverPath="objective.successFloor"
           label="Success floor"
+          tip={TIPS['objective.successFloor']}
           type="percent"
           min={0}
           max={1}
@@ -170,6 +183,7 @@ export function StrategyPanel() {
         <Field
           leverPath="objective.bequestFloor"
           label="Bequest floor"
+          tip={TIPS['objective.bequestFloor']}
           type="percent"
           min={0}
           max={1}
@@ -183,6 +197,7 @@ export function StrategyPanel() {
         <Field
           leverPath="objective.runnerUpTolerance"
           label="Runner-up tolerance"
+          tip={TIPS['objective.runnerUpTolerance']}
           type="percent"
           min={0}
           max={1}

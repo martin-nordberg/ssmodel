@@ -1,4 +1,5 @@
 import { Field, FieldRow, Panel, SelectField } from '@/app/components/fields.tsx'
+import { TIPS } from '@/app/tips.ts'
 import { updateFile, useFile } from '@/state/scenario.ts'
 
 const sexes = [
@@ -16,6 +17,7 @@ export function HouseholdPanel() {
       <FieldRow>
         <Field
           label="Base date (month)"
+          tip={TIPS['household.baseDate']}
           type="yearMonth"
           value={h.baseDate}
           onCommit={(v) =>
@@ -24,12 +26,20 @@ export function HouseholdPanel() {
             })
           }
         />
-        <Field label="State" type="text" value={h.state} onCommit={() => {}} hint="South Carolina (fixed)" />
+        <Field
+          label="State"
+          tip={TIPS['household.state']}
+          type="text"
+          value={h.state}
+          onCommit={() => {}}
+          hint="South Carolina (fixed)"
+        />
       </FieldRow>
       <h3 className="font-medium text-xs">Primary</h3>
       <FieldRow>
         <Field
           label="Name"
+          tip={TIPS['household.name']}
           type="text"
           value={p.name}
           onCommit={(v) =>
@@ -40,6 +50,7 @@ export function HouseholdPanel() {
         />
         <Field
           label="Birth date"
+          tip={TIPS['household.birthDate']}
           type="date"
           value={p.birthDate}
           onCommit={(v) =>
@@ -50,6 +61,7 @@ export function HouseholdPanel() {
         />
         <SelectField
           label="Sex (for life tables)"
+          tip={TIPS['household.sex']}
           value={p.sex}
           options={sexes}
           onChange={(v) =>
@@ -63,6 +75,7 @@ export function HouseholdPanel() {
       <FieldRow>
         <Field
           label="Name"
+          tip={TIPS['household.name']}
           type="text"
           value={s.name}
           onCommit={(v) =>
@@ -73,6 +86,7 @@ export function HouseholdPanel() {
         />
         <Field
           label="Birth date"
+          tip={TIPS['household.birthDate']}
           type="date"
           value={s.birthDate}
           onCommit={(v) =>
@@ -83,6 +97,7 @@ export function HouseholdPanel() {
         />
         <SelectField
           label="Sex (for life tables)"
+          tip={TIPS['household.sex']}
           value={s.sex}
           options={sexes}
           onChange={(v) =>
@@ -100,6 +115,7 @@ export function HouseholdPanel() {
             <Field
               key={year}
               label={`${year} MAGI`}
+              tip={TIPS['household.priorMagi']}
               type="currency"
               optional
               value={h.priorMagi[year]}

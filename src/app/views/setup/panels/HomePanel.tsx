@@ -1,4 +1,5 @@
 import { Field, FieldRow, Panel, SelectField, SwitchField } from '@/app/components/fields.tsx'
+import { TIPS, type TipKey } from '@/app/tips.ts'
 import { levelPayment, paymentsToPayoff } from '@/engine/accounts/mortgage.ts'
 import { formatYM, parseYM, ymMonth, ymYear } from '@/engine/core/dates.ts'
 import { Home, type ScenarioT } from '@/schema/model.ts'
@@ -34,6 +35,7 @@ export function HomePanel() {
     >
       <SwitchField
         label="We own a home"
+        tip={TIPS['home.owned']}
         checked={!!h}
         onChange={(v) =>
           updateScenario((d) => {
@@ -46,6 +48,7 @@ export function HomePanel() {
           <FieldRow>
             <Field
               label="Value today"
+              tip={TIPS['home.value']}
               type="currency"
               min={0}
               value={h.value}
@@ -57,6 +60,7 @@ export function HomePanel() {
             />
             <Field
               label="Cost basis"
+              tip={TIPS['home.basis']}
               type="currency"
               min={0}
               value={h.basis}
@@ -68,6 +72,7 @@ export function HomePanel() {
             />
             <Field
               label="Appreciation (mean)"
+              tip={TIPS['home.appreciation.mean']}
               type="percent"
               min={-0.1}
               max={0.2}
@@ -80,6 +85,7 @@ export function HomePanel() {
             />
             <Field
               label="Appreciation (volatility)"
+              tip={TIPS['home.appreciation.sd']}
               type="percent"
               min={0}
               max={0.5}
@@ -95,6 +101,7 @@ export function HomePanel() {
           <FieldRow>
             <SwitchField
               label="We have a mortgage"
+              tip={TIPS['home.mortgage.on']}
               checked={!!mg}
               onChange={(v) =>
                 updateScenario((d) => {
@@ -114,6 +121,7 @@ export function HomePanel() {
               <>
                 <Field
                   label="Balance (from a statement)"
+                  tip={TIPS['home.mortgage.balance']}
                   type="currency"
                   min={0}
                   value={mg.balance}
@@ -125,6 +133,7 @@ export function HomePanel() {
                 />
                 <Field
                   label="Balance as of (month)"
+                  tip={TIPS['home.mortgage.asOf']}
                   type="yearMonth"
                   value={mg.asOf}
                   hint="Balance after that month's payment"
@@ -136,6 +145,7 @@ export function HomePanel() {
                 />
                 <Field
                   label="Interest rate"
+                  tip={TIPS['home.mortgage.rate']}
                   type="percent"
                   min={0}
                   max={0.2}
@@ -148,6 +158,7 @@ export function HomePanel() {
                 />
                 <Field
                   label="Monthly principal + interest"
+                  tip={TIPS['home.mortgage.payment']}
                   type="currency"
                   min={0}
                   value={mg.payment}
@@ -181,6 +192,7 @@ export function HomePanel() {
                 key={c.key}
                 leverPath={`home.costs.${c.key}`}
                 label={c.label}
+                tip={TIPS[`home.costs.${c.key}` as TipKey]}
                 type="currency"
                 min={0}
                 value={h.costs[c.key]}
@@ -197,6 +209,7 @@ export function HomePanel() {
           <FieldRow>
             <SelectField
               label="Sale"
+              tip={TIPS['home.sale.mode']}
               value={h.sale.mode}
               options={[
                 { value: 'none' as const, label: 'Keep' },
@@ -212,6 +225,7 @@ export function HomePanel() {
             {h.sale.mode === 'planned' && (
               <Field
                 label="Sale month"
+                tip={TIPS['home.sale.date']}
                 type="yearMonth"
                 optional
                 value={h.sale.date}
@@ -225,6 +239,7 @@ export function HomePanel() {
             {h.sale.mode === 'backstop' && (
               <Field
                 label="Sell when savings fall below (today's $)"
+                tip={TIPS['home.sale.liquidFloor']}
                 type="currency"
                 min={0}
                 value={h.sale.liquidFloor}
@@ -237,6 +252,7 @@ export function HomePanel() {
             )}
             <Field
               label="Selling costs"
+              tip={TIPS['home.sale.sellingCostPct']}
               type="percent"
               min={0}
               max={0.2}
@@ -249,6 +265,7 @@ export function HomePanel() {
             />
             <Field
               label="Replacement home cost (downsizing, today's $)"
+              tip={TIPS['home.sale.replacementCost']}
               type="currency"
               min={0}
               value={h.sale.replacementCost}
@@ -267,6 +284,7 @@ export function HomePanel() {
                   <Field
                     key={c.key}
                     label={`${c.label} reduction`}
+                    tip={TIPS[`home.replacementCostCuts.${c.key}` as TipKey]}
                     type="percent"
                     min={0}
                     max={1}

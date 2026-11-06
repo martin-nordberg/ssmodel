@@ -1,5 +1,6 @@
 import { Field, FieldRow, Panel } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
+import { TIPS } from '@/app/tips.ts'
 import type { ExpenseItemT } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario, useFile } from '@/state/scenario.ts'
 
@@ -14,6 +15,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'label',
     header: 'Label',
+    tip: TIPS['expenseItems.label'],
     type: 'text',
     width: 140,
     get: (r) => r.label,
@@ -22,6 +24,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'annual',
     header: 'Annual (base-date $)',
+    tip: TIPS['expenseItems.annual'],
     type: 'currency',
     width: 130,
     min: 0,
@@ -31,6 +34,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'start',
     header: 'Start',
+    tip: TIPS['expenseItems.start'],
     type: 'yearMonth',
     width: 90,
     get: (r) => r.start,
@@ -39,6 +43,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'end',
     header: 'End',
+    tip: TIPS['expenseItems.end'],
     type: 'yearMonth',
     width: 90,
     optional: true,
@@ -48,6 +53,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'indexing',
     header: 'Indexing',
+    tip: TIPS['expenseItems.indexing'],
     type: 'select',
     width: 130,
     options: indexingOptions,
@@ -60,6 +66,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'rate',
     header: 'Fixed rate',
+    tip: TIPS['expenseItems.rate'],
     type: 'percent',
     width: 80,
     optional: true,
@@ -69,6 +76,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'oneTime',
     header: 'One-time',
+    tip: TIPS['expenseItems.oneTime'],
     type: 'boolean',
     width: 70,
     get: (r) => r.oneTime,
@@ -77,6 +85,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
   {
     id: 'perPerson',
     header: 'Per person',
+    tip: TIPS['expenseItems.perPerson'],
     type: 'boolean',
     width: 80,
     get: (r) => r.perPerson,
@@ -86,6 +95,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
     // Itemized deduction [FR-TAX-6]: charitable gifts above 0.5% of AGI, medical costs above 7.5% of AGI.
     id: 'deductible',
     header: 'Tax-deductible',
+    tip: TIPS['expenseItems.deductible'],
     type: 'select',
     width: 110,
     options: [
@@ -119,6 +129,7 @@ export function ExpensesPanel() {
         <Field
           leverPath="expenses.survivorFraction"
           label="Survivor spending fraction"
+          tip={TIPS['expenses.survivorFraction']}
           type="percent"
           min={0}
           max={1}
@@ -132,6 +143,7 @@ export function ExpensesPanel() {
         <Field
           leverPath="expenses.bequestTarget"
           label="Bequest target (real, after tax)"
+          tip={TIPS['expenses.bequestTarget']}
           type="currency"
           min={0}
           value={s.expenses.bequestTarget}

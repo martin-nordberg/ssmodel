@@ -1,4 +1,5 @@
 import { Field, FieldRow, Panel, SelectField } from '@/app/components/fields.tsx'
+import { TIPS } from '@/app/tips.ts'
 import { updateScenario, useActiveScenario } from '@/state/scenario.ts'
 
 export function AssumptionsPanel() {
@@ -12,6 +13,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.inflation.mean"
           label="Mean"
+          tip={TIPS['assumptions.inflation.mean']}
           type="percent"
           min={-0.05}
           max={0.2}
@@ -25,6 +27,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.inflation.sd"
           label="Volatility"
+          tip={TIPS['assumptions.inflation.sd']}
           type="percent"
           min={0}
           max={0.2}
@@ -38,6 +41,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.inflation.phi"
           label="Persistence (phi)"
+          tip={TIPS['assumptions.inflation.phi']}
           type="number"
           min={0}
           max={0.99}
@@ -51,6 +55,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.realWageGrowth"
           label="Real wage growth"
+          tip={TIPS['assumptions.realWageGrowth']}
           type="percent"
           min={-0.05}
           max={0.05}
@@ -66,6 +71,7 @@ export function AssumptionsPanel() {
       <FieldRow>
         <SelectField
           label="Model"
+          tip={TIPS['assumptions.returns.model']}
           value={a.returns.model}
           options={[
             { value: 'parametric' as const, label: 'Parametric (lognormal)' },
@@ -81,6 +87,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.returns.crossAccountCorrelation"
           label="Cross-account correlation"
+          tip={TIPS['assumptions.returns.crossAccountCorrelation']}
           type="number"
           min={-1}
           max={1}
@@ -94,6 +101,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.returns.inflationCorrelation"
           label="Correlation with inflation"
+          tip={TIPS['assumptions.returns.inflationCorrelation']}
           type="number"
           min={-1}
           max={1}
@@ -107,6 +115,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.returns.realReturnShift"
           label="Return shift (all accounts)"
+          tip={TIPS['assumptions.returns.realReturnShift']}
           type="percent"
           min={-0.1}
           max={0.1}
@@ -120,6 +129,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.returns.volatilityMultiplier"
           label="Volatility multiplier"
+          tip={TIPS['assumptions.returns.volatilityMultiplier']}
           type="number"
           min={0}
           max={3}
@@ -133,6 +143,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.returns.blockLength"
           label="Bootstrap block (years)"
+          tip={TIPS['assumptions.returns.blockLength']}
           type="integer"
           min={1}
           max={20}
@@ -148,6 +159,7 @@ export function AssumptionsPanel() {
       <FieldRow>
         <SelectField
           label="Mortality"
+          tip={TIPS['assumptions.mortality.mode']}
           value={a.mortality.mode}
           options={[
             { value: 'stochastic' as const, label: 'Stochastic (SSA life table)' },
@@ -163,6 +175,7 @@ export function AssumptionsPanel() {
           <Field
             key={`d-${who}`}
             label={`Death age (${who}, fixed mode)`}
+            tip={TIPS['assumptions.mortality.deathAge']}
             type="number"
             min={60}
             max={110}
@@ -178,6 +191,7 @@ export function AssumptionsPanel() {
           <Field
             key={`o-${who}`}
             label={`Health age offset (${who})`}
+            tip={TIPS['assumptions.mortality.ageOffset']}
             type="number"
             min={-15}
             max={15}
@@ -196,6 +210,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.heirTaxRate"
           label="Heirs' tax rate on IRAs"
+          tip={TIPS['assumptions.heirTaxRate']}
           type="percent"
           min={0}
           max={1}
@@ -209,6 +224,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.expenseScale"
           label="Nondiscretionary spending scale"
+          tip={TIPS['assumptions.expenseScale']}
           type="percent"
           min={0}
           max={3}
@@ -223,6 +239,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="assumptions.discretionaryScale"
           label="Discretionary spending scale"
+          tip={TIPS['assumptions.discretionaryScale']}
           type="percent"
           min={0}
           max={3}
@@ -239,6 +256,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="simulation.paths"
           label="Paths"
+          tip={TIPS['simulation.paths']}
           type="integer"
           min={100}
           max={100000}
@@ -252,6 +270,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="simulation.seed"
           label="Seed"
+          tip={TIPS['simulation.seed']}
           type="integer"
           min={0}
           value={s.simulation.seed}
@@ -264,6 +283,7 @@ export function AssumptionsPanel() {
         <Field
           leverPath="simulation.maxAge"
           label="Maximum age (younger spouse)"
+          tip={TIPS['simulation.maxAge']}
           type="integer"
           min={85}
           max={120}

@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { TIP_TRIGGER, Tip } from '../Tip.tsx'
 import {
   formatCurrency,
   formatPercent,
@@ -36,6 +37,8 @@ export type CellType =
 export type GridColumn<R> = {
   id: string
   header: string
+  /** Tooltip on the column heading (5–40 words); every editable column has one. */
+  tip?: string
   type: CellType
   width?: number
   options?: { value: string; label: string }[]
@@ -346,7 +349,14 @@ export function DataGrid<R>({
     ...columns.map(
       (col, ci): ColumnDef<R> => ({
         id: col.id,
-        header: col.header,
+        header: () =>
+          col.tip ? (
+            <Tip tip={col.tip}>
+              <span className={TIP_TRIGGER}>{col.header}</span>
+            </Tip>
+          ) : (
+            col.header
+          ),
         size: col.width ?? 120,
         cell: (ctx) => {
           const ri = ctx.row.index
@@ -428,6 +438,7 @@ export function DataGrid<R>({
                 {hg.headers.map((h) => (
                   <th
                     key={h.id}
+                    aria-description={columns.find((c) => c.id === h.column.id)?.tip}
                     style={{ width: h.getSize() }}
                     className="border-b px-1 py-1 text-left font-medium font-sans text-muted-foreground"
                   >

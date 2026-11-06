@@ -1,11 +1,14 @@
 // Default Console levers [FR-UI-7]. Each maps a scenario value to a lever and back to what-if override entries.
 import { parseCurrency, parseNumber, parsePercent } from '@/app/components/grid/parse.ts'
+import { TIPS } from '@/app/tips.ts'
 import type { ScenarioT } from '@/schema/model.ts'
 
 export type SliderLever = {
   kind: 'slider'
   id: string
   label: string
+  /** Tooltip on the label (5–40 words). */
+  tip: string
   min: number
   max: number
   step: number
@@ -21,6 +24,8 @@ export type SegmentLever = {
   kind: 'segment'
   id: string
   label: string
+  /** Tooltip on the label (5–40 words). */
+  tip: string
   options: { value: string; label: string }[]
   get: (s: ScenarioT) => string
   set: (v: string, s: ScenarioT) => [string, unknown][]
@@ -62,6 +67,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'inflation',
     label: 'Inflation (mean)',
+    tip: TIPS['assumptions.inflation.mean'],
     min: 0.01,
     max: 0.06,
     step: 0.0025,
@@ -74,6 +80,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'returnShift',
     label: 'Return shift (all accounts)',
+    tip: TIPS['assumptions.returns.realReturnShift'],
     min: -0.03,
     max: 0.03,
     step: 0.0025,
@@ -89,6 +96,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'vol',
     label: 'Volatility multiplier',
+    tip: TIPS['assumptions.returns.volatilityMultiplier'],
     min: 0.5,
     max: 1.5,
     step: 0.05,
@@ -101,6 +109,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'segment',
     id: 'mortality',
     label: 'Mortality',
+    tip: TIPS['assumptions.mortality.mode'],
     options: [
       { value: 'stochastic', label: 'Life table' },
       { value: 'fixed', label: 'Fixed ages' },
@@ -112,6 +121,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'deathP',
     label: 'Death age — primary',
+    tip: TIPS['assumptions.mortality.deathAge'],
     min: 70,
     max: 105,
     step: 1,
@@ -125,6 +135,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'deathS',
     label: 'Death age — spouse',
+    tip: TIPS['assumptions.mortality.deathAge'],
     min: 70,
     max: 105,
     step: 1,
@@ -138,6 +149,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'tfPct',
     label: 'Trust fund: payable %',
+    tip: TIPS['lever.trustFundPercent'],
     min: 60,
     max: 100,
     step: 1,
@@ -150,6 +162,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'tfYear',
     label: 'Trust fund: cut starts',
+    tip: TIPS['lever.trustFundYear'],
     min: 2030,
     max: 2040,
     step: 1,
@@ -162,6 +175,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'survivor',
     label: 'Survivor spending',
+    tip: TIPS['expenses.survivorFraction'],
     min: 0.5,
     max: 1,
     step: 0.05,
@@ -174,6 +188,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'expenseScale',
     label: 'Nondiscretionary spending',
+    tip: TIPS['assumptions.expenseScale'],
     min: 0.7,
     max: 1.3,
     step: 0.05,
@@ -186,6 +201,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'discretionaryScale',
     label: 'Discretionary spending',
+    tip: TIPS['assumptions.discretionaryScale'],
     min: 0,
     max: 1.5,
     step: 0.05,
@@ -198,6 +214,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'segment',
     id: 'roth',
     label: 'Roth conversions',
+    tip: TIPS['lever.roth'],
     options: [
       { value: 'off', label: 'Off' },
       { value: '0.12', label: '12%' },
@@ -218,6 +235,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'segment',
     id: 'withdrawal',
     label: 'Withdrawal strategy',
+    tip: TIPS['strategy.withdrawal'],
     options: [
       { value: 'conventional', label: 'Conventional' },
       { value: 'bracket_fill', label: 'Bracket-fill' },
@@ -230,6 +248,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'segment',
     id: 'inheritOn',
     label: 'Inheritances',
+    tip: TIPS['lever.inheritancesEnabled'],
     options: [
       { value: 'on', label: 'Included' },
       { value: 'off', label: 'Excluded' },
@@ -242,6 +261,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'inheritScale',
     label: 'Inheritance amount',
+    tip: TIPS['lever.inheritanceScale'],
     min: 0,
     max: 1.5,
     step: 0.05,
@@ -255,6 +275,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'bequest',
     label: 'Bequest target',
+    tip: TIPS['expenses.bequestTarget'],
     min: 0,
     max: 1_000_000,
     step: 25_000,
@@ -267,6 +288,7 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     kind: 'slider',
     id: 'successFloor',
     label: 'Success floor',
+    tip: TIPS['objective.successFloor'],
     min: 0.7,
     max: 0.99,
     step: 0.01,

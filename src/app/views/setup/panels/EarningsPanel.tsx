@@ -1,6 +1,7 @@
 import { Field, FieldRow, Panel } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { formatCurrency, formatPercent } from '@/app/components/grid/parse.ts'
+import { TIPS } from '@/app/tips.ts'
 import { ymYear } from '@/engine/core/dates.ts'
 import { updateFile, useFile, usePrepared } from '@/state/scenario.ts'
 
@@ -11,6 +12,7 @@ const recordColumns: GridColumn<RecordRow>[] = [
   {
     id: 'year',
     header: 'Year',
+    tip: TIPS['earningsRecord.year'],
     type: 'integer',
     width: 70,
     min: 1937,
@@ -21,6 +23,7 @@ const recordColumns: GridColumn<RecordRow>[] = [
   {
     id: 'amount',
     header: 'Taxed SS earnings',
+    tip: TIPS['earningsRecord.amount'],
     type: 'currency',
     width: 140,
     min: 0,
@@ -33,6 +36,7 @@ const projColumns: GridColumn<ProjRow>[] = [
   {
     id: 'year',
     header: 'Year',
+    tip: TIPS['earnings.year'],
     type: 'integer',
     width: 70,
     min: 2000,
@@ -43,6 +47,7 @@ const projColumns: GridColumn<ProjRow>[] = [
   {
     id: 'wages',
     header: 'Wages',
+    tip: TIPS['earnings.wages'],
     type: 'currency',
     width: 110,
     min: 0,
@@ -52,6 +57,7 @@ const projColumns: GridColumn<ProjRow>[] = [
   {
     id: 'se',
     header: 'Self-employment (net)',
+    tip: TIPS['earnings.selfEmployment'],
     type: 'currency',
     width: 140,
     min: 0,
@@ -77,6 +83,7 @@ export function EarningsPanel() {
       <FieldRow>
         <Field
           label="SSA statement FRA estimate (monthly)"
+          tip={TIPS['ss.primary.fraEstimateMonthly']}
           type="currency"
           optional
           value={p.ss.fraEstimateMonthly}
@@ -88,6 +95,7 @@ export function EarningsPanel() {
         />
         <Field
           label="Statement date (month)"
+          tip={TIPS['ss.primary.estimateAsOf']}
           type="yearMonth"
           optional
           value={p.ss.estimateAsOf}

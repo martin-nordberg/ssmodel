@@ -1,5 +1,6 @@
 import { Panel } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
+import { TIPS } from '@/app/tips.ts'
 import { Account, type AccountT } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario } from '@/state/scenario.ts'
 
@@ -49,6 +50,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'type',
     header: 'Type',
+    tip: TIPS['accounts.type'],
     type: 'select',
     width: 140,
     options: typeOptions,
@@ -58,6 +60,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'label',
     header: 'Label',
+    tip: TIPS['accounts.label'],
     type: 'text',
     optional: true,
     width: 120,
@@ -67,6 +70,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'owner',
     header: 'Owner',
+    tip: TIPS['accounts.owner'],
     type: 'select',
     width: 80,
     options: ownerOptions,
@@ -76,6 +80,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'balance',
     header: 'Balance',
+    tip: TIPS['accounts.balance'],
     type: 'currency',
     width: 110,
     min: 0,
@@ -85,6 +90,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'preset',
     header: 'Return preset',
+    tip: TIPS['accounts.preset'],
     type: 'select',
     width: 110,
     options: presetOptions,
@@ -94,6 +100,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'mean',
     header: 'Mean (override)',
+    tip: TIPS['accounts.mean'],
     type: 'percent',
     optional: true,
     width: 100,
@@ -104,6 +111,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'sd',
     header: 'Volatility (override)',
+    tip: TIPS['accounts.sd'],
     type: 'percent',
     optional: true,
     width: 110,
@@ -114,6 +122,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'fee',
     header: 'Fee',
+    tip: TIPS['accounts.fee'],
     type: 'percent',
     width: 70,
     min: 0,
@@ -124,6 +133,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'basis',
     header: 'Cost basis',
+    tip: TIPS['accounts.basis'],
     type: 'currency',
     optional: true,
     width: 100,
@@ -133,6 +143,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'yield',
     header: 'Dividend yield',
+    tip: TIPS['accounts.yield'],
     type: 'percent',
     width: 90,
     get: (r) => (r.type === 'taxable' ? r.dividendYield : undefined),
@@ -141,6 +152,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'rate',
     header: 'Cash rate',
+    tip: TIPS['accounts.rate'],
     type: 'percent',
     width: 80,
     get: (r) => (r.type === 'cash' ? r.rate : undefined),
@@ -149,6 +161,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'target',
     header: 'Reserve (months)',
+    tip: TIPS['accounts.target'],
     type: 'number',
     width: 100,
     min: 0,
@@ -159,6 +172,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'employer',
     header: 'Current employer',
+    tip: TIPS['accounts.employer'],
     type: 'boolean',
     width: 100,
     get: (r) => (r.type === 'traditional_401k' ? r.currentEmployer : undefined),
@@ -167,6 +181,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'hsaFirst',
     header: 'HSA pays medical',
+    tip: TIPS['accounts.hsaFirst'],
     type: 'boolean',
     width: 100,
     get: (r) => (r.type === 'hsa' ? r.payMedicalFirst : undefined),
@@ -175,6 +190,7 @@ const regularColumns: GridColumn<Regular>[] = [
   {
     id: 'hsaContrib',
     header: 'HSA contribution/yr',
+    tip: TIPS['accounts.hsaContrib'],
     type: 'currency',
     width: 110,
     get: (r) => (r.type === 'hsa' ? r.annualContribution : undefined),
@@ -186,6 +202,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'label',
     header: 'Label',
+    tip: TIPS['inheritedIras.label'],
     type: 'text',
     optional: true,
     width: 120,
@@ -195,6 +212,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'flavor',
     header: 'Kind',
+    tip: TIPS['inheritedIras.flavor'],
     type: 'select',
     width: 100,
     options: [
@@ -207,6 +225,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'beneficiary',
     header: 'Beneficiary',
+    tip: TIPS['inheritedIras.beneficiary'],
     type: 'select',
     width: 90,
     options: ownerOptions.slice(0, 2),
@@ -216,6 +235,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'balance',
     header: 'Balance',
+    tip: TIPS['inheritedIras.balance'],
     type: 'currency',
     width: 110,
     min: 0,
@@ -225,6 +245,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'dob',
     header: 'Owner born',
+    tip: TIPS['inheritedIras.dob'],
     type: 'date',
     width: 100,
     get: (r) => r.decedentBirthDate,
@@ -233,6 +254,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'dod',
     header: 'Owner died',
+    tip: TIPS['inheritedIras.dod'],
     type: 'date',
     width: 100,
     get: (r) => r.decedentDeathDate,
@@ -241,6 +263,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'class',
     header: 'Beneficiary class',
+    tip: TIPS['inheritedIras.class'],
     type: 'select',
     width: 140,
     options: [
@@ -253,6 +276,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'schedule',
     header: 'Schedule',
+    tip: TIPS['inheritedIras.schedule'],
     type: 'select',
     width: 120,
     options: [
@@ -267,6 +291,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'preset',
     header: 'Return preset',
+    tip: TIPS['inheritedIras.preset'],
     type: 'select',
     width: 110,
     options: presetOptions,
@@ -276,6 +301,7 @@ const inheritedColumns: GridColumn<Inherited>[] = [
   {
     id: 'fee',
     header: 'Fee',
+    tip: TIPS['inheritedIras.fee'],
     type: 'percent',
     width: 70,
     min: 0,

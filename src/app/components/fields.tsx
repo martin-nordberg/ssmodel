@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { updateScenario } from '@/state/scenario.ts'
 import { type CellType, formatCell, parseCell } from './grid/DataGrid.tsx'
+import { TIP_TRIGGER, Tip } from './Tip.tsx'
 
 /** Default lever range around the current value. */
 export function leverRange(type: CellType, v: number): { min: number; max: number; step: number } {
@@ -37,6 +38,8 @@ type FieldProps = {
   /** Scenario-relative path; enables right-click "Add to Console" [FR-UI-7a]. */
   leverPath?: string
   label: string
+  /** Tooltip on the label (5–40 words). */
+  tip: string
   type: Exclude<CellType, 'select' | 'boolean'>
   value: unknown
   onCommit: (value: unknown) => void
@@ -50,6 +53,7 @@ type FieldProps = {
 
 export function Field({
   label,
+  tip,
   type,
   value,
   onCommit,
@@ -89,6 +93,7 @@ export function Field({
       placeholder={placeholder}
       aria-invalid={!!error}
       aria-describedby={error || hint ? `${id}-help` : undefined}
+      aria-description={tip}
       className={cn(
         'h-7 w-full min-w-0 rounded-md border bg-background px-2 font-mono text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
         error && 'border-destructive',
@@ -118,9 +123,11 @@ export function Field({
   )
   return (
     <div className={cn(FIELD, className)}>
-      <Label htmlFor={id} className={LABEL}>
-        {label}
-      </Label>
+      <Tip tip={tip}>
+        <Label htmlFor={id} className={cn(LABEL, TIP_TRIGGER)}>
+          {label}
+        </Label>
+      </Tip>
       {leverPath && typeof value === 'number' ? (
         <DropdownMenu open={menu} onOpenChange={setMenu}>
           <div className="relative grid">
@@ -149,6 +156,8 @@ export function Field({
 
 type SelectProps<T extends string | number> = {
   label: string
+  /** Tooltip on the label (5–40 words). */
+  tip: string
   value: T
   options: { value: T; label: string }[]
   onChange: (value: T) => void
@@ -158,6 +167,7 @@ type SelectProps<T extends string | number> = {
 
 export function SelectField<T extends string | number>({
   label,
+  tip,
   value,
   options,
   onChange,
@@ -167,11 +177,14 @@ export function SelectField<T extends string | number>({
   const id = useId()
   return (
     <div className={cn(FIELD, className)}>
-      <Label htmlFor={id} className={LABEL}>
-        {label}
-      </Label>
+      <Tip tip={tip}>
+        <Label htmlFor={id} className={cn(LABEL, TIP_TRIGGER)}>
+          {label}
+        </Label>
+      </Tip>
       <select
         id={id}
+        aria-description={tip}
         value={String(value)}
         className="h-7 w-full min-w-0 truncate rounded-md border bg-background px-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         onChange={(e) => {
@@ -192,10 +205,13 @@ export function SelectField<T extends string | number>({
 
 export function SwitchField({
   label,
+  tip,
   checked,
   onChange,
 }: {
   label: string
+  /** Tooltip on the label (5–40 words). */
+  tip: string
   checked: boolean
   onChange: (v: boolean) => void
 }) {
@@ -204,10 +220,12 @@ export function SwitchField({
     <div className={FIELD}>
       <span aria-hidden />
       <div className="flex h-7 items-center gap-2">
-        <Switch id={id} checked={checked} onCheckedChange={onChange} size="sm" />
-        <Label htmlFor={id} className="text-xs">
-          {label}
-        </Label>
+        <Switch id={id} checked={checked} onCheckedChange={onChange} size="sm" aria-description={tip} />
+        <Tip tip={tip}>
+          <Label htmlFor={id} className={cn('text-xs', TIP_TRIGGER)}>
+            {label}
+          </Label>
+        </Tip>
       </div>
     </div>
   )

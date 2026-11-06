@@ -1,5 +1,6 @@
 import { RotateCcw, Save } from 'lucide-react'
 import { Lever, SegmentedLever } from '@/app/components/lever/Lever.tsx'
+import { TIPS, tipForPath } from '@/app/tips.ts'
 import { Button } from '@/components/ui/button'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
 import type { Prepared } from '@/engine/model/prepare.ts'
@@ -42,6 +43,7 @@ export function LeverRail({ saved, effective, prep }: { saved: ScenarioT; effect
       {cands.length > 0 && claim !== null && (
         <Lever
           label="Claim age (inspect)"
+          tip={TIPS['lever.claim']}
           value={Math.max(0, cands.indexOf(claim))}
           saved={recommended !== null ? Math.max(0, cands.indexOf(recommended)) : 0}
           min={0}
@@ -76,6 +78,7 @@ export function LeverRail({ saved, effective, prep }: { saved: ScenarioT; effect
           <Lever
             key={l.id}
             label={l.label}
+            tip={l.tip}
             value={l.get(effective)}
             saved={l.get(saved)}
             min={l.min}
@@ -94,6 +97,7 @@ export function LeverRail({ saved, effective, prep }: { saved: ScenarioT; effect
           <SegmentedLever
             key={l.id}
             label={l.label}
+            tip={l.tip}
             value={l.get(effective)}
             saved={l.get(saved)}
             options={l.options}
@@ -112,6 +116,7 @@ export function LeverRail({ saved, effective, prep }: { saved: ScenarioT; effect
           <Lever
             key={p.path}
             label={p.label ?? humanizePath(p.path)}
+            tip={tipForPath(p.path)}
             value={cur}
             saved={Number(getPath(saved, p.path) ?? p.min)}
             min={p.min}

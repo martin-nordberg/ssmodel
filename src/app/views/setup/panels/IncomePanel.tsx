@@ -1,5 +1,6 @@
 import { Panel } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
+import { TIPS } from '@/app/tips.ts'
 import type { AnnuityT, IncomeStreamT } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario, useFile } from '@/state/scenario.ts'
 
@@ -12,6 +13,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'label',
     header: 'Label',
+    tip: TIPS['annuities.label'],
     type: 'text',
     width: 120,
     get: (r) => r.label,
@@ -20,6 +22,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'owner',
     header: 'Owner',
+    tip: TIPS['annuities.owner'],
     type: 'select',
     width: 80,
     options: people,
@@ -29,6 +32,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'monthly',
     header: 'Monthly payment',
+    tip: TIPS['annuities.monthly'],
     type: 'currency',
     width: 110,
     min: 0,
@@ -38,6 +42,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'start',
     header: 'Start',
+    tip: TIPS['annuities.start'],
     type: 'yearMonth',
     width: 90,
     get: (r) => r.start,
@@ -46,6 +51,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'cola',
     header: 'COLA',
+    tip: TIPS['annuities.cola'],
     type: 'percent',
     width: 70,
     min: 0,
@@ -56,6 +62,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'surv',
     header: 'Survivor %',
+    tip: TIPS['annuities.surv'],
     type: 'percent',
     width: 80,
     min: 0,
@@ -66,6 +73,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'qual',
     header: 'Qualified (IRA money)',
+    tip: TIPS['annuities.qual'],
     type: 'boolean',
     width: 120,
     get: (r) => r.qualified,
@@ -74,6 +82,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'excl',
     header: 'Exclusion ratio',
+    tip: TIPS['annuities.excl'],
     type: 'percent',
     width: 100,
     min: 0,
@@ -84,6 +93,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
   {
     id: 'basis',
     header: 'Investment (basis)',
+    tip: TIPS['annuities.basis'],
     type: 'currency',
     width: 110,
     optional: true,
@@ -96,6 +106,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
   {
     id: 'label',
     header: 'Label',
+    tip: TIPS['streams.label'],
     type: 'text',
     width: 130,
     get: (r) => r.label,
@@ -104,6 +115,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
   {
     id: 'owner',
     header: 'Owner',
+    tip: TIPS['streams.owner'],
     type: 'select',
     width: 80,
     options: [...people, { value: 'joint', label: 'Joint' }],
@@ -113,6 +125,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
   {
     id: 'annual',
     header: 'Annual (base-date $)',
+    tip: TIPS['streams.annual'],
     type: 'currency',
     width: 130,
     min: 0,
@@ -122,6 +135,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
   {
     id: 'start',
     header: 'Start',
+    tip: TIPS['streams.start'],
     type: 'yearMonth',
     width: 90,
     get: (r) => r.start,
@@ -130,6 +144,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
   {
     id: 'end',
     header: 'End',
+    tip: TIPS['streams.end'],
     type: 'yearMonth',
     width: 90,
     optional: true,
@@ -139,6 +154,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
   {
     id: 'indexing',
     header: 'Indexing',
+    tip: TIPS['streams.indexing'],
     type: 'select',
     width: 110,
     options: [
@@ -151,6 +167,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
   {
     id: 'tax',
     header: 'Tax',
+    tip: TIPS['streams.tax'],
     type: 'select',
     width: 90,
     options: [
