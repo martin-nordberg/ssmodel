@@ -33,7 +33,7 @@ test('a large property tax and mortgage make it itemize; more property tax raise
     run((f) => {
       const h = f.scenarios[0]!.home!
       h.costs.propertyTax = propertyTax
-      h.mortgage = { balance: 600_000, asOf: '2026-12', rate: 0.07, payoff: '2056-12' }
+      h.mortgage = { balance: 600_000, asOf: '2026-12', rate: 0.07, payment: 3991.82 }
     })
   const rows = big(20_000)
   const r = rows[1]!

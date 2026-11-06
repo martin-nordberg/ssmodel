@@ -1,6 +1,6 @@
 import { Field, FieldRow, Panel, SelectField, SwitchField } from '@/app/components/fields.tsx'
-import { makeMortgage } from '@/engine/accounts/mortgage.ts'
-import { formatYM, parseYM } from '@/engine/core/dates.ts'
+import { levelPayment, paymentsToPayoff } from '@/engine/accounts/mortgage.ts'
+import { formatYM, parseYM, ymMonth, ymYear } from '@/engine/core/dates.ts'
 import { Home, type ScenarioT } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario, useFile } from '@/state/scenario.ts'
 
@@ -10,6 +10,7 @@ const COSTS: { key: CostKey; label: string }[] = [
   { key: 'insurance', label: 'Homeowners insurance' },
   { key: 'maintenance', label: 'Maintenance' },
 ]
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const money2 = (x: number) => `$${x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 /**
@@ -22,8 +23,10 @@ export function HomePanel() {
   if (!s || !file) return null
   const h = s.home
   const mg = h?.mortgage
-  const mgBad = mg && mg.payoff <= mg.asOf
-  const payment = mg && !mgBad ? makeMortgage(mg.balance, mg.rate, parseYM(mg.asOf), parseYM(mg.payoff)).payment : null
+  const interest = mg ? (mg.balance * mg.rate) / 12 : 0
+  const nPay = mg ? paymentsToPayoff(mg.balance, mg.rate / 12, mg.payment) : 0
+  const mgBad = mg && !Number.isFinite(nPay)
+  const payoff = mg && !mgBad ? parseYM(mg.asOf) + nPay : null
   return (
     <Panel
       title="Home"
@@ -97,7 +100,12 @@ export function HomePanel() {
                 updateScenario((d) => {
                   const base = parseYM(file.household.baseDate)
                   d.home!.mortgage = v
-                    ? { balance: 200_000, asOf: formatYM(base - 1), rate: 0.065, payoff: formatYM(base + 299) }
+                    ? {
+                        balance: 200_000,
+                        asOf: formatYM(base - 1),
+                        rate: 0.065,
+                        payment: Math.ceil(levelPayment(200_000, 0.065, 300) * 100) / 100,
+                      }
                     : undefined
                 })
               }
@@ -139,13 +147,14 @@ export function HomePanel() {
                   }
                 />
                 <Field
-                  label="Payoff month (last payment)"
-                  type="yearMonth"
-                  value={mg.payoff}
-                  hint={mgBad ? undefined : `Principal + interest: ${money2(payment ?? 0)}/month`}
+                  label="Monthly principal + interest"
+                  type="currency"
+                  min={0}
+                  value={mg.payment}
+                  hint="What you pay, without escrow"
                   onCommit={(v) =>
                     updateScenario((d) => {
-                      d.home!.mortgage!.payoff = v as string
+                      d.home!.mortgage!.payment = v as number
                     })
                   }
                 />
@@ -154,14 +163,15 @@ export function HomePanel() {
           </FieldRow>
           {mgBad && (
             <p className="text-destructive text-xs" role="alert">
-              The payoff month must be after the balance date.
+              The payment must be more than the monthly interest ({money2(interest)}), or the loan never pays off.
             </p>
           )}
-          {payment !== null && (
+          {payoff !== null && (
             <p className="text-muted-foreground text-xs" data-testid="mortgage-note">
-              Compare the principal + interest above with your statement (excluding escrow). The payment is fixed in
-              dollars and stops at the payoff month or a sale; the balance is paid from the sale proceeds. Interest is
-              not deducted (the model uses the standard deduction).
+              Paid off in {MONTHS[ymMonth(payoff) - 1]} {ymYear(payoff)} ({nPay} more payments). Use the principal +
+              interest from your statement, without escrow; if you regularly pay extra principal, include it. The
+              payment is fixed in dollars and stops at payoff or a sale; the balance is paid from the sale proceeds.
+              Interest is an itemized deduction (on up to $750,000 of debt).
             </p>
           )}
           <h3 className="font-medium text-xs">Annual costs (today's $, rise with inflation; end when sold)</h3>

@@ -48,5 +48,5 @@ test('the command palette filters and runs commands from each group', async ({ p
   await expect(tabs.getByRole('tab')).toHaveCount(1)
 
   await run(page, 'save', /^Save\b(?! as)/)
-  expect(await readDisk(page, 'minimal.yaml')).toContain('schemaVersion: 2')
+  expect(await readDisk(page, 'minimal.yaml')).toContain('schemaVersion: 3')
 })

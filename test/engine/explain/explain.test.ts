@@ -57,7 +57,7 @@ describe('explain a number', () => {
     checkAll(2028, (f) => {
       const h = f.scenarios[0]!.home!
       h.costs.propertyTax = 20_000
-      h.mortgage = { balance: 600_000, asOf: '2026-12', rate: 0.07, payoff: '2056-12' }
+      h.mortgage = { balance: 600_000, asOf: '2026-12', rate: 0.07, payment: 3991.82 }
     })
   })
   test('federal tax breakdown: brackets add to the row value and the deduction is explained', () => {

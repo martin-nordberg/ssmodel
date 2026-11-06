@@ -1,5 +1,5 @@
 # Full synthetic household (not real data). Exercises every section of the schema.
-schemaVersion: 2
+schemaVersion: 3
 household:
   baseDate: 2027-01
   state: SC
@@ -96,7 +96,7 @@ scenarios:
       value: 450000
       basis: 280000
       appreciation: { mean: 0.03, sd: 0.06 }
-      mortgage: { balance: 92340, asOf: 2026-12, rate: 0.0375, payoff: 2031-08 } # ~$1,800/month P&I
+      mortgage: { balance: 92340, asOf: 2026-12, rate: 0.0375, payment: 1799.99 } # paid off Aug 2031
       costs: { propertyTax: 3200, insurance: 2400, maintenance: 4500 }
       replacementCostCuts: { propertyTax: 0.4, insurance: 0.3, maintenance: 0.5 }
       sale: { mode: backstop, liquidFloor: 50000, sellingCostPct: 0.07, replacementCost: 0 }

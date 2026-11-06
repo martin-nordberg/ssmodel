@@ -618,6 +618,10 @@ v1.1 notes:
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
+- **Mortgage payment instead of payoff month (Q-HOME-1, schema version 3):** the mortgage is entered as balance,
+  as-of month, rate and the monthly P&I payment actually made, so extra principal payments shorten the loan; the
+  payoff month is derived and the final payment is partial. The v2→v3 migration sets the level payment that meets
+  the old payoff month and asks the user to check it.
 - **Discretionary expenses (Q-EXP-6):** a second expense table with its own scale; two Console sliders and percent
   fields on Assumptions. Existing files load unchanged (new keys with defaults).
 - **Mortgage and home costs (Q-HOME-1, schema version 2):** the home carries its mortgage (balance as of a month,

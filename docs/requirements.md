@@ -235,8 +235,9 @@ Annuities are income streams (FR-INC-3), not accounts. All asset types above are
 - **FR-ACC-7** Home equity inputs: current value, cost basis, appreciation (mean/volatility), an optional
   **mortgage**, annual **home costs**, and an optional **sale** *(D: Q-HOME-1)*.
   - Mortgage (fixed rate, from a statement): principal balance **as of a given month** (after that month's payment),
-    interest rate and payoff month. The principal-and-interest payment is derived by standard amortization, so
-    escrow is not part of it. The payment is fixed in dollars and runs to the payoff month while the home is owned.
+    interest rate and the **monthly principal-and-interest payment** actually made (escrow excluded; regular extra
+    principal included). The payoff month is derived by amortization and shown; the last payment is only what is
+    owed. The payment is fixed in dollars and runs to payoff while the home is owned.
   - Home costs: property tax, homeowners insurance and maintenance, per year in base-date dollars and
     inflation-indexed. They are paid every year the home is owned (also after the loan is paid off) and end at a sale.
   - Sale: on a planned date, or a **backstop** (sell when liquid assets fall below a threshold). Inputs: selling costs
@@ -247,7 +248,7 @@ Annuities are income streams (FR-INC-3), not accounts. All asset types above are
     maintenance are the old home's reduced by a percentage entered for each.
   - Home equity is **not** counted as liquid when testing for depletion. It is reported separately and included in
     terminal wealth net of selling costs and any mortgage balance still owed.
-  - Mortgage interest and property tax are not itemized; the model uses the standard deduction.
+  - Mortgage interest and property tax are itemizable deductions (FR-TAX-6).
 - **FR-ACC-8** Cash reserve: balance, interest rate, and target months of expenses. The withdrawal logic refills it
   first (optional).
 
@@ -573,7 +574,7 @@ Setup panels:
 | Earnings *(shared)* | Primary's past earnings record (pasted from SSA statement); projected wages/self-employment per spouse by year; computed PIA vs. statement estimate |
 | Social Security | Primary's FRA estimate + as-of date; Spouse's current benefit and claim month; haircut schedule |
 | Accounts | Grid: type, owner, balance, basis, return preset/mean/vol, fee, inherited-IRA fields |
-| Home | Value, basis, appreciation; mortgage (balance as of a month, rate, payoff; derived payment shown); property tax, insurance, maintenance; sale plan/backstop; replacement home and its cost reductions |
+| Home | Value, basis, appreciation; mortgage (balance as of a month, rate, monthly P&I payment; derived payoff month shown); property tax, insurance, maintenance; sale plan/backstop; replacement home and its cost reductions |
 | Inheritances | Grid: label, heir, decedent birth date/sex, timing, amounts by type, growth, probability, if-heir-predeceases; sub-grid for real estate (keep/sell, carrying costs, rent) |
 | Income | Annuities and other streams |
 | Expenses | Two grids, nondiscretionary and discretionary (with a tax-deductible flag: charity or medical); survivor step-down %; bequest target |
@@ -687,7 +688,7 @@ added without reworking it.
 ## 9. Data file format (illustrative)
 
 ```yaml
-schemaVersion: 2
+schemaVersion: 3
 household:
   baseDate: 2027-01
   state: SC
@@ -741,7 +742,7 @@ scenarios:
       value: 450000
       appreciation: { mean: 0.03, sd: 0.06 }
       basis: 280000
-      mortgage: { balance: 92340, asOf: 2026-12, rate: 0.0375, payoff: 2031-08 }   # P&I derived: ~$1,800/month
+      mortgage: { balance: 92340, asOf: 2026-12, rate: 0.0375, payment: 1799.99 }  # P&I; paid off Aug 2031
       costs: { propertyTax: 3200, insurance: 2400, maintenance: 4500 }              # today's $, per year
       replacementCostCuts: { propertyTax: 0.4, insurance: 0.3, maintenance: 0.5 }  # used when downsizing
       sale: { mode: backstop, liquidFloor: 50000, sellingCostPct: 0.07, replacementCost: 0 }
@@ -871,7 +872,7 @@ A blank answer meant "accept the recommendation".
 | Q-TAX-5 | Itemized deductions (after v1) | Larger of standard and itemized each year: SALT (SC tax + property tax, OBBBA cap and phase-down), mortgage interest, medical over 7.5% of AGI, charity over 0.5% of AGI; 2/37 limit. SC unaffected | FR-TAX-6, plan T5.3 |
 | Q-TAX-6 | Gains from funding conversion tax (after v1) | Taxed in the same year; cash above its reserve target pays first | FR-WD-4, plan T5.2 |
 | Q-EXP-6 | Discretionary expenses (after v1) | Two expense tables, nondiscretionary and discretionary, each with its own scale (percent field and Console slider); healthcare unscaled. File keys: `expenses.items` / `assumptions.expenseScale` stay as the nondiscretionary ones, plus `expenses.discretionary` / `assumptions.discretionaryScale` | FR-EXP-1a, FR-UI-7 |
-| Q-HOME-1 | Mortgage and home costs (after v1) | Mortgage from a statement: balance as of a month, rate, payoff month (payment derived). Property tax, insurance, maintenance with the home, ending at a sale. Downsizing: no new mortgage; each cost reduced by a percentage. Schema version 2; v1 files lose the expense link with a note | FR-ACC-7, FR-EXP-1 |
+| Q-HOME-1 | Mortgage and home costs (after v1) | Mortgage from a statement: balance as of a month, rate, monthly P&I payment (payoff derived, so extra principal shortens the loan; schema version 3 replaced the payoff month). Property tax, insurance, maintenance with the home, ending at a sale. Downsizing: no new mortgage; each cost reduced by a percentage. Schema version 2; v1 files lose the expense link with a note | FR-ACC-7, FR-EXP-1 |
 
 ---
 

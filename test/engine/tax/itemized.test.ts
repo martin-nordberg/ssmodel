@@ -71,7 +71,7 @@ describe('federal deduction: larger of standard and itemized', () => {
 })
 
 describe('mortgage interest', () => {
-  const mg = makeMortgage(300_000, 0.06, parseYM('2026-12'), parseYM('2056-12'))
+  const mg = makeMortgage(300_000, 0.06, parseYM('2026-12'), 1798.66)
   test('interest equals payments less principal repaid', () => {
     const paid = 12 * mg.payment
     const principal = mortgageBalance(mg, parseYM('2026-12')) - mortgageBalance(mg, parseYM('2027-12'))

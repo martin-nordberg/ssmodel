@@ -90,7 +90,7 @@ describe('parseHouseholdYaml', () => {
 describe('migration from schema version 1', () => {
   const v1 = async () =>
     (await fixture('full.yaml'))
-      .replace('schemaVersion: 2', 'schemaVersion: 1 # old format')
+      .replace('schemaVersion: 3', 'schemaVersion: 1 # old format')
       .replace(
         / {6}mortgage: .*\n {6}costs: .*\n {6}replacementCostCuts: .*\n/,
         '      mortgageExpense: Mortgage # linked row\n',
@@ -99,7 +99,7 @@ describe('migration from schema version 1', () => {
   test('drops the mortgage-expense link with a note and marks the file migrated', async () => {
     const r = mustParse(await v1())
     expect(r.migrated).toBe(true)
-    expect(r.value.schemaVersion).toBe(2)
+    expect(r.value.schemaVersion).toBe(3)
     const home = r.value.scenarios[0]!.home!
     expect(home.mortgage).toBeUndefined()
     expect(home.costs).toEqual({ propertyTax: 0, insurance: 0, maintenance: 0 })
@@ -111,7 +111,7 @@ describe('migration from schema version 1', () => {
   test('saving a migrated file keeps its comments and writes the new version', async () => {
     const r = mustParse(await v1())
     const out = serializeHouseholdYaml(r.value, r.doc)
-    expect(out).toMatch(/^schemaVersion: 2/m)
+    expect(out).toMatch(/^schemaVersion: 3/m)
     expect(out).not.toMatch(/mortgageExpense/)
     expect(out).toMatch(/# from SSA statement/)
     expect(mustParse(out).migrated).toBe(false)
@@ -124,11 +124,31 @@ describe('migration from schema version 1', () => {
     expect(r.value.scenarios[0]!.home!.mortgage!.balance).toBe(92340)
   })
 
-  test('payoff must follow the balance date', async () => {
-    const text = (await fixture('full.yaml')).replace('payoff: 2031-08', 'payoff: 2026-06')
+  test('the payment must be more than the monthly interest', async () => {
+    const text = (await fixture('full.yaml')).replace('payment: 1799.99', 'payment: 288')
     const r = parseHouseholdYaml(text)
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.errors[0]!.path).toBe('scenarios[0].home.mortgage.payoff')
+    if (!r.ok) expect(r.errors[0]!.path).toBe('scenarios[0].home.mortgage.payment')
+  })
+})
+
+describe('migration from schema version 2', () => {
+  const v2 = async () =>
+    (await fixture('full.yaml'))
+      .replace('schemaVersion: 3', 'schemaVersion: 2')
+      .replace('payment: 1799.99 } # paid off Aug 2031', 'payoff: 2031-08 } # derived payment')
+
+  test('replaces the payoff month with the level payment that meets it, with a note', async () => {
+    const r = mustParse(await v2())
+    expect(r.migrated).toBe(true)
+    expect(r.value.schemaVersion).toBe(3)
+    const mg = r.value.scenarios[0]!.home!.mortgage!
+    expect(mg).toEqual({ balance: 92340, asOf: '2026-12', rate: 0.0375, payment: 1799.99 })
+    expect(r.notes.length).toBe(1)
+    expect(r.notes[0]).toMatch(/Base case.*\$1799\.99.*2031-08/)
+    const out = serializeHouseholdYaml(r.value, r.doc)
+    expect(out).not.toMatch(/payoff/)
+    expect(out).toMatch(/payment: 1799.99/)
   })
 })
 

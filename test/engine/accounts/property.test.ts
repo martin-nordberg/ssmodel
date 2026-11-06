@@ -76,9 +76,13 @@ describe('properties in the path', () => {
     expect(pay).toBeCloseTo(1800, 0)
     const costs = 3200 + 2400 + 4500
     expect(row(rows, 2027).housing).toBeCloseTo(12 * pay + costs, 6)
-    // Eight payments in the payoff year (through August 2031), none after.
+    // Eight payments in the payoff year (through August 2031), the last only what is owed; none after.
+    const mg = prep.properties[0]!.mortgage!
+    expect(mg.payoff).toBe(parseYM('2031-08'))
+    const last = mortgageBalance(mg, parseYM('2031-07')) * (1 + mg.i)
+    expect(last).toBeLessThanOrEqual(pay)
     const r31 = row(rows, 2031)
-    expect(r31.housing).toBeCloseTo(8 * pay + costs * r31.price, 6)
+    expect(r31.housing).toBeCloseTo(7 * pay + last + costs * r31.price, 6)
     const r32 = row(rows, 2032)
     expect(r32.housing).toBeCloseTo(costs * r32.price, 6)
   })
@@ -113,7 +117,7 @@ describe('properties in the path', () => {
     const { rows, prep } = run((f) => {
       const h = f.scenarios[0]!.home!
       h.sale.mode = 'none'
-      h.mortgage = { balance: 300_000, asOf: '2026-12', rate: 0.06, payoff: '2070-12' }
+      h.mortgage = { balance: 300_000, asOf: '2026-12', rate: 0.06, payment: 1616.09 }
     })
     const last = rows.at(-1)!
     const owed = mortgageBalance(prep.properties[0]!.mortgage!, parseYM(`${last.year}-12`))

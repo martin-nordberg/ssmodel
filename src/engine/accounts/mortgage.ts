@@ -1,7 +1,7 @@
-// Home mortgage [FR-ACC-7]: a fixed-rate, level-payment loan described by its balance on a statement date, the
-// interest rate and the payoff month. The principal-and-interest payment is derived (standard amortization:
-// payment = B·i / (1 − (1 + i)^−n), i = monthly rate, n = payments left), so escrowed taxes and insurance are not
-// part of it. Payments fall on months asOf+1 … payoff; the statement balance is after the asOf payment.
+// Home mortgage [FR-ACC-7]: a fixed-rate loan described by its balance on a statement date, the interest rate and
+// the monthly principal-and-interest payment actually made (escrow excluded; any regular extra principal included).
+// The balance after k payments is B·(1+i)^k − P·((1+i)^k − 1)/i (i = monthly rate). Payments fall on months
+// asOf+1 … payoff, where payoff is the first month the balance reaches zero; the last payment is only what is owed.
 import type { YM } from '../core/dates.ts'
 
 export type EngineMortgage = {
@@ -10,17 +10,30 @@ export type EngineMortgage = {
   balance: number
   /** Monthly interest rate (annual / 12). */
   i: number
-  /** Month of the last payment. */
-  payoff: YM
-  /** Monthly principal and interest (nominal, level). */
+  /** Monthly principal and interest (nominal, level), except the smaller final payment. */
   payment: number
+  /** Month of the last (possibly partial) payment; Infinity if the payment does not cover the interest. */
+  payoff: YM
 }
 
-export function makeMortgage(balance: number, annualRate: number, asOf: YM, payoff: YM): EngineMortgage {
+/** Payments needed to retire `balance` at monthly rate `i` paying `payment`; Infinity if it never amortizes. */
+export function paymentsToPayoff(balance: number, i: number, payment: number): number {
+  if (balance <= 0) return 0
+  if (payment <= balance * i) return Number.POSITIVE_INFINITY
+  if (i === 0) return Math.ceil(balance / payment - 1e-9)
+  return Math.ceil(-Math.log(1 - (balance * i) / payment) / Math.log(1 + i) - 1e-9)
+}
+
+/** Level payment that retires `balance` in `n` monthly payments (standard amortization). */
+export function levelPayment(balance: number, annualRate: number, n: number): number {
   const i = annualRate / 12
-  const n = Math.max(1, payoff - asOf)
-  const payment = i === 0 ? balance / n : (balance * i) / (1 - (1 + i) ** -n)
-  return { asOf, balance, i, payoff, payment }
+  return i === 0 ? balance / n : (balance * i) / (1 - (1 + i) ** -n)
+}
+
+export function makeMortgage(balance: number, annualRate: number, asOf: YM, payment: number): EngineMortgage {
+  const i = annualRate / 12
+  // A payment below the interest (rejected by the schema, but possible while editing) never pays off.
+  return { asOf, balance, i, payment, payoff: asOf + paymentsToPayoff(balance, i, payment) }
 }
 
 /** Balance after the payment of month `m` (0 from the payoff month on). Months before `asOf` run backwards. */
@@ -32,18 +45,22 @@ export function mortgageBalance(mg: EngineMortgage, m: YM): number {
   return Math.max(0, mg.balance * g - (mg.payment * (g - 1)) / mg.i)
 }
 
-/** Number of monthly payments in `year` from month `from` on (e.g. the model's base month). */
-export function mortgagePaymentsInYear(mg: EngineMortgage, year: number, from: YM): number {
-  const first = Math.max(year * 12, from)
-  const last = Math.min(year * 12 + 11, mg.payoff)
-  return Math.max(0, last - first + 1)
+function paymentMonths(mg: EngineMortgage, year: number, from: YM): [YM, YM] {
+  return [Math.max(year * 12, from), Math.min(year * 12 + 11, mg.payoff)]
 }
 
 /** Interest in the payments of `year` from month `from` on: each payment's interest is the prior balance × i. */
 export function mortgageInterestInYear(mg: EngineMortgage, year: number, from: YM): number {
-  const first = Math.max(year * 12, from)
-  const last = Math.min(year * 12 + 11, mg.payoff)
+  const [first, last] = paymentMonths(mg, year, from)
   let interest = 0
   for (let m = first; m <= last; m++) interest += mortgageBalance(mg, m - 1) * mg.i
   return interest
+}
+
+/** Principal and interest paid in `year` from month `from` on, including the partial final payment. */
+export function mortgagePaidInYear(mg: EngineMortgage, year: number, from: YM): number {
+  const [first, last] = paymentMonths(mg, year, from)
+  if (last < first) return 0
+  const principal = mortgageBalance(mg, first - 1) - mortgageBalance(mg, last)
+  return principal + mortgageInterestInYear(mg, year, from)
 }

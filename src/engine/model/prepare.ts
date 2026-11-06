@@ -355,7 +355,7 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
       label: 'Home',
       primaryResidence: true,
       mortgage: h.mortgage
-        ? makeMortgage(h.mortgage.balance, h.mortgage.rate, parseYM(h.mortgage.asOf), parseYM(h.mortgage.payoff))
+        ? makeMortgage(h.mortgage.balance, h.mortgage.rate, parseYM(h.mortgage.asOf), h.mortgage.payment)
         : null,
       value: h.value,
       basis: h.basis,

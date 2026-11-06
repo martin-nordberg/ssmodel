@@ -30,10 +30,16 @@ test('setup sections show the loaded household', async ({ page }) => {
   await expect(page.getByRole('grid', { name: 'Nondiscretionary expenses' })).toContainText('Roof + kitchen')
   await expect(page.getByRole('grid', { name: 'Discretionary expenses', exact: true })).toBeVisible()
   await section(page, 'Home').click()
-  await expect(page.getByText(/Principal \+ interest: \$1,(799|800)\.\d\d\/month/)).toBeVisible()
-  await page.getByLabel('Interest rate').fill('6%')
-  await page.getByLabel('Interest rate').press('Enter')
-  await expect(page.getByText(/Principal \+ interest: \$1,894\.\d\d\/month/)).toBeVisible()
+  const note = page.getByTestId('mortgage-note')
+  await expect(note).toContainText('Paid off in Aug 2031 (56 more payments)')
+  // Paying extra principal shortens the loan: n = −ln(1 − 92,340·0.003125/2,500) / ln(1.003125) = 39.3 -> 40.
+  const pay = page.getByLabel('Monthly principal + interest')
+  await pay.fill('2500')
+  await pay.press('Enter')
+  await expect(note).toContainText('Paid off in Apr 2030 (40 more payments)')
+  await pay.fill('250')
+  await pay.press('Enter')
+  await expect(page.getByRole('alert')).toContainText('more than the monthly interest ($288.56)')
   await expect(page.getByLabel('Property tax reduction')).toHaveCount(0) // no replacement home
 })
 

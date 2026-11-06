@@ -1,5 +1,5 @@
 # Minimal synthetic household: only required facts, one empty scenario.
-schemaVersion: 2
+schemaVersion: 3
 household:
   people:
     primary:

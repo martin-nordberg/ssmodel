@@ -1,7 +1,7 @@
 // One simulated path for one claiming date [FR-SIM-1..4]. Annual steps with monthly precision for benefits,
 // earnings test, deaths and dated items. Order within a year follows FR-SIM-3.
 import { inheritedRules, inheritedScheduled } from '../accounts/inheritedIra.ts'
-import { mortgageBalance, mortgageInterestInYear, mortgagePaymentsInYear } from '../accounts/mortgage.ts'
+import { mortgageBalance, mortgageInterestInYear, mortgagePaidInYear } from '../accounts/mortgage.ts'
 import { sellProperty } from '../accounts/property.ts'
 import { lifetimeRmd, rmdStartYear } from '../accounts/rmd.ts'
 import { addToTaxable, sellTaxable } from '../accounts/taxable.ts'
@@ -560,7 +560,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       for (const item of prep.expenses) expenses += expenseForYear(item, y, ectx)
       if (cache) cache.expenses[yi] = expenses
     }
-    // Housing while owned: mortgage principal and interest (nominal, level) and carrying costs; rent received.
+    // Housing while owned: mortgage principal and interest (nominal) and carrying costs; rent received.
     // Property tax and mortgage interest are also itemizable [FR-TAX-6].
     let propertyIncome = 0
     let housing = 0
@@ -571,7 +571,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       housing += (downsized ? pr.carryingReplacement : pr.carrying) * price
       itemizable.propertyTax += (downsized ? pr.propertyTaxReplacement : pr.propertyTax) * price
       if (pr.mortgage && !loanClosed[k]) {
-        housing += pr.mortgage.payment * mortgagePaymentsInYear(pr.mortgage, y, prep.baseYM)
+        housing += mortgagePaidInYear(pr.mortgage, y, prep.baseYM)
         itemizable.mortgageInterest +=
           mortgageInterestInYear(pr.mortgage, y, prep.baseYM) *
           deductibleInterestShare(mortgageBalance(pr.mortgage, m0 - 1))
@@ -712,7 +712,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
           const carrying = (soldOnce.has(k) ? pr.carryingReplacement : pr.carrying) * price
           if (carrying > 0) out.push({ label: `${pr.label}: carrying costs`, amount: carrying })
           if (pr.mortgage && !loanClosed[k]) {
-            const pay = pr.mortgage.payment * mortgagePaymentsInYear(pr.mortgage, y, prep.baseYM)
+            const pay = mortgagePaidInYear(pr.mortgage, y, prep.baseYM)
             if (pay > 0) out.push({ label: `${pr.label}: mortgage principal + interest`, amount: pay })
           }
           return out

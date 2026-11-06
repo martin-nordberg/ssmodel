@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Input model for a household file (requirements §9). Facts live under `household`; plan and levers live per
 // scenario. Every nested object uses `.prefault({})` so minimal files parse with defaults filled in.
 
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 export const YearMonth = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'expected YYYY-MM')
 export const DateStr = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'expected YYYY-MM-DD')
@@ -147,17 +147,20 @@ export const SalePlan = z
   })
   .prefault({})
 
-/** Fixed-rate mortgage from a statement: the payment (principal + interest) is derived [FR-ACC-7]. */
+/** Fixed-rate mortgage from a statement: balance, rate and the monthly payment; the payoff month is derived [FR-ACC-7]. */
 export const Mortgage = z
   .object({
     /** Principal balance on the statement date (after that month's payment). */
     balance: NonNegMoney,
     asOf: YearMonth,
     rate: z.number().finite().min(0).max(0.2),
-    /** Month of the last payment. */
-    payoff: YearMonth,
+    /** Monthly principal + interest actually paid (no escrow), including any regular extra principal. */
+    payment: z.number().finite().positive(),
   })
-  .refine((m) => m.payoff > m.asOf, { message: 'payoff must be after the balance date', path: ['payoff'] })
+  .refine((m) => m.payment > (m.balance * m.rate) / 12, {
+    message: 'payment must be more than the monthly interest',
+    path: ['payment'],
+  })
 
 /** Annual home costs in base-date dollars, inflation-indexed; paid while the home is owned, ending at a sale. */
 export const HomeCosts = z

@@ -1,3 +1,5 @@
+import { levelPayment } from '../engine/accounts/mortgage.ts'
+import { parseYM } from '../engine/core/dates.ts'
 import { CURRENT_SCHEMA_VERSION } from './model.ts'
 
 type Raw = Record<string, unknown>
@@ -23,6 +25,27 @@ export const migrations: Record<number, (raw: Raw, notes: string[]) => Raw> = {
             'Home screen, then remove them from Expenses.',
         )
         return { ...s, home }
+      }),
+    }
+  },
+  // v3: the mortgage is described by its monthly payment instead of a payoff month, so extra principal payments
+  // shorten the loan. The payment is the level payment that retires the balance by the old payoff month.
+  2: (raw, notes) => {
+    const scenarios = Array.isArray(raw.scenarios) ? raw.scenarios : []
+    return {
+      ...raw,
+      scenarios: scenarios.map((s: unknown) => {
+        if (!isObj(s) || !isObj(s.home) || !isObj(s.home.mortgage)) return s
+        const { payoff, ...mg } = s.home.mortgage
+        const n = parseYM(String(payoff)) - parseYM(String(mg.asOf))
+        const balance = Number(mg.balance)
+        const payment = Math.ceil(levelPayment(balance, Number(mg.rate), Math.max(1, n)) * 100) / 100
+        notes.push(
+          `Scenario "${String(s.name ?? s.id)}": the mortgage now uses its monthly payment instead of a payoff ` +
+            `month. It was set to $${payment.toFixed(2)}, which pays it off in ${String(payoff)}. On the Home ` +
+            'screen, replace it with the principal + interest you actually pay, including any extra principal.',
+        )
+        return { ...s, home: { ...s.home, mortgage: { ...mg, payment } } }
       }),
     }
   },
