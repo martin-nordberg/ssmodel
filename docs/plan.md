@@ -618,6 +618,16 @@ v1.1 notes:
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
+- **Future federal tax (Q-TAX-7, FR-TAX-7):** `assumptions.futureTax` adds a rate increase (points on every ordinary
+  federal rate from a start year) and a bracket indexing gap (federal brackets, deductions and LTCG breakpoints grow
+  slower than inflation). Applied in `federalRules.params`; bracket targets match the statutory rate. Three Console
+  levers, a Setup → Assumptions row and a Sensitivity factor (current law vs. +3 points from 2030); the reference
+  engine and differential test cover both. Defaults are current
+  law, so existing files load unchanged.
+- **Results toolbar:** the dollars and table toggles use the Console's active-toggle style, with dividers before
+  Export CSV.
+- **Include/exclude rows:** annuities, income streams and expense items have an Included Yes/No column (last); an
+  excluded row stays in the grid, dimmed, and is left out of the model.
 - **Checklist hides when complete:** the "Needed for the Console" box in Setup appears only while something is missing.
 - **Brand blues:** labels, titles and column headings in dark blue (light blue in dark mode); tooltips and slider
   ranges use coordinating blues from the chart band ramp (`--brand*` tokens in `src/index.css`). Active Console

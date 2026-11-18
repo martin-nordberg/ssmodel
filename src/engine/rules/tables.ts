@@ -73,21 +73,45 @@ type FederalYear = (typeof federalJson.years)['2026']
 const federalTable = numKeyed(federalJson.years as Record<string, FederalYear>)
 
 export type FederalParams = {
+  /** Ordinary brackets as [start, rate]; rates include any future-tax add-on (`rateShift`). */
   brackets: Record<FilingStatus, [number, number][]>
+  /** Points added to every ordinary rate this year (0 under current law). */
+  rateShift: number
   standardDeduction: Record<FilingStatus, number>
   additional65: Record<FilingStatus, number>
   ltcg: Record<FilingStatus, [number, number]>
 }
 
+/**
+ * User assumptions about federal income tax beyond current law (both zero = current law). These are not rule data:
+ * they model possible future legislation, so they come from the scenario rather than from data/rules.
+ */
+export type FederalPolicy = {
+  /** Added to every ordinary bracket rate from `fromYear` on (0.03 = 3 points). */
+  rateIncrease: number
+  fromYear: number
+  /** Indexed amounts grow this much less than inflation each year after the latest table year. */
+  indexingGap: number
+}
+
+export const CURRENT_LAW: FederalPolicy = { rateIncrease: 0, fromYear: 0, indexingGap: 0 }
+
 export const federalRules = {
   latestYear: Math.max(...federalTable.keys()),
-  params(year: number, priceFactor = 1): Projected<FederalParams> {
+  /**
+   * Parameters for `year`. After the latest table year, indexed amounts scale by `priceFactor` (the price level
+   * relative to the table year), reduced by `policy.indexingGap` per projected year.
+   */
+  params(year: number, priceFactor = 1, policy: FederalPolicy = CURRENT_LAW): Projected<FederalParams> {
     const [tableYear, v] = latestAtOrBefore(federalTable, year)
-    const f = year > tableYear ? priceFactor : 1
-    const scaleBrackets = (b: number[][]) => b.map(([lo, r]) => [lo! * f, r!] as [number, number])
+    const f = year > tableYear ? priceFactor / (1 + policy.indexingGap) ** (year - tableYear) : 1
+    const shift = year >= policy.fromYear ? policy.rateIncrease : 0
+    const scaleBrackets = (b: number[][]) =>
+      b.map(([lo, r]) => [lo! * f, Math.min(1, Math.max(0, r! + shift))] as [number, number])
     return {
       value: {
         brackets: { mfj: scaleBrackets(v.brackets.mfj), single: scaleBrackets(v.brackets.single) },
+        rateShift: shift,
         standardDeduction: { mfj: v.standardDeduction.mfj * f, single: v.standardDeduction.single * f },
         additional65: { mfj: v.additional65.mfj * f, single: v.additional65.single * f },
         ltcg: {

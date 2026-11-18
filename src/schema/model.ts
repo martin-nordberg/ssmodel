@@ -356,6 +356,16 @@ export const Assumptions = z
       })
       .prefault({}),
     heirTaxRate: Fraction.default(0.22),
+    /** Federal income tax beyond current law [FR-TAX-7]; the defaults are current law. */
+    futureTax: z
+      .object({
+        /** Points added to every ordinary federal rate from `fromYear` (0.03 = +3 points). */
+        rateIncrease: z.number().finite().min(-0.1).max(0.2).default(0),
+        fromYear: z.int().min(2026).max(2100).default(2030),
+        /** Federal brackets and deductions grow this much less than inflation each year. */
+        indexingGap: z.number().finite().min(0).max(0.03).default(0),
+      })
+      .prefault({}),
     realWageGrowth: z.number().finite().min(-0.05).max(0.05).default(0.011),
     /** Scale on nondiscretionary expenses (expenses.items); healthcare and home costs are not scaled. */
     expenseScale: z.number().finite().min(0).max(3).default(1),

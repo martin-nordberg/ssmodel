@@ -43,6 +43,11 @@ describe('brackets', () => {
     expect(bracketTop(0.12, b)).toBe(100800)
     expect(bracketTop(0.37, b)).toBe(Number.POSITIVE_INFINITY)
   })
+  test('bracketTop names the statutory bracket when rates carry a future-tax add-on', () => {
+    const shifted = federalRules.params(2030, 1, { rateIncrease: 0.03, fromYear: 2030, indexingGap: 0 }).value
+    expect(shifted.brackets.mfj[2]![1]).toBeCloseTo(0.25, 12)
+    expect(bracketTop(0.22, shifted.brackets.mfj, shifted.rateShift)).toBe(211400)
+  })
 })
 
 describe('senior deduction (2025-2028)', () => {

@@ -1,5 +1,8 @@
-// Sensitivity variants [FR-REC-4]: scenario edits for longevity, real return, the trust-fund cut and inheritances.
+// Sensitivity variants [FR-REC-4]: scenario edits for longevity, real return, the trust-fund cut, future federal tax
+// (FR-TAX-7) and inheritances.
 import type { ScenarioT } from '../../schema/model.ts'
+
+const CURRENT_LAW_TAX = { rateIncrease: 0, indexingGap: 0 }
 
 export type Variant = { factor: string; label: string; apply: (s: ScenarioT) => ScenarioT }
 
@@ -40,6 +43,22 @@ export function sensitivityVariants(s: ScenarioT): Variant[] {
     factor: 'Trust fund',
     label: 'Trustees 2026 (78% from 2033)',
     apply: (x) => ({ ...x, trustFund: { preset: 'trustees_2026_oasi', steps: [] } }),
+  })
+  out.push({
+    factor: 'Future tax',
+    label: 'Current law',
+    apply: (x) => ({
+      ...x,
+      assumptions: { ...x.assumptions, futureTax: { ...x.assumptions.futureTax, ...CURRENT_LAW_TAX } },
+    }),
+  })
+  out.push({
+    factor: 'Future tax',
+    label: '+3 points from 2030',
+    apply: (x) => ({
+      ...x,
+      assumptions: { ...x.assumptions, futureTax: { ...x.assumptions.futureTax, rateIncrease: 0.03, fromYear: 2030 } },
+    }),
   })
   if (s.inheritances.length > 0) {
     out.push({

@@ -306,10 +306,10 @@ Full federal and South Carolina income tax is computed *(D: Q-TAX-1, Q-TAX-2)*.
   - NIIT at 3.8% above $250k MAGI (MFJ).
   - Payroll and SE tax on earnings (Section 3.1).
 - **Filing status** switches from MFJ to Single in the year after the first death.
-- **Tax law assumption** *(D: Q-TAX-4)*: current law as enacted today, with no future legislative changes. The TCJA
-  brackets are permanent under OBBBA. The senior deduction **expires after 2028** as scheduled. Brackets, standard
-  deduction and IRMAA thresholds are inflation-indexed. The SS-taxation thresholds and the NIIT threshold are not
-  indexed.
+- **Tax law assumption** *(D: Q-TAX-4, Q-TAX-7)*: by default, current law as enacted today, with no future
+  legislative changes. The TCJA brackets are permanent under OBBBA. The senior deduction **expires after 2028** as
+  scheduled. Brackets, standard deduction and IRMAA thresholds are inflation-indexed. The SS-taxation thresholds and
+  the NIIT threshold are not indexed. Two optional assumptions model higher future federal income tax (FR-TAX-7).
 - **South Carolina** *(D: Q-TAX-2; no move planned)*:
   - Social Security benefits are **fully exempt**.
   - Retirement income deduction (per person) and the age-65 deduction apply to IRA/401(k) withdrawals and annuity
@@ -340,6 +340,17 @@ Full federal and South Carolina income tax is computed *(D: Q-TAX-1, Q-TAX-2)*.
   - The 2/37 top-bracket limitation from 2026.
   - SC tax is unaffected (it starts from AGI with the SCIAD).
   - The year table shows the deduction used.
+- **FR-TAX-7** **Future federal tax** *(D: Q-TAX-7)*. Two scenario assumptions (`assumptions.futureTax`) test higher
+  future federal income tax. Both default to zero, which is current law. They are user what-ifs, not rule data.
+  - **Rate increase** (`rateIncrease`, percentage points, −10 to +20) added to every ordinary federal bracket rate
+    from **`fromYear`** (default 2030) on. Capital-gains rates, NIIT, payroll tax, SC tax and IRMAA are unchanged.
+    Bracket targets (Roth conversions "up to 22%", bracket-fill withdrawals) still name the same statutory bracket,
+    so a +3-point increase fills the bracket now taxed at 25%.
+  - **Bracket indexing gap** (`indexingGap`, 0–3% a year): after the latest published table year, the federal
+    brackets, standard deduction, 65+ additional deduction and LTCG breakpoints grow this much slower than simulated
+    inflation (the price factor is divided by (1 + gap)^years since the table year). This models bracket creep, for
+    example chained CPI, which runs about 0.25% below CPI-U. IRMAA and SC thresholds keep full indexing.
+  - Both are Console levers (FR-UI-7) and fields in Setup → Assumptions.
 
 ### 3.8 Longevity
 
@@ -411,7 +422,8 @@ not the decedent's spouse:
 
 - **FR-MC-1** Monte Carlo with a configurable number of paths (default 5,000, range 100–100,000) and a seed.
 - **FR-MC-2** Variables drawn per path per year:
-  - inflation (CPI), which drives COLA, indexed expenses, medical inflation (CPI + spread) and tax brackets;
+  - inflation (CPI), which drives COLA, indexed expenses, medical inflation (CPI + spread) and tax brackets (federal
+    brackets less any indexing gap, FR-TAX-7);
   - the return on **each account** (and on home equity and pre-receipt inheritance growth, if volatile);
   - death dates for both spouses (if stochastic, FR-LIFE-1);
   - inheritance timing and receipt (FR-INH-3).
@@ -505,7 +517,8 @@ not the decedent's spouse:
   terminal wealth (+$84k vs. 67) and raises the survivor benefit by 24%. It needs $X from the taxable account in
   2027–2030. Success probability is 96% vs. 95%. Without the expected inheritance, the recommendation would be 68y6m."
 - **FR-REC-4** **Sensitivity** (tornado chart and table): how the recommendation changes with longevity (fixed death
-  ages from 75 to 100), real return (±2%), trust fund haircut (none vs. preset), and inheritances (with vs. without).
+  ages from 75 to 100), real return (±2%), trust fund haircut (none vs. preset), future federal tax (current law vs.
+  +3 points from 2030, FR-TAX-7), and inheritances (with vs. without).
 - **FR-REC-5** Only the Primary's claiming date is optimized. The Spouse's claim is a historical fact. Retirement date,
   Roth conversion settings and withdrawal strategy are user inputs, compared by cloning scenarios (Q-REC-2 left blank,
   interpreted this way).
@@ -634,6 +647,8 @@ Setup panels:
   | Volatility multiplier | Slider | 0.5×–1.5× |
   | Mortality | Toggle *Stochastic / Fixed* + two death-age sliders | 70–105 |
   | Trust-fund payable % and start year | Slider + stepper | 60–100%; 2030–2040 |
+  | Future federal tax rates (FR-TAX-7) | Slider, plus a start-year slider when not zero | −5 to +10 points, 0.5; 2027–2045 |
+  | Bracket indexing gap (FR-TAX-7) | Slider | 0–1.5% a year, 0.05% |
   | Survivor spending fraction | Slider | 50–100% |
   | Nondiscretionary spending scale | Slider | 70–130% |
   | Discretionary spending scale | Slider | 0–150% |
@@ -794,6 +809,7 @@ scenarios:
       inflation: { model: ar1, mean: 0.025, sd: 0.012, phi: 0.6 }
       returns: { model: parametric, crossAccountCorrelation: 0.85, inflationCorrelation: -0.1 }
       heirTaxRate: 0.22
+      futureTax: { rateIncrease: 0, fromYear: 2030, indexingGap: 0 }   # FR-TAX-7; zeros = current law
     simulation: { paths: 5000, seed: 20270101, maxAge: 100 }
     objective: { metric: median_terminal_real_after_tax, successFloor: 0.90, bequestFloor: 0.50 }
     consoleLevers:                     # promoted via "Add to Console" (FR-UI-7a); overrides are never saved
@@ -827,7 +843,7 @@ A blank answer meant "accept the recommendation".
 | Q-TAX-1 | Tax depth | Full federal | 3.7 |
 | Q-TAX-2 | State | South Carolina, no move planned | 3.7 |
 | Q-TAX-3 | IRMAA | Include | FR-TAX-5 |
-| Q-TAX-4 | Future tax law | No changes: current law as enacted (senior deduction ends after 2028) | 3.7 |
+| Q-TAX-4 | Future tax law | No changes: current law as enacted (senior deduction ends after 2028). Default only, since Q-TAX-7 | 3.7 |
 | Q-STOCH-1 | Return model | Parametric (default, presets) + historical bootstrap | FR-MC-3 |
 | Q-STOCH-2 | Asset class vs. per account | Per account | FR-ACC-1, FR-MC-3 |
 | Q-STOCH-3 | COLA | Follows simulated inflation; actual COLAs through 2027 in data | 3.1 |
@@ -873,6 +889,7 @@ A blank answer meant "accept the recommendation".
 | Q-UX-7 | Visual style | Left blank (no Rec) → compact console style, system theme, tabular numerals | FR-UI-18 |
 | Q-TAX-5 | Itemized deductions (after v1) | Larger of standard and itemized each year: SALT (SC tax + property tax, OBBBA cap and phase-down), mortgage interest, medical over 7.5% of AGI, charity over 0.5% of AGI; 2/37 limit. SC unaffected | FR-TAX-6, plan T5.3 |
 | Q-TAX-6 | Gains from funding conversion tax (after v1) | Taxed in the same year; cash above its reserve target pays first | FR-WD-4, plan T5.2 |
+| Q-TAX-7 | Higher future taxes (after v1) | Federal only: a rate add-on (points, from a start year) on every ordinary rate, and a bracket indexing gap below inflation. Defaults zero (current law). Console levers; no schema version change | FR-TAX-7, FR-UI-7 |
 | Q-EXP-6 | Discretionary expenses (after v1) | Two expense tables, nondiscretionary and discretionary, each with its own scale (percent field and Console slider); healthcare unscaled. File keys: `expenses.items` / `assumptions.expenseScale` stay as the nondiscretionary ones, plus `expenses.discretionary` / `assumptions.discretionaryScale` | FR-EXP-1a, FR-UI-7 |
 | Q-HOME-1 | Mortgage and home costs (after v1) | Mortgage from a statement: balance as of a month, rate, monthly P&I payment (payoff derived, so extra principal shortens the loan; schema version 3 replaced the payoff month). Property tax, insurance, maintenance with the home, ending at a sale. Downsizing: no new mortgage; each cost reduced by a percentage. Schema version 2; v1 files lose the expense link with a note | FR-ACC-7, FR-EXP-1 |
 

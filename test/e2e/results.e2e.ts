@@ -57,6 +57,7 @@ test('sensitivity view', async ({ page }) => {
   const chart = page.getByTestId('sensitivity')
   await expect(chart).toContainText('Both live to 75', { timeout: 200_000 })
   await expect(chart).toContainText('Inheritances')
+  await expect(chart).toContainText('+3 points from 2030')
   await page.screenshot({ path: 'test-results/sensitivity.png' })
 })
 

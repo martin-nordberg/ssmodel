@@ -106,3 +106,34 @@ describe('other tables', () => {
     }
   })
 })
+
+// Future federal tax assumptions [FR-TAX-7]: user what-ifs layered on the rule tables (not rule data).
+describe('federal params under a future-tax policy', () => {
+  const latest = federalRules.latestYear
+  const cur = federalRules.params(latest + 4, 1.1).value
+  test('current law by default: inflation-indexed thresholds, statutory rates', () => {
+    expect(cur.rateShift).toBe(0)
+    expect(cur.brackets.mfj[1]).toEqual([24800 * 1.1, 0.12])
+    expect(cur.standardDeduction.mfj).toBeCloseTo(32200 * 1.1, 6)
+  })
+  test('the rate increase applies to every ordinary rate from its start year only', () => {
+    const policy = { rateIncrease: 0.03, fromYear: latest + 4, indexingGap: 0 }
+    const before = federalRules.params(latest + 3, 1, policy).value
+    const from = federalRules.params(latest + 4, 1, policy).value
+    expect(before.brackets.mfj.map(([, r]) => r)).toEqual([0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37])
+    expect(from.rateShift).toBe(0.03)
+    for (const [i, [, r]] of from.brackets.mfj.entries()) expect(r).toBeCloseTo(before.brackets.mfj[i]![1] + 0.03, 12)
+    // Capital gains breakpoints are untouched by the rate increase.
+    expect(from.ltcg).toEqual(before.ltcg)
+  })
+  test('the indexing gap compounds after the table year and leaves the table year alone', () => {
+    const policy = { rateIncrease: 0, fromYear: 2100, indexingGap: 0.01 }
+    expect(federalRules.params(latest, 1.1, policy).value.standardDeduction.mfj).toBe(32200)
+    const gap = federalRules.params(latest + 4, 1.1, policy).value
+    const k = 1.1 / 1.01 ** 4
+    expect(gap.brackets.mfj[1]![0]).toBeCloseTo(24800 * k, 6)
+    expect(gap.standardDeduction.mfj).toBeCloseTo(32200 * k, 6)
+    expect(gap.additional65.mfj).toBeCloseTo(1650 * k, 6)
+    expect(gap.ltcg.mfj[0]).toBeCloseTo(98900 * k, 6)
+  })
+})

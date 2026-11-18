@@ -129,6 +129,8 @@ type TaxIn = {
   y: number
   st: St
   f: number
+  /** Future-tax add-on to every ordinary rate this year (assumptions.futureTax). */
+  shift: number
   scF: number
   n65: number
   is65: [boolean, boolean]
@@ -155,7 +157,9 @@ function saltCapRef(y: number, magi: number): number {
 }
 
 function taxRef(t: TaxIn) {
-  const fp = federalRules.params(t.y, t.f).value
+  const raw = federalRules.params(t.y, t.f).value
+  const addShift = (b: [number, number][]) => b.map(([lo, r]) => [lo, r + t.shift] as [number, number])
+  const fp = { ...raw, brackets: { mfj: addShift(raw.brackets.mfj), single: addShift(raw.brackets.single) } }
   // payroll
   let pay = 0
   let halfSe = 0
@@ -341,7 +345,12 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
     const st: St = deathP >= m0 && deathS >= m0 ? 'mfj' : 'single'
     const yi = y - baseY
     const med = P * (1 + sc.healthcare.medicalInflationSpread) ** yi
-    const f = P * (1 + infl) ** (baseY - federalRules.latestYear)
+    // Future tax: brackets index at inflation less the gap after the table year, and rates rise from fromYear.
+    const ft = asm.futureTax
+    const f =
+      (P * (1 + infl) ** (baseY - federalRules.latestYear)) /
+      (1 + ft.indexingGap) ** Math.max(0, y - federalRules.latestYear)
+    const shift = y >= ft.fromYear ? ft.rateIncrease : 0
     const scF = P * (1 + infl) ** (baseY - scRules.latestYear)
     const mF = P * (1 + infl) ** (baseY - medicareRules.latestYear)
     const mPrem = med * (1 + infl + sc.healthcare.medicalInflationSpread) ** (baseY - medicareRules.latestYear)
@@ -569,6 +578,7 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
         y,
         st,
         f,
+        shift,
         scF,
         n65,
         is65: [y - ip.by >= 65, y - is.by >= 65],

@@ -205,6 +205,53 @@ export function AssumptionsPanel() {
           />
         ))}
       </FieldRow>
+      <h3 className="font-medium text-xs">Future federal tax</h3>
+      <FieldRow>
+        <Field
+          leverPath="assumptions.futureTax.rateIncrease"
+          label="Rate increase (points)"
+          tip={TIPS['assumptions.futureTax.rateIncrease']}
+          type="percent"
+          min={-0.1}
+          max={0.2}
+          value={a.futureTax.rateIncrease}
+          hint="Added to every ordinary rate; 0 = current law"
+          onCommit={(v) =>
+            updateScenario((d) => {
+              d.assumptions.futureTax.rateIncrease = v as number
+            })
+          }
+        />
+        <Field
+          leverPath="assumptions.futureTax.fromYear"
+          label="Increase starts (year)"
+          tip={TIPS['assumptions.futureTax.fromYear']}
+          type="integer"
+          min={2026}
+          max={2100}
+          value={a.futureTax.fromYear}
+          onCommit={(v) =>
+            updateScenario((d) => {
+              d.assumptions.futureTax.fromYear = v as number
+            })
+          }
+        />
+        <Field
+          leverPath="assumptions.futureTax.indexingGap"
+          label="Bracket indexing gap"
+          tip={TIPS['assumptions.futureTax.indexingGap']}
+          type="percent"
+          min={0}
+          max={0.03}
+          value={a.futureTax.indexingGap}
+          hint="Yearly shortfall vs. inflation; 0 = current law"
+          onCommit={(v) =>
+            updateScenario((d) => {
+              d.assumptions.futureTax.indexingGap = v as number
+            })
+          }
+        />
+      </FieldRow>
       <h3 className="font-medium text-xs">Other</h3>
       <FieldRow>
         <Field

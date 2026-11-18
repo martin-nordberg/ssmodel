@@ -101,4 +101,16 @@ test('lever formats keep whole-number zeros', () => {
   expect(fmt('successFloor', 0.9)).toBe('90%')
   expect(fmt('inflation', 0.025)).toBe('2.5%')
   expect(fmt('deathP', 90)).toBe('90')
+  expect(fmt('taxRate', 0.03)).toBe('+3 pts')
+  expect(fmt('taxRate', 0)).toBe('0 pts')
+  expect(fmt('taxRate', -0.025)).toBe('−2.5 pts')
+  expect(fmt('taxIndexGap', 0.0025)).toBe('0.25%')
+})
+
+test('the future tax rate lever parses points', () => {
+  const l = DEFAULT_LEVERS.find((x) => x.id === 'taxRate')!
+  if (l.kind !== 'slider') throw new Error('slider')
+  expect(l.parse('+3 pts')).toBeCloseTo(0.03, 12)
+  expect(l.parse('2.5')).toBeCloseTo(0.025, 12)
+  expect(l.parse('x')).toBeNull()
 })

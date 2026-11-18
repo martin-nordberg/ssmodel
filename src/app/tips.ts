@@ -274,6 +274,12 @@ export const TIPS = {
     'How much inflation varies from year to year across the simulations, as a standard deviation.',
   'assumptions.inflation.phi':
     "Persistence in the AR(1) inflation model: how much of this year's gap from the mean carries into next year. 0 means independent years; higher values give long high- or low-inflation spells.",
+  'assumptions.futureTax.rateIncrease':
+    'Percentage points added to every federal ordinary income tax rate from the start year, to test higher future taxes. Zero is current law. Capital gains rates and state tax are unchanged.',
+  'assumptions.futureTax.fromYear':
+    'First tax year in which the federal rate increase applies. Earlier years use current-law rates.',
+  'assumptions.futureTax.indexingGap':
+    'How much slower than inflation the federal brackets, standard deduction and capital gains breakpoints grow each year. Above zero, more income falls into higher brackets over time (bracket creep).',
   'assumptions.realWageGrowth':
     "Growth of national average wages above inflation. It projects the wage index that sets the PIA formula's bend points and indexes future earnings.",
   'assumptions.returns.model':

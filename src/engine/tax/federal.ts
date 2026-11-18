@@ -90,9 +90,12 @@ export function marginalRate(taxable: number, brackets: [number, number][]): num
   return rate
 }
 
-/** Top of the bracket with the given rate (taxable-income terms). */
-export function bracketTop(rate: number, brackets: [number, number][]): number {
-  const i = brackets.findIndex(([, r]) => r === rate)
+/**
+ * Top of the bracket with the given statutory rate (taxable-income terms). `rateShift` is the future-tax add-on
+ * already in `brackets`, so "the 22% bracket" still names the same bracket when rates are raised.
+ */
+export function bracketTop(rate: number, brackets: [number, number][], rateShift = 0): number {
+  const i = brackets.findIndex(([, r]) => Math.abs(r - rateShift - rate) < 1e-9)
   if (i < 0 || i + 1 >= brackets.length) return Number.POSITIVE_INFINITY
   return brackets[i + 1]![0]
 }

@@ -147,6 +147,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
   const [deathP, deathS] = draws.deathMonth
   const firstDeath = Math.min(deathP, deathS)
   const meanInfl = asm.inflation.mean
+  const fedPolicy = asm.futureTax
   const spread = sc.healthcare.medicalInflationSpread
   const startBal = new Float64Array(nAcc)
 
@@ -216,7 +217,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     const medFactor = price * (1 + meanInfl) ** (prep.baseYear - medicareRules.latestYear)
     const medPremiumFactor = medical * (1 + meanInfl + spread) ** (prep.baseYear - medicareRules.latestYear)
     const medicare = medicareRules.params(y, medFactor, medPremiumFactor).value
-    const fedParams = federalRules.params(y, fedFactor).value
+    const fedParams = federalRules.params(y, fedFactor, fedPolicy).value
     for (let i = 0; i < nAcc; i++) startBal[i] = accounts[i]!.balance
 
     // ---- property sales at the start of the year [FR-ACC-7] ----
@@ -660,7 +661,11 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
       const nearMedicare = [P, S].some((p, i) => (i === 0 ? deathP : deathS) >= m0 && y - p.birthYear >= 63)
       const capTier = st.irmaaCapTier
       const magiCap = nearMedicare && capTier < 5 ? medicare.thresholds[status][capTier]! : Number.POSITIVE_INFINITY
-      strategy = { kind: 'bracket_fill', bracketTop: bracketTop(st.targetBracket, fedParams.brackets[status]), magiCap }
+      strategy = {
+        kind: 'bracket_fill',
+        bracketTop: bracketTop(st.targetBracket, fedParams.brackets[status], fedParams.rateShift),
+        magiCap,
+      }
     } else if (st.withdrawal === 'custom') {
       strategy = { kind: 'custom', order: st.customOrder }
     } else {
@@ -784,7 +789,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
     const cashAcc = accounts.find((x) => x.kind === 'cash')
     for (const a of accounts) {
       if (a.kind !== 'inherited_traditional' || a.inherited?.schedule !== 'bracket_aware' || a.balance <= 0) continue
-      const top = bracketTop(st.targetBracket, fedParams.brackets[status])
+      const top = bracketTop(st.targetBracket, fedParams.brackets[status], fedParams.rateShift)
       const before = tax(finalDelta).total
       const x = ordinaryRoom(tax, finalDelta, a.owner, top, capFor(st.irmaaCapTier), a.balance)
       if (x <= 1) continue
@@ -808,7 +813,7 @@ export function runPath(prep: Prepared, claim: YM, draws: PathDraws, opts: RunOp
         const roth = accounts.find((x) => x.kind === 'roth' && x.owner === owner)
         const available = trads.reduce((t, x) => t + x.balance, 0)
         if (!roth || available <= 0) continue
-        const top = bracketTop(rc.upToBracket, fedParams.brackets[status])
+        const top = bracketTop(rc.upToBracket, fedParams.brackets[status], fedParams.rateShift)
         const before = tax(finalDelta).total
         let x = ordinaryRoom(tax, finalDelta, owner, top, capFor(rc.irmaaCapTier), available)
         if (x <= 1) continue

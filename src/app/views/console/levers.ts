@@ -44,6 +44,8 @@ const num =
   (digits = 2) =>
   (v: number) =>
     trimZeros(v.toFixed(digits))
+/** Rate change in percentage points: 0.03 -> "+3 pts". */
+const points = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${trimZeros(Math.abs(v * 100).toFixed(1))} pts`
 const money = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`
 const ok = <T>(r: { ok: true; value: T } | { ok: false }) => (r.ok ? r.value : null)
 const parsePct = (t: string) => ok(parsePercent(t))
@@ -170,6 +172,49 @@ export const DEFAULT_LEVERS: LeverDef[] = [
     set: (v, s) => customTrust(trustFund(s).pct, v),
     format: num(0),
     parse: parseNum,
+  },
+  {
+    kind: 'slider',
+    id: 'taxRate',
+    label: 'Future federal tax rates',
+    tip: TIPS['assumptions.futureTax.rateIncrease'],
+    min: -0.05,
+    max: 0.1,
+    step: 0.005,
+    get: (s) => s.assumptions.futureTax.rateIncrease,
+    set: (v) => [['assumptions.futureTax.rateIncrease', v]],
+    format: points,
+    parse: (t) => {
+      const v = parseNum(t.replace(/pts?|%|\+/g, '').trim())
+      return v === null ? null : v / 100
+    },
+  },
+  {
+    kind: 'slider',
+    id: 'taxYear',
+    label: 'Tax increase starts',
+    tip: TIPS['assumptions.futureTax.fromYear'],
+    min: 2027,
+    max: 2045,
+    step: 1,
+    get: (s) => s.assumptions.futureTax.fromYear,
+    set: (v) => [['assumptions.futureTax.fromYear', v]],
+    format: num(0),
+    parse: parseNum,
+    show: (s) => s.assumptions.futureTax.rateIncrease !== 0,
+  },
+  {
+    kind: 'slider',
+    id: 'taxIndexGap',
+    label: 'Bracket indexing gap',
+    tip: TIPS['assumptions.futureTax.indexingGap'],
+    min: 0,
+    max: 0.015,
+    step: 0.0005,
+    get: (s) => s.assumptions.futureTax.indexingGap,
+    set: (v) => [['assumptions.futureTax.indexingGap', v]],
+    format: pct(2),
+    parse: parsePct,
   },
   {
     kind: 'slider',

@@ -82,6 +82,10 @@ describe('production vs reference engine', () => {
       travel: fc.oneof(fc.constant(0), money(30)),
       needScale: fc.constantFrom(0.8, 1, 1.15),
       wantScale: fc.constantFrom(0.5, 1, 1.3),
+      // Future federal tax [FR-TAX-7]: often current law.
+      rateIncrease: fc.constantFrom(0, 0, 0.03, 0.08),
+      taxFrom: fc.integer({ min: 2027, max: 2040 }),
+      indexingGap: fc.constantFrom(0, 0, 0.005),
     })
     .map((h) => {
       const pY = Number(h.pBirth.slice(0, 4))
@@ -156,6 +160,7 @@ describe('production vs reference engine', () => {
               mortality: { mode: 'fixed', deathAge: { primary: h.deathP, spouse: h.deathS } },
               expenseScale: h.needScale,
               discretionaryScale: h.wantScale,
+              futureTax: { rateIncrease: h.rateIncrease, fromYear: h.taxFrom, indexingGap: h.indexingGap },
             },
             simulation: { maxAge: 100 },
           },
