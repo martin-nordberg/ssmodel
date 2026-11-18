@@ -101,6 +101,8 @@ export const TIPS = {
   'inheritedIras.fee': fee,
 
   // ---------- income ----------
+  'annuities.included':
+    'No keeps the row but leaves it out of the model, so you can compare choices such as different start dates by switching rows on and off.',
   'annuities.label': 'Your name for the annuity, shown in tables and explanations.',
   'annuities.owner': 'Whose annuity it is. Payments drop to the survivor percentage after this person dies.',
   'annuities.monthly': "Monthly payment when payments start, in that year's dollars.",
@@ -115,6 +117,8 @@ export const TIPS = {
     "For a non-qualified annuity, the tax-free share of each payment (the return of your investment), from the insurer's statement. Tax-free treatment stops once the investment is recovered.",
   'annuities.basis':
     'What you paid for a non-qualified annuity. Payments are partly tax-free, by the exclusion ratio, until this amount has been recovered.',
+  'streams.included':
+    'No keeps the row but leaves it out of the model, so you can compare alternatives by switching rows on and off.',
   'streams.label': 'Your name for the income, shown in tables and explanations.',
   'streams.owner': "Who receives it. A person's income stops at their death; joint income continues to the survivor.",
   'streams.annual': "Yearly amount in today's dollars, or in that year's dollars when indexing is None.",
@@ -172,6 +176,8 @@ export const TIPS = {
     'Share of per-person expenses that continues after the first death. 75% means the survivor spends three-quarters of what the couple spent on those items.',
   'expenses.bequestTarget':
     "Amount you'd like to leave at the second death, after tax and in today's dollars. Above zero, the bequest floor also applies to the recommendation.",
+  'expenseItems.included':
+    'No keeps the row but leaves it out of the model, so you can compare choices such as when to buy a car by switching rows on and off.',
   'expenseItems.label': 'Name for the expense, shown in tables and explanations.',
   'expenseItems.annual':
     "Yearly amount in today's dollars, or in that year's dollars when indexing is None. For a one-time expense, the total.",

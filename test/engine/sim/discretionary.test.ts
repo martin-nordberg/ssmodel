@@ -16,7 +16,15 @@ function row2027(need: number, want: number) {
   const s = f.scenarios[0]!
   s.assumptions.mortality.mode = 'fixed'
   s.expenses.discretionary = [
-    { label: 'Travel', annual: 20_000, start: '2027-01', indexing: 'inflation', oneTime: false, perPerson: false },
+    {
+      label: 'Travel',
+      annual: 20_000,
+      start: '2027-01',
+      indexing: 'inflation',
+      oneTime: false,
+      perPerson: false,
+      included: true,
+    },
   ]
   s.assumptions.expenseScale = need
   s.assumptions.discretionaryScale = want

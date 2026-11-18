@@ -62,6 +62,8 @@ export type DataGridProps<R> = {
   validateRow?: (row: R) => Record<string, string>
   readOnly?: boolean
   maxHeight?: number
+  /** Rows to show dimmed, e.g. ones excluded from the model. */
+  dimRow?: (row: R) => boolean
   /** Row index to highlight (linked highlighting) [FR-UI-11]. */
   highlightRow?: number
   /** Pointer or keyboard focus moved to a row (null when leaving the grid). */
@@ -165,6 +167,7 @@ export function DataGrid<R>({
   validateRow,
   readOnly,
   maxHeight,
+  dimRow,
   highlightRow,
   onRowHover,
   onCellActivate,
@@ -454,7 +457,10 @@ export function DataGrid<R>({
               <tr
                 key={row.id}
                 aria-rowindex={row.index + 1}
-                className={cn(row.index === highlightRow && 'bg-primary/10')}
+                className={cn(
+                  row.index === highlightRow && 'bg-primary/10',
+                  dimRow?.(row.original) && 'text-muted-foreground',
+                )}
               >
                 {row.getVisibleCells().map((cell, ci) => {
                   const ri = row.index

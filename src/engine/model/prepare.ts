@@ -420,12 +420,14 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     expenses: [
       ...scenario.expenses.items.map((e) => ({ ...e, discretionary: false })),
       ...scenario.expenses.discretionary.map((e) => ({ ...e, discretionary: true })),
-    ].map((e) => ({
-      ...e,
-      startYM: parseYM(e.start),
-      endYM: e.end ? parseYM(e.end) : undefined,
-    })),
-    incomes: scenario.income.streams,
+    ]
+      .filter((e) => e.included)
+      .map((e) => ({
+        ...e,
+        startYM: parseYM(e.start),
+        endYM: e.end ? parseYM(e.end) : undefined,
+      })),
+    incomes: scenario.income.streams.filter((i) => i.included),
     haircut,
     priorMagi: new Map(Object.entries(hh.priorMagi).map(([y, v]) => [Number(y), v])),
     statementCheck,
@@ -434,6 +436,6 @@ export function prepare(file: HouseholdFile, scenarioId?: string): Prepared {
     taxableMaxByYear,
     inheritances,
     properties,
-    annuities: scenario.income.annuities.map(toEngineAnnuity),
+    annuities: scenario.income.annuities.filter((a) => a.included).map(toEngineAnnuity),
   }
 }

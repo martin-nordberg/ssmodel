@@ -443,6 +443,7 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
     let ordOther = 0
     let freeOther = 0
     for (const s of sc.income.streams) {
+      if (!s.included) continue
       const od = s.owner === 'primary' ? deathP : s.owner === 'spouse' ? deathS : Number.POSITIVE_INFINITY
       let end = s.end ? mi(s.end) : Number.POSITIVE_INFINITY
       if (od <= m0 + 11) end = Math.min(end, od)
@@ -534,6 +535,7 @@ export function referenceRun(file: HouseholdFile, claimStr: string): RefRow[] {
       ...sc.expenses.discretionary.map((e) => ({ e, scale: asm.discretionaryScale })),
     ]
     for (const { e, scale } of tagged) {
+      if (!e.included) continue
       const before = exp
       const idx =
         (e.indexing === 'inflation'

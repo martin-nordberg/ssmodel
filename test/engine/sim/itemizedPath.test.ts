@@ -54,6 +54,7 @@ test('expense items marked medical count above 7.5% of AGI', () => {
       oneTime: false,
       perPerson: false,
       deductible: 'medical',
+      included: true,
     })
   })
   const r = rows.find((x) => x.year === 2028)!
@@ -76,6 +77,7 @@ test('the withdrawal solver still balances cash flow across the standard/itemize
         oneTime: false,
         perPerson: false,
         deductible: 'medical',
+        included: true,
       })
     })
     for (const row of rows) {

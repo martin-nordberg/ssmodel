@@ -236,6 +236,8 @@ export const Annuity = z.object({
   exclusionRatio: Fraction.default(0),
   /** Investment in the contract for a non-qualified annuity; exclusion stops once recovered. */
   basis: NonNegMoney.optional(),
+  /** Off leaves the row in place but out of the model, as if it were not there. */
+  included: z.boolean().default(true),
 })
 
 export const IncomeStream = z.object({
@@ -246,6 +248,8 @@ export const IncomeStream = z.object({
   end: YearMonth.optional(),
   indexing: Indexing.default('inflation'),
   tax: z.enum(['ordinary', 'tax_free']).default('ordinary'),
+  /** Off leaves the row in place but out of the model, as if it were not there. */
+  included: z.boolean().default(true),
 })
 
 export const ExpenseItem = z.object({
@@ -260,6 +264,8 @@ export const ExpenseItem = z.object({
   perPerson: z.boolean().default(false),
   /** Counts as an itemized deduction: a charitable gift or a medical cost [FR-TAX-6]. */
   deductible: z.enum(['charity', 'medical']).optional(),
+  /** Off leaves the row in place but out of the model, as if it were not there. */
+  included: z.boolean().default(true),
 })
 
 export const Pre65 = z.object({

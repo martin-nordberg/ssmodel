@@ -3,6 +3,7 @@ import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { TIPS } from '@/app/tips.ts'
 import type { AnnuityT, IncomeStreamT } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario, useFile } from '@/state/scenario.ts'
+import { includedColumn, isExcluded } from './includedColumn.ts'
 
 const people = [
   { value: 'primary', label: 'Primary' },
@@ -100,6 +101,7 @@ const annuityColumns: GridColumn<AnnuityT>[] = [
     get: (r) => (r.qualified ? undefined : r.basis),
     set: (r, v) => (r.qualified ? r : { ...r, basis: v as number | undefined }),
   },
+  includedColumn(TIPS['annuities.included']),
 ]
 
 const streamColumns: GridColumn<IncomeStreamT>[] = [
@@ -177,6 +179,7 @@ const streamColumns: GridColumn<IncomeStreamT>[] = [
     get: (r) => r.tax,
     set: (r, v) => ({ ...r, tax: v as IncomeStreamT['tax'] }),
   },
+  includedColumn(TIPS['streams.included']),
 ]
 
 /** Income other than Social Security and earnings [FR-INC-2, FR-INC-3]. No pensions in this household. */
@@ -194,6 +197,7 @@ export function IncomePanel() {
         label="Annuities"
         rows={s.income.annuities}
         columns={annuityColumns}
+        dimRow={isExcluded}
         newRow={(): AnnuityT => ({
           label: 'Annuity',
           owner: 'primary',
@@ -203,6 +207,7 @@ export function IncomePanel() {
           survivorPercent: 0,
           qualified: true,
           exclusionRatio: 0,
+          included: true,
         })}
         onChange={(rows) =>
           updateScenario((d) => {
@@ -215,6 +220,7 @@ export function IncomePanel() {
         label="Income streams"
         rows={s.income.streams}
         columns={streamColumns}
+        dimRow={isExcluded}
         newRow={(): IncomeStreamT => ({
           label: 'Income',
           owner: 'joint',
@@ -222,6 +228,7 @@ export function IncomePanel() {
           start: file.household.baseDate,
           indexing: 'inflation',
           tax: 'ordinary',
+          included: true,
         })}
         onChange={(rows) =>
           updateScenario((d) => {

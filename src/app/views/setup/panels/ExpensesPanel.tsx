@@ -3,6 +3,7 @@ import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { TIPS } from '@/app/tips.ts'
 import type { ExpenseItemT } from '@/schema/model.ts'
 import { updateScenario, useActiveScenario, useFile } from '@/state/scenario.ts'
+import { includedColumn, isExcluded } from './includedColumn.ts'
 
 const indexingOptions = [
   { value: 'inflation', label: 'Inflation' },
@@ -106,6 +107,7 @@ const columns: GridColumn<ExpenseItemT>[] = [
     get: (r) => r.deductible ?? 'none',
     set: (r, v) => ({ ...r, deductible: v === 'none' ? undefined : (v as 'charity' | 'medical') }),
   },
+  includedColumn(TIPS['expenseItems.included']),
 ]
 
 export function ExpensesPanel() {
@@ -119,6 +121,7 @@ export function ExpensesPanel() {
     indexing: 'inflation',
     oneTime: false,
     perPerson: false,
+    included: true,
   })
   return (
     <Panel
@@ -162,6 +165,7 @@ export function ExpensesPanel() {
         label="Nondiscretionary expenses"
         rows={s.expenses.items}
         columns={columns}
+        dimRow={isExcluded}
         newRow={newRow}
         onChange={(rows) =>
           updateScenario((d) => {
@@ -177,6 +181,7 @@ export function ExpensesPanel() {
         label="Discretionary expenses"
         rows={s.expenses.discretionary}
         columns={columns}
+        dimRow={isExcluded}
         newRow={newRow}
         onChange={(rows) =>
           updateScenario((d) => {
