@@ -4,7 +4,15 @@ import { coarseCandidates, refineCandidates } from '@/engine/recommend/grid.ts'
 import { type CandidateMetrics, candidateMetrics } from '@/engine/recommend/metrics.ts'
 import { type ObjectiveSettings, type Recommendation, recommend } from '@/engine/recommend/recommend.ts'
 import { sensitivityVariants } from '@/engine/recommend/sensitivity.ts'
-import { type CandidateSamples, concatSamples, type DetailShard } from '@/engine/sim/monteCarlo.ts'
+import {
+  type CandidateSamples,
+  concatSamples,
+  type DetailShard,
+  PATH_PERCENTILES,
+  type PathPercentile,
+  type PathStory,
+  pathAtPercentile,
+} from '@/engine/sim/monteCarlo.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
 import type { HouseholdFile } from '@/schema/model.ts'
 import type { WorkerPool } from './pool.ts'
@@ -56,9 +64,18 @@ export type Detail = {
   liquid: Float32Array
   byAccount: Float32Array
   terminal: Float64Array
-  /** Index of the path with the median terminal wealth, and its full year rows. */
-  medianPath: number
-  medianRows: YearRow[]
+  /** Single paths at percentiles of after-tax estate (10th to 90th), with full year rows [FR-OUT-9]. */
+  pctPaths: Record<PathPercentile, PercentilePath>
+}
+
+export type PercentilePath = {
+  pct: PathPercentile
+  /** Path index (re-run it with the same seed to explain a value). */
+  path: number
+  rows: YearRow[]
+  story: PathStory
+  /** After-tax estate in today's dollars (the ranking value). */
+  estate: number
 }
 
 export async function runDetail(
@@ -86,14 +103,16 @@ export async function runDetail(
     terminal.set(r.terminal, off)
     off += r.terminal.length
   }
-  const order = Array.from(terminal.keys()).sort((a, b) => terminal[a]! - terminal[b]!)
-  const medianPath = order[Math.floor(order.length / 2)] ?? 0
-  const medianRows = await pool.run(
-    'pathRows',
-    { file, scenarioId, seed: o.seed, path: medianPath, claim },
-    { signal: o.signal },
+  // Each percentile path is one quick re-run; fetching all five up front makes switching instant.
+  const picked = await Promise.all(
+    PATH_PERCENTILES.map(async (pct): Promise<PercentilePath> => {
+      const path = pathAtPercentile(terminal, pct)
+      const r = await pool.run('pathStory', { file, scenarioId, seed: o.seed, path, claim }, { signal: o.signal })
+      return { pct, path, rows: r.rows, story: r.story, estate: terminal[path]! }
+    }),
   )
-  return { years, paths: o.paths, liquid, byAccount, terminal, medianPath, medianRows }
+  const pctPaths = Object.fromEntries(picked.map((p) => [p.pct, p])) as Record<PathPercentile, PercentilePath>
+  return { years, paths: o.paths, liquid, byAccount, terminal, pctPaths }
 }
 
 export type RecommendationRun = {

@@ -23,6 +23,7 @@ import { useConsole } from '@/state/consoleStore.ts'
 import { CHART_LABELS, type ChartId, TILE_LABELS, useLayout } from '@/state/layoutStore.ts'
 import { useSettings } from '@/state/settingsStore.ts'
 import { DollarsToggle } from '../results/ResultsView.tsx'
+import { pathLabel } from './DetailStrip.tsx'
 
 /** Main chart area with tabs [FR-OUT-2, FR-OUT-3, FR-UI-17]. */
 export function ChartArea({ prep, claim, dim }: { prep: Prepared; claim: YM | null; dim: boolean }) {
@@ -37,6 +38,8 @@ export function ChartArea({ prep, claim, dim }: { prep: Prepared; claim: YM | nu
   const real = useSettings((s) => s.dollars) === 'real'
   const [stacked, setStacked] = useState(false)
   const detailOk = detail && detailClaim === claim
+  const pathPct = useConsole((s) => s.pathPct)
+  const sel = detailOk ? detail.pctPaths[pathPct] : null
 
   const fan = useMemo(
     () => (detailOk ? fanSummary(detail.liquid, detail.paths, detail.years, prep.baseYear) : []),
@@ -116,12 +119,20 @@ export function ChartArea({ prep, claim, dim }: { prep: Prepared; claim: YM | nu
       )}
       {current === 'fan' &&
         (detailOk ? (
-          <FanChart fan={fan} baseline={baseFan} stacked={accounts} accountLabels={prep.accounts.map((a) => a.label)} />
+          <FanChart
+            fan={fan}
+            baseline={baseFan}
+            stacked={accounts}
+            accountLabels={prep.accounts.map((a) => a.label)}
+            path={sel && { label: pathLabel(sel.pct), rows: sel.rows }}
+          />
         ) : (
           <Pending />
         ))}
-      {current === 'income' && (detailOk ? <IncomeChart rows={detail.medianRows} real={real} /> : <Pending />)}
-      {current === 'taxes' && (detailOk ? <TaxChart rows={detail.medianRows} real={real} /> : <Pending />)}
+      {current === 'income' &&
+        (sel ? <IncomeChart rows={sel.rows} real={real} pathName={pathLabel(sel.pct)} /> : <Pending />)}
+      {current === 'taxes' &&
+        (sel ? <TaxChart rows={sel.rows} real={real} pathName={pathLabel(sel.pct)} /> : <Pending />)}
     </section>
   )
 }

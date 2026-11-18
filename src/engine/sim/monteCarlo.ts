@@ -218,3 +218,63 @@ export function runDetailShard(
 export function pathRows(prep: Prepared, seed: number, path: number, claim: YM, trace?: YearTrace): YearRow[] {
   return runPath(prep, claim, drawPath(drawContext(prep), seed, path), { recordRows: true, trace }).rows!
 }
+
+/** Percentiles of after-tax estate offered as single paths in the Console strip [FR-OUT-9]. */
+export const PATH_PERCENTILES = [10, 25, 50, 75, 90] as const
+export type PathPercentile = (typeof PATH_PERCENTILES)[number]
+
+/** Index of the path at `pct` percent of the ranking by `terminal` (50 = the median, floor(n/2)). */
+export function pathAtPercentile(terminal: Float64Array, pct: number): number {
+  const n = terminal.length
+  if (n === 0) return 0
+  const order = Array.from(terminal.keys()).sort((a, b) => terminal[a]! - terminal[b]!)
+  return order[Math.min(n - 1, Math.floor((pct / 100) * n))]!
+}
+
+/** What one path drew, to read its year rows in context [FR-OUT-9]. */
+export type PathStory = {
+  /** Death year and age in whole years per person; null when alive at the end of the projection. */
+  deaths: ({ year: number; age: number } | null)[]
+  /** First year an inheritance arrived, or null. */
+  inheritanceYear: number | null
+  firstShortfallYear: number | null
+  /** Annualized real return on liquid savings (start-of-year balance weights, after fees). */
+  realReturn: number
+}
+
+export type StoryPath = { rows: YearRow[]; story: PathStory }
+
+/** Rows and draw summary for one path. */
+export function pathWithStory(prep: Prepared, seed: number, path: number, claim: YM): StoryPath {
+  const draws = drawPath(drawContext(prep), seed, path)
+  const rows = runPath(prep, claim, draws, { recordRows: true }).rows!
+  const lastYm = ym(prep.endYear, 12)
+  const deaths = prep.people.map((p, i) => {
+    const m = draws.deathMonth[i]!
+    if (m > lastYm) return null
+    const birth = ym(p.age.birth.year, p.age.birth.month)
+    return { year: Math.floor(m / 12), age: Math.floor((m - birth) / 12) }
+  })
+  let growth = 1
+  let start = prep.accounts.map((a) => a.balance)
+  for (const r of rows) {
+    const yi = r.year - prep.baseYear
+    const total = start.reduce((x, v) => x + v, 0)
+    if (total > 0) {
+      let nominal = 0
+      for (let i = 0; i < start.length; i++)
+        nominal += (start[i]! / total) * (draws.returns[i]![yi]! - prep.accounts[i]!.fee)
+      growth *= (1 + nominal) / (1 + draws.inflation[yi]!)
+    }
+    start = r.endBalances
+  }
+  return {
+    rows,
+    story: {
+      deaths,
+      inheritanceYear: rows.find((r) => (r.inheritances ?? 0) > 0)?.year ?? null,
+      firstShortfallYear: rows.find((r) => r.shortfall > 0.5)?.year ?? null,
+      realReturn: rows.length > 0 ? growth ** (1 / rows.length) - 1 : 0,
+    },
+  }
+}

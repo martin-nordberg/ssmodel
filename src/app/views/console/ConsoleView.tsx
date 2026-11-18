@@ -18,7 +18,7 @@ import { useSettings } from '@/state/settingsStore.ts'
 import { useUi } from '@/state/uiStore.ts'
 import { completeness, isComplete } from '../setup/completeness.ts'
 import { ChartArea } from './ChartArea.tsx'
-import { DetailStrip } from './DetailStrip.tsx'
+import { DetailStrip, pathLabel } from './DetailStrip.tsx'
 import { KpiTiles, money } from './KpiTiles.tsx'
 import { LeverRail } from './LeverRail.tsx'
 import { useConsoleRunner } from './useConsoleRunner.ts'
@@ -76,7 +76,8 @@ function ConsoleBody() {
       return null
     }
   }, [prep, claim, c.draft, effFile, effective.id])
-  const showMedian = c.draft === null && !!c.detail && c.detailClaim === claim
+  // The selected percentile path once the detail run for this date is in; the deterministic preview until then.
+  const sel = c.draft === null && c.detail && c.detailClaim === claim ? c.detail.pctPaths[c.pathPct] : null
 
   if (!prep) return <p className="p-4 text-muted-foreground">The household could not be prepared; check Setup.</p>
   if (prep.candidates.length === 0)
@@ -131,13 +132,16 @@ function ConsoleBody() {
         </section>
         <ChartArea prep={prep} claim={claim} dim={dim} />
         <DetailStrip
-          rows={showMedian ? c.detail!.medianRows : (preview?.result.rows ?? [])}
-          label={showMedian ? 'Median path' : 'Deterministic path'}
+          rows={sel ? sel.rows : (preview?.result.rows ?? [])}
+          label={sel ? pathLabel(sel.pct) : 'Deterministic path'}
+          path={sel}
+          names={[prep.people[0].name, prep.people[1].name]}
+          onPct={(pathPct) => c.set({ pathPct })}
           onExplain={(year, col) => {
             if (claim === null) return
-            // Re-run the path shown (the median Monte Carlo path or the deterministic one), capturing that year.
+            // Re-run the path shown (a percentile Monte Carlo path or the deterministic one), capturing that year.
             const trace: YearTrace = { year }
-            if (showMedian) pathRows(prep, prep.scenario.simulation.seed, c.detail!.medianPath, claim, trace)
+            if (sel) pathRows(prep, prep.scenario.simulation.seed, sel.path, claim, trace)
             else if (preview) runDeterministic(preview.prep, claim, false, trace)
             const e = trace.data && explainValue(trace.data, col)
             if (!e) {
@@ -147,7 +151,7 @@ function ConsoleBody() {
             setExplain({
               explanation: e,
               price: trace.data!.price,
-              source: `${showMedian ? 'Median path' : 'Deterministic path'}, claiming ${formatYM(claim)}`,
+              source: `${sel ? pathLabel(sel.pct) : 'Deterministic path'}, claiming ${formatYM(claim)}`,
             })
           }}
         />

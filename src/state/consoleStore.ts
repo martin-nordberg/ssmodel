@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { YM } from '@/engine/core/dates.ts'
 import type { CandidateMetrics } from '@/engine/recommend/metrics.ts'
 import type { Recommendation } from '@/engine/recommend/recommend.ts'
+import type { PathPercentile } from '@/engine/sim/monteCarlo.ts'
 import type { Detail } from '@/worker/monteCarloClient.ts'
 
 export type RunResult = {
@@ -28,6 +29,8 @@ type ConsoleState = {
   result: RunResult | null
   detail: Detail | null
   detailClaim: YM | null
+  /** Which single path the strip, income and tax charts show: a percentile of after-tax estate [FR-OUT-9]. */
+  pathPct: PathPercentile
   /** Inputs changed since the results were computed (results are dimmed). */
   stale: boolean
   draft: Draft
@@ -45,6 +48,7 @@ export const useConsole = create<ConsoleState>()((set) => ({
   result: null,
   detail: null,
   detailClaim: null,
+  pathPct: 50,
   stale: false,
   draft: null,
   baseline: null,

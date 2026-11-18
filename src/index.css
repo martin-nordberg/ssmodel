@@ -167,6 +167,8 @@
   --band-line: #1c5cab;
   --grid-line: #e5e4e0;
   --ghost: #8a8985;
+  /* One simulated path over the fan bands: the categorical orange, distinct from the blue ramp. */
+  --path-line: #eb6834;
 }
 .dark {
   --series-1: #3987e5;
@@ -181,6 +183,7 @@
   --band-line: #9ec5f4;
   --grid-line: #33332f;
   --ghost: #8f8e88;
+  --path-line: #f07a45;
 }
 
 /* Print [FR-OUT-7]: content only, full width, no chrome. */

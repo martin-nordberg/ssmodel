@@ -627,6 +627,13 @@ Setup panels:
 - **FR-OUT-6** **Sensitivity** view (FR-REC-4).
 - **FR-OUT-7** Export the year-by-year table to CSV. Printing to PDF via a print stylesheet SHOULD work.
 - **FR-OUT-8** Charts MUST have an accessible table equivalent.
+- **FR-OUT-9** **Percentile paths** *(after v1)*. The Console's year-by-year strip shows one simulated path, chosen
+  by its rank in after-tax estate: 10th, 25th, median (default), 75th or 90th percentile, picked with a segmented
+  control. A line under it summarizes what that path drew: estate, each death year and age (or alive at the end),
+  inheritance year, annualized real return on liquid savings (start-of-year balance weights, after fees, deflated by
+  the path's inflation) and the first shortfall year. The selected path's liquid savings is drawn over the balance
+  fan, and the Income and Taxes charts and "explain this number" use the same path. A path is labeled by its estate
+  rank, not its market luck: a low estate can come from poor returns or a long life.
 
 ### 8.5 Console controls (levers)
 

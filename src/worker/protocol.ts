@@ -1,7 +1,6 @@
 // Messages between the UI thread and engine workers [NFR-ARCH-2]. Cancellation terminates the worker, so there
 // is no cancel message: long synchronous engine loops could not receive one anyway.
-import type { CandidateSamples, DetailShard } from '@/engine/sim/monteCarlo.ts'
-import type { YearRow } from '@/engine/sim/path.ts'
+import type { CandidateSamples, DetailShard, StoryPath } from '@/engine/sim/monteCarlo.ts'
 import type { HouseholdFile } from '@/schema/model.ts'
 
 export type TaskKind = keyof TaskMap
@@ -17,7 +16,7 @@ export interface TaskMap {
     res: CandidateSamples[]
   }
   mcDetail: { req: ScenarioRef & { seed: number; pathStart: number; pathEnd: number; claim: number }; res: DetailShard }
-  pathRows: { req: ScenarioRef & { seed: number; path: number; claim: number }; res: YearRow[] }
+  pathStory: { req: ScenarioRef & { seed: number; path: number; claim: number }; res: StoryPath }
 }
 
 export type ToWorker = { id: number; kind: TaskKind; payload: unknown }

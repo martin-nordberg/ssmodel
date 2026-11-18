@@ -618,6 +618,9 @@ v1.1 notes:
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
 
 Changes after v1:
+- **Percentile paths (FR-OUT-9):** the strip picks the 10th/25th/median/75th/90th after-tax-estate path; the detail
+  run fetches all five (`pctPaths`, worker task `pathStory`), so switching is instant. A story line summarizes the
+  path's draws, the path is overlaid on the fan (`--path-line`), and the Income/Taxes charts and explain follow it.
 - **Future federal tax (Q-TAX-7, FR-TAX-7):** `assumptions.futureTax` adds a rate increase (points on every ordinary
   federal rate from a start year) and a bracket indexing gap (federal brackets, deductions and LTCG breakpoints grow
   slower than inflation). Applied in `federalRules.params`; bracket targets match the statutory rate. Three Console

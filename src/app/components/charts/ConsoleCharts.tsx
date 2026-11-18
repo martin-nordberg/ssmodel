@@ -224,11 +224,14 @@ export function FanChart({
   baseline,
   stacked,
   accountLabels,
+  path,
 }: {
   fan: FanPoint[]
   baseline: FanPoint[] | null
   stacked: { year: number; values: number[] }[] | null
   accountLabels: string[]
+  /** One simulated path drawn over the bands, in today's dollars [FR-OUT-9]. */
+  path?: { label: string; rows: YearRow[] } | null
 }) {
   const { hoverYear, handlers } = useHover()
   if (stacked) {
@@ -272,7 +275,14 @@ export function FanChart({
     )
   }
   const base = new Map(baseline?.map((p) => [p.year, p.p50]) ?? [])
-  const data = fan.map((p) => ({ ...p, outer: [p.p10, p.p90], inner: [p.p25, p.p75], base: base.get(p.year) }))
+  const one = new Map(path?.rows.map((r) => [r.year, r.liquid / r.price]) ?? [])
+  const data = fan.map((p) => ({
+    ...p,
+    outer: [p.p10, p.p90],
+    inner: [p.p25, p.p75],
+    base: base.get(p.year),
+    path: one.get(p.year),
+  }))
   return (
     <ChartFrame
       title="Total liquid savings (today's $)"
@@ -280,11 +290,12 @@ export function FanChart({
         { label: 'Median', color: 'var(--band-line)' },
         { label: '25th–75th', color: 'var(--band-inner)', band: true },
         { label: '10th–90th', color: 'var(--band-outer)', band: true },
+        ...(path ? [{ label: path.label, color: 'var(--path-line)' }] : []),
         ...(baseline ? [{ label: 'Baseline median', color: 'var(--ghost)', dashed: true }] : []),
       ]}
       table={{
-        columns: ['Year', '10th', '25th', 'Median', '75th', '90th', 'Household alive'],
-        rows: fan.map((p) => [
+        columns: ['Year', '10th', '25th', 'Median', '75th', '90th', 'Household alive', ...(path ? [path.label] : [])],
+        rows: data.map((p) => [
           p.year,
           fullMoney(p.p10),
           fullMoney(p.p25),
@@ -292,8 +303,14 @@ export function FanChart({
           fullMoney(p.p75),
           fullMoney(p.p90),
           `${Math.round(p.alive * 100)}%`,
+          ...(path ? [p.path === undefined ? '—' : fullMoney(p.path)] : []),
         ]),
       }}
+      note={
+        path
+          ? `Bands and median are percentiles in each year across all paths; the ${path.label.toLowerCase()} is one path.`
+          : undefined
+      }
     >
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart
@@ -318,6 +335,9 @@ export function FanChart({
                     { label: 'Median', value: fullMoney(d.p50), color: 'var(--band-line)' },
                     { label: '25th', value: fullMoney(d.p25) },
                     { label: '10th', value: fullMoney(d.p10) },
+                    ...(path && d.path !== undefined
+                      ? [{ label: path.label, value: fullMoney(d.path), color: 'var(--path-line)' }]
+                      : []),
                   ]}
                 />
               )
@@ -336,6 +356,16 @@ export function FanChart({
             />
           )}
           <Line dataKey="p50" stroke="var(--band-line)" strokeWidth={2} dot={false} isAnimationActive={false} />
+          {path && (
+            <Line
+              dataKey="path"
+              stroke="var(--path-line)"
+              strokeWidth={1.5}
+              dot={false}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          )}
           {hoverYear !== null && <ReferenceLine x={hoverYear} stroke="var(--muted-foreground)" />}
         </ComposedChart>
       </ResponsiveContainer>
@@ -343,18 +373,20 @@ export function FanChart({
   )
 }
 
-// ---------- income stack and taxes (median path) ----------
+// ---------- income stack and taxes (the selected percentile path) ----------
 
 type StackSeries = { key: string; label: string; value: (r: YearRow) => number }
 
 function StackedYears({
   title,
+  pathName,
   rows,
   real,
   series,
   line,
 }: {
   title: string
+  pathName: string
   rows: YearRow[]
   real: boolean
   series: StackSeries[]
@@ -381,7 +413,7 @@ function StackedYears({
         columns: ['Year', ...all.map((s) => s.label)],
         rows: data.map((d) => [d.year as number, ...all.map((s) => fullMoney(Number(d[s.key])))]),
       }}
-      note="Median path (the path with the median after-tax estate)."
+      note={`${pathName}: one simulated path, chosen by its rank in after-tax estate.`}
     >
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={data} margin={{ top: 6, right: 12, bottom: 0, left: 4 }} {...handlers}>
@@ -420,9 +452,10 @@ function StackedYears({
   )
 }
 
-export function IncomeChart({ rows, real }: { rows: YearRow[]; real: boolean }) {
+export function IncomeChart({ rows, real, pathName }: { rows: YearRow[]; real: boolean; pathName: string }) {
   return (
     <StackedYears
+      pathName={pathName}
       title={`Where the money comes from (${real ? "today's $" : 'nominal $'})`}
       rows={rows}
       real={real}
@@ -441,9 +474,10 @@ export function IncomeChart({ rows, real }: { rows: YearRow[]; real: boolean }) 
   )
 }
 
-export function TaxChart({ rows, real }: { rows: YearRow[]; real: boolean }) {
+export function TaxChart({ rows, real, pathName }: { rows: YearRow[]; real: boolean; pathName: string }) {
   return (
     <StackedYears
+      pathName={pathName}
       title={`Taxes and IRMAA (${real ? "today's $" : 'nominal $'})`}
       rows={rows}
       real={real}

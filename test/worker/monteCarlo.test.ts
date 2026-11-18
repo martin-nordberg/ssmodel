@@ -44,15 +44,21 @@ test('paths differ, deaths are stochastic, and claiming later raises lifetime SS
   expect(mean(s[2]!.pvSs)).toBeGreaterThan(mean(s[0]!.pvSs) * 0.9)
 })
 
-test('detail run returns per-year balances and the median path rows', async () => {
+test('detail run returns per-year balances and the percentile paths', async () => {
   const pool = new WorkerPool(() => new Worker(workerUrl), 2)
   pools.push(pool)
   const d = await runDetail(pool, file, 'base', prep.people[0].age.fraMonth, { paths: 40, seed: 3 })
   expect(d.liquid.length).toBe(40 * d.years)
-  expect(d.medianRows.length).toBeGreaterThan(5)
-  expect(d.medianRows[0]!.year).toBe(2027)
+  const med = d.pctPaths[50]
+  expect(med.rows.length).toBeGreaterThan(5)
+  expect(med.rows[0]!.year).toBe(2027)
   const sorted = Array.from(d.terminal).sort((x, y) => x - y)
-  expect(d.terminal[d.medianPath]).toBe(sorted[20]!)
+  expect(d.terminal[med.path]).toBe(sorted[20]!)
+  expect(med.estate).toBe(sorted[20]!)
+  // 40 paths: the 10th percentile is the 4th lowest, the 90th the 36th.
+  expect(d.pctPaths[10].estate).toBe(sorted[4]!)
+  expect(d.pctPaths[90].estate).toBe(sorted[36]!)
+  expect(d.pctPaths[10].estate).toBeLessThanOrEqual(d.pctPaths[25].estate)
 })
 
 test('cancellation rejects', async () => {

@@ -1,17 +1,46 @@
 import { useMemo } from 'react'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
+import { ACTIVE_TOGGLE } from '@/app/components/toggleStyle.ts'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { PATH_PERCENTILES, type PathPercentile } from '@/engine/sim/monteCarlo.ts'
 import type { YearRow } from '@/engine/sim/path.ts'
 import { useSettings } from '@/state/settingsStore.ts'
 import { useUi } from '@/state/uiStore.ts'
+import type { PercentilePath } from '@/worker/monteCarloClient.ts'
+import { money as compactMoney } from './KpiTiles.tsx'
+
+const pctName = (p: PathPercentile) => (p === 50 ? 'Median' : `${p}th`)
+/** "Median path", "10th-percentile path": one simulated path ranked by after-tax estate [FR-OUT-9]. */
+export const pathLabel = (p: PathPercentile) => (p === 50 ? 'Median path' : `${p}th-percentile path`)
+
+/** One line on what the shown path drew, so its rows are read in context. */
+export function storyText(p: PercentilePath, names: [string, string]): string {
+  const s = p.story
+  const r = s.realReturn * 100
+  return [
+    `After-tax estate ${compactMoney(p.estate)} (today's $)`,
+    ...s.deaths.map((d, i) => (d ? `${names[i]} dies ${d.year} at ${d.age}` : `${names[i]} alive at the end`)),
+    ...(s.inheritanceYear !== null ? [`inheritance ${s.inheritanceYear}`] : []),
+    `real return ${r < 0 ? '−' : ''}${Math.abs(r).toFixed(1)}%/yr`,
+    s.firstShortfallYear !== null ? `first shortfall ${s.firstShortfallYear}` : 'no shortfall',
+  ].join(' · ')
+}
 
 /** Compact year-by-year strip for the date shown [§8.2]; hovering a row highlights that year in charts. */
 export function DetailStrip({
   rows,
   label,
+  path,
+  names,
+  onPct,
   onExplain,
 }: {
   rows: YearRow[]
   label: string
+  /** The percentile path shown, or null for the deterministic preview. */
+  path?: PercentilePath | null
+  names?: [string, string]
+  onPct?: (p: PathPercentile) => void
   /** Click (or Enter) on a value: explain it [FR-UI-14]. */
   onExplain?: (year: number, columnId: string) => void
 }) {
@@ -56,9 +85,32 @@ export function DetailStrip({
   }, [real])
   return (
     <section aria-label="Year-by-year" className="grid min-h-0 gap-1">
-      <h3 className="font-medium text-xs">
-        {label} {hoverYear !== null && <span className="text-muted-foreground">— {hoverYear}</span>}
-      </h3>
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="font-medium text-xs">
+          {label} {hoverYear !== null && <span className="text-muted-foreground">— {hoverYear}</span>}
+        </h3>
+        {path && onPct && (
+          <ToggleGroup
+            type="single"
+            size="sm"
+            variant="outline"
+            value={String(path.pct)}
+            onValueChange={(v) => v && onPct(Number(v) as PathPercentile)}
+            aria-label="Path by after-tax estate percentile"
+          >
+            {PATH_PERCENTILES.map((p) => (
+              <ToggleGroupItem key={p} value={String(p)} className={ACTIVE_TOGGLE}>
+                {pctName(p)}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        )}
+      </div>
+      {path && names && (
+        <p className="text-muted-foreground text-xs" data-testid="path-story">
+          {storyText(path, names)}
+        </p>
+      )}
       <DataGrid
         label="Year-by-year strip"
         rows={rows}
