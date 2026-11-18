@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
 import { TIP_TRIGGER, Tip } from '../Tip.tsx'
+import { ACTIVE_TOGGLE } from '../toggleStyle.ts'
 
 export type LeverProps = {
   label: string
@@ -212,7 +213,8 @@ export function SegmentedLever<T extends string>({
             key={o.value}
             value={o.value}
             className={cn(
-              'flex-1 px-1 text-[11px] data-[state=on]:border-brand-active data-[state=on]:bg-brand-track data-[state=on]:text-foreground data-[state=on]:hover:bg-brand-track/80 data-[state=on]:hover:text-foreground',
+              'flex-1 px-1 text-[11px]',
+              ACTIVE_TOGGLE,
               o.value === saved && o.value !== value && 'underline decoration-dotted',
             )}
           >

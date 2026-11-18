@@ -5,8 +5,10 @@ import { ExplainDialog, type ExplainState } from '@/app/components/ExplainDialog
 import { SelectField } from '@/app/components/fields.tsx'
 import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { formatCurrency } from '@/app/components/grid/parse.ts'
+import { ACTIVE_TOGGLE } from '@/app/components/toggleStyle.ts'
 import { TIPS } from '@/app/tips.ts'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { formatAge, formatYM } from '@/engine/core/dates.ts'
 import { explainValue } from '@/engine/explain/explain.ts'
@@ -30,8 +32,12 @@ export function DollarsToggle() {
       onValueChange={(v) => v && set({ dollars: v as 'real' | 'nominal' })}
       aria-label="Dollars"
     >
-      <ToggleGroupItem value="real">Today's $</ToggleGroupItem>
-      <ToggleGroupItem value="nominal">Nominal $</ToggleGroupItem>
+      <ToggleGroupItem value="real" className={ACTIVE_TOGGLE}>
+        Today's $
+      </ToggleGroupItem>
+      <ToggleGroupItem value="nominal" className={ACTIVE_TOGGLE}>
+        Nominal $
+      </ToggleGroupItem>
     </ToggleGroup>
   )
 }
@@ -103,6 +109,7 @@ export function ResultsView() {
           className="w-64"
         />
         <DollarsToggle />
+        <Separator orientation="vertical" className="data-vertical:h-7 data-vertical:self-end" />
         <ToggleGroup
           type="single"
           size="sm"
@@ -111,10 +118,17 @@ export function ResultsView() {
           onValueChange={(v) => v && setTable(v as 'years' | 'schedule' | 'sensitivity')}
           aria-label="Table"
         >
-          <ToggleGroupItem value="years">Year table</ToggleGroupItem>
-          <ToggleGroupItem value="schedule">Withdrawal schedule</ToggleGroupItem>
-          <ToggleGroupItem value="sensitivity">Sensitivity</ToggleGroupItem>
+          <ToggleGroupItem value="years" className={ACTIVE_TOGGLE}>
+            Year table
+          </ToggleGroupItem>
+          <ToggleGroupItem value="schedule" className={ACTIVE_TOGGLE}>
+            Withdrawal schedule
+          </ToggleGroupItem>
+          <ToggleGroupItem value="sensitivity" className={ACTIVE_TOGGLE}>
+            Sensitivity
+          </ToggleGroupItem>
         </ToggleGroup>
+        <Separator orientation="vertical" className="data-vertical:h-7 data-vertical:self-end" />
         <Button variant="outline" size="sm" onClick={exportCsv}>
           <Download /> Export CSV
         </Button>
