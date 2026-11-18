@@ -1,6 +1,7 @@
 // Shared chart frame [FR-OUT-8]: title, legend (identity never by color alone), and a table view of the same data.
 import { type ReactNode, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { ACTIVE_TOGGLE } from '@/app/components/toggleStyle.ts'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 export type LegendItem = { label: string; color: string; dashed?: boolean; band?: boolean }
 
@@ -51,15 +52,22 @@ export function ChartFrame({
               {l.label}
             </span>
           ))}
-        <Button
-          variant="ghost"
-          size="xs"
+        <ToggleGroup
+          type="single"
+          size="sm"
+          variant="outline"
           className="ml-auto"
-          aria-pressed={asTable}
-          onClick={() => setAsTable(!asTable)}
+          value={asTable ? 'table' : 'chart'}
+          onValueChange={(v) => v && setAsTable(v === 'table')}
+          aria-label={`${title} view`}
         >
-          {asTable ? 'Chart' : 'Table'}
-        </Button>
+          <ToggleGroupItem value="chart" className={ACTIVE_TOGGLE}>
+            Chart
+          </ToggleGroupItem>
+          <ToggleGroupItem value="table" className={ACTIVE_TOGGLE}>
+            Table
+          </ToggleGroupItem>
+        </ToggleGroup>
       </figcaption>
       {asTable ? (
         <div className="max-h-72 overflow-auto rounded-md border">

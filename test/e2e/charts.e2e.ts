@@ -20,9 +20,9 @@ test('claim curve, fan, income and tax charts render with table views', async ({
   const charts = page.getByRole('region', { name: 'Charts' })
   await expect(charts.getByTestId('claim-curve').locator('svg.recharts-surface').first()).toBeVisible()
   await page.screenshot({ path: 'test-results/chart-claim.png' })
-  await charts.getByRole('button', { name: 'Table' }).click()
+  await charts.getByRole('radio', { name: 'Table' }).click()
   await expect(charts.getByRole('table')).toContainText('Median')
-  await charts.getByRole('button', { name: 'Chart' }).click()
+  await charts.getByRole('radio', { name: 'Chart' }).click()
 
   for (const [tab, title] of [
     ['Balance fan', 'Total liquid savings'],
@@ -34,7 +34,7 @@ test('claim curve, fan, income and tax charts render with table views', async ({
     await page.screenshot({ path: `test-results/chart-${tab.replace(/\W+/g, '-')}.png` })
   }
   await charts.getByRole('tab', { name: 'Balance fan' }).click()
-  await charts.getByRole('button', { name: 'By account' }).click()
+  await charts.getByRole('radio', { name: 'By account' }).click()
   await expect(charts.getByRole('figure', { name: /Median balance by account/ })).toBeVisible()
   await page.screenshot({ path: 'test-results/chart-by-account.png' })
 })

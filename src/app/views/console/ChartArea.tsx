@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, LayoutGrid } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { ClaimCurveChart, FanChart, IncomeChart, TaxChart } from '@/app/components/charts/ConsoleCharts.tsx'
+import { ACTIVE_TOGGLE } from '@/app/components/toggleStyle.ts'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,6 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Separator } from '@/components/ui/separator'
+import { toggleVariants } from '@/components/ui/toggle'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { YM } from '@/engine/core/dates.ts'
 import type { Prepared } from '@/engine/model/prepare.ts'
 import { accountMedians, fanSummary } from '@/engine/recommend/fan.ts'
@@ -66,20 +70,33 @@ export function ChartArea({ prep, claim, dim }: { prep: Prepared; claim: YM | nu
               type="button"
               role="tab"
               aria-selected={c.id === current}
+              data-state={c.id === current ? 'on' : 'off'}
               onClick={() => setTab(c.id)}
-              className={cn(
-                'rounded-md px-2 py-1 text-xs',
-                c.id === current ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60',
-              )}
+              className={cn(toggleVariants({ variant: 'outline', size: 'sm' }), ACTIVE_TOGGLE)}
             >
               {CHART_LABELS[c.id]}
             </button>
           ))}
         </div>
         {current === 'fan' && (
-          <Button variant="ghost" size="xs" aria-pressed={stacked} onClick={() => setStacked(!stacked)}>
-            {stacked ? 'Total' : 'By account'}
-          </Button>
+          <Separator orientation="vertical" className="mx-1 data-vertical:h-5 data-vertical:self-center" />
+        )}
+        {current === 'fan' && (
+          <ToggleGroup
+            type="single"
+            size="sm"
+            variant="outline"
+            value={stacked ? 'accounts' : 'total'}
+            onValueChange={(v) => v && setStacked(v === 'accounts')}
+            aria-label="Balance fan view"
+          >
+            <ToggleGroupItem value="total" className={ACTIVE_TOGGLE}>
+              Total
+            </ToggleGroupItem>
+            <ToggleGroupItem value="accounts" className={ACTIVE_TOGGLE}>
+              By account
+            </ToggleGroupItem>
+          </ToggleGroup>
         )}
         <div className="ml-auto flex items-center gap-1">
           {(current === 'income' || current === 'taxes') && <DollarsToggle />}
