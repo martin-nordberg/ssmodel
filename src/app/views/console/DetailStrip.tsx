@@ -86,7 +86,8 @@ export function DetailStrip({
   return (
     <section aria-label="Year-by-year" className="grid min-h-0 gap-1">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-medium text-xs">
+        {/* Fixed width (fits "10th-percentile path — 2099") so the toggles stay put as the hover year comes and goes. */}
+        <h3 className="w-[26ch] shrink-0 whitespace-nowrap font-medium text-xs tabular-nums">
           {label} {hoverYear !== null && <span className="text-muted-foreground">— {hoverYear}</span>}
         </h3>
         {path && onPct && (
