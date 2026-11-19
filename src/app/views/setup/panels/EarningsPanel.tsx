@@ -3,6 +3,7 @@ import { DataGrid, type GridColumn } from '@/app/components/grid/DataGrid.tsx'
 import { formatCurrency, formatPercent } from '@/app/components/grid/parse.ts'
 import { TIPS } from '@/app/tips.ts'
 import { ymYear } from '@/engine/core/dates.ts'
+import { employeeSsTaxPaid } from '@/engine/ss/taxesPaid.ts'
 import { updateFile, useFile, usePrepared } from '@/state/scenario.ts'
 
 type RecordRow = { year: number; amount: number }
@@ -137,6 +138,12 @@ export function EarningsPanel() {
               })
             }
           />
+          <div className="text-muted-foreground text-xs" data-testid="ss-tax-paid">
+            Social Security tax paid (employee share):{' '}
+            <strong className="text-foreground tabular-nums">
+              {formatCurrency(employeeSsTaxPaid(p.earningsRecord))}
+            </strong>
+          </div>
         </div>
         <div className="grid content-start gap-4">
           {(['primary', 'spouse'] as const).map((who) => {

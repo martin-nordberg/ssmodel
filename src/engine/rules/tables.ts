@@ -26,6 +26,7 @@ const awiTable = numKeyed(ssaJson.awi)
 const taxableMaxTable = numKeyed(ssaJson.taxableMax)
 const colaTable = numKeyed(ssaJson.cola)
 const earningsTestTable = numKeyed(ssaJson.earningsTest)
+const oasdiEmployeeRateTable = numKeyed(ssaJson.oasdiEmployeeRate)
 
 export const ssaRules = {
   latestAwiYear: Math.max(...awiTable.keys()),
@@ -37,6 +38,8 @@ export const ssaRules = {
   taxableMax: (year: number): number | undefined => taxableMaxTable.get(year),
   /** COLA first payable in January of `year` (applies to December of year-1 benefits). */
   cola: (year: number): number | undefined => colaTable.get(year),
+  /** Employee-share OASDI tax rate in effect for `year` (the latest rate carries forward). */
+  oasdiEmployeeRate: (year: number): number => latestAtOrBefore(oasdiEmployeeRateTable, year)[1],
   bendPointBase: ssaJson.bendPointBase,
   earningsTest(year: number, priceFactor = 1): Projected<{ underFra: number; fraYear: number }> {
     const [tableYear, v] = latestAtOrBefore(earningsTestTable, year)

@@ -8,7 +8,8 @@
     "fra": "https://www.ssa.gov/benefits/retirement/planner/agereduction.html",
     "bendPoints": "https://www.ssa.gov/oact/cola/piaformula.html (computed: 180 and 1085 x AWI[t-2] / AWI[1977])",
     "trustees": "https://www.ssa.gov/news/en/press/releases/2026-06-09.html",
-    "survivorFra": "https://www.ssa.gov/benefits/survivors/survivorchartred.html"
+    "survivorFra": "https://www.ssa.gov/benefits/survivors/survivorchartred.html",
+    "oasdiEmployeeRate": "https://www.ssa.gov/oact/progdata/oasdiRates.html (employee OASDI rate; keys are the first year of each rate. 2011-2012 is the payroll tax holiday. 1984 ignores the one-year 0.3% employee credit.)"
   },
   "effectiveYear": 2027,
   "awi": {
@@ -249,5 +250,31 @@
     "1961": [66, 10],
     "1962": [67, 0]
   },
-  "survivorReductionAt60": 0.285
+  "survivorReductionAt60": 0.285,
+  "oasdiEmployeeRate": {
+    "1937": 0.01,
+    "1950": 0.015,
+    "1954": 0.02,
+    "1957": 0.0225,
+    "1959": 0.025,
+    "1960": 0.03,
+    "1962": 0.03125,
+    "1963": 0.03625,
+    "1966": 0.0385,
+    "1967": 0.039,
+    "1968": 0.038,
+    "1969": 0.042,
+    "1971": 0.046,
+    "1973": 0.0485,
+    "1974": 0.0495,
+    "1978": 0.0505,
+    "1979": 0.0508,
+    "1981": 0.0535,
+    "1982": 0.054,
+    "1984": 0.057,
+    "1988": 0.0606,
+    "1990": 0.062,
+    "2011": 0.042,
+    "2013": 0.062
+  }
 }
