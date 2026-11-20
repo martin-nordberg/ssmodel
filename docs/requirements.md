@@ -43,7 +43,7 @@ Give a clear **recommended claiming age (to the quarter)** for the Primary. Back
   - Suspending benefits at FRA, or withdrawing an application within 12 months *(D: Q-SS-5)*.
   - Uncertain trust-fund haircuts (planned for v2) *(D: Q-TF-1)*.
   - Joint optimization of decisions other than the Primary's claiming date (see FR-REC-5).
-  - Multi-user collaboration, cloud sync, any server-side processing, PWA/offline install *(D: Q-ARCH-6)*.
+  - Multi-user collaboration, cloud sync, any server-side processing.
   - Browsers other than Chromium-based ones *(D: Q-ARCH-1)*.
   - Long-term care as a modeled risk. It can be entered as ordinary expense items; a stochastic LTC event may come
     later *(D: Q-IMP-8)*.
@@ -69,6 +69,7 @@ Give a clear **recommended claiming age (to the quarter)** for the Primary. Back
 | Hosting | **Local only**: `bun run dev`, or `bun run build` + `bun run preview` *(D: Q-ARCH-7)* |
 | Source control / CI | git, private GitHub repository, GitHub Actions running type-check, Biome, `bun test` and Playwright *(D: Q-IMP-7)* |
 | Persistence | Local YAML files through the **File System Access API** |
+| Install / offline | **Progressive web app** via `vite-plugin-pwa` (Workbox precache) *(D: Q-ARCH-6)* |
 
 - **NFR-ARCH-1** The app MUST run entirely client-side. It MUST make no network requests except fetching its own
   static assets.
@@ -86,6 +87,11 @@ Give a clear **recommended claiming age (to the quarter)** for the Primary. Back
   (compute brackets directly instead of iterating, refine the claiming grid near the best date, use fewer paths for the
   live preview). Only after that, port the engine to Rust compiled to WebAssembly behind the same interface. Tauri is
   needed only if a native desktop app becomes a goal.
+- **NFR-ARCH-7** The app SHOULD be an installable progressive web app *(D: Q-ARCH-6)*. A web app manifest gives its
+  name, icons (including a maskable one) and standalone display. A service worker precaches the whole build, including
+  the engine worker and fonts, so after one visit the app loads and runs with no network. A new build MUST NOT replace
+  the running one silently: the app offers a reload, and refuses it while there are unsaved changes. Rule tables are
+  bundled, so the status bar's rule years show which tables a cached build uses.
 
 ### 2.1 File handling
 
@@ -102,6 +108,8 @@ Give a clear **recommended claiming age (to the quarter)** for the Primary. Back
 - **FR-FILE-7** In a browser without `showOpenFilePicker`, show a clear "Chromium-based browser required" message
   instead of the app. There is no fallback.
 - **FR-FILE-8** Save the random seed and simulation settings in the file so results can be reproduced.
+- **FR-FILE-9** The installed app registers as a handler for `.yaml`/`.yml` files. Opening one from the operating
+  system opens it in the app (File Handling API, `launchQueue`), with the same unsaved-changes check as Open….
 
 One file = one **household** containing one or more **scenarios** (tabs). Household facts (people, birth dates,
 earnings history) are shared by all scenarios. Everything else is per scenario, so it can be varied by cloning.
@@ -866,7 +874,7 @@ A blank answer meant "accept the recommendation".
 | Q-ARCH-3 | Grid | TanStack Table | §2 |
 | Q-ARCH-4 | Charts | Recharts via shadcn | §2 |
 | Q-ARCH-5 | Audience | One household | 1.3 |
-| Q-ARCH-6 | PWA | Not needed | 1.3 |
+| Q-ARCH-6 | PWA | Not needed in v1; added after v1.1 (2026-11-20): installable, offline, file handler | NFR-ARCH-7, FR-FILE-9 |
 | Q-ARCH-7 | Hosting | Local only | §2 |
 | Q-SS-6 | How earnings change PIA | (a) Exact: paste earnings record; compute AIME/PIA; statement estimate is a cross-check | FR-SS-2, FR-SS-2a |
 | Q-EXP-5 | Pre-65 coverage | COBRA at a fixed premium; no ACA subsidy modeling | FR-EXP-3 |

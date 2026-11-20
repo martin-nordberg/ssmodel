@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
+import { useLaunchQueue } from '@/app/pwa/useLaunchQueue.ts'
+import { usePwa } from '@/app/pwa/usePwa.ts'
 import { ViewHost } from '@/app/views/ViewHost.tsx'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -18,6 +20,9 @@ import { useShortcuts } from './useShortcuts.ts'
 
 export function AppShell() {
   useShortcuts()
+  usePwa()
+  const { openHandle } = useFileCommands()
+  useLaunchQueue(openHandle)
   useDisplaySettings()
   useSettings((s) => s.numberFormat)
   const name = useDocument((s) => s.name)

@@ -26,3 +26,15 @@ interface Window {
   showOpenFilePicker?(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>
   showSaveFilePicker?(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>
 }
+
+// File Handling API: files the OS opened the installed app with (Chromium only).
+interface LaunchParams {
+  readonly targetURL?: string
+  readonly files: readonly FileSystemHandle[]
+}
+interface LaunchQueue {
+  setConsumer(consumer: (params: LaunchParams) => void): void
+}
+interface Window {
+  launchQueue?: LaunchQueue
+}

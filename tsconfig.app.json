@@ -4,7 +4,7 @@
     "target": "es2023",
     "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"],
     "module": "esnext",
-    "types": ["vite/client", "bun"],
+    "types": ["vite/client", "vite-plugin-pwa/client", "bun"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

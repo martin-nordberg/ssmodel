@@ -49,6 +49,19 @@ export function useFileCommands() {
     [loadOpened],
   )
 
+  /** Opens a handle the OS passed in, e.g. a double-clicked file in the installed app [FR-FILE-9]. */
+  const openHandle = useCallback(
+    async (handle: FileSystemFileHandle) => {
+      if (!confirmDiscard()) return
+      try {
+        await loadOpened(await readHandle(handle))
+      } catch (e) {
+        toast.error(`Could not open ${handle.name}: ${String(e)}`)
+      }
+    },
+    [loadOpened],
+  )
+
   const saveAs = useCallback(async () => {
     const doc = useDocument.getState()
     if (!doc.file) return
@@ -83,5 +96,5 @@ export function useFileCommands() {
     useDocument.getState().close()
   }, [])
 
-  return { newHousehold, open, openRecent, save, saveAs, close }
+  return { newHousehold, open, openRecent, openHandle, save, saveAs, close }
 }

@@ -578,6 +578,21 @@ green, goldens regenerated only with the change explained in the commit message.
     and the gain realized to fund conversions.
 - Done when: e2e opens a breakdown of federal tax and of a withdrawal, and the parts add up to the shown value.
 
+## v1.2
+
+**T6.1 Progressive web app**
+- Covers: NFR-ARCH-7, FR-FILE-9 (reverses Q-ARCH-6).
+- Steps:
+  - `vite-plugin-pwa` in `vite.config.ts`: manifest (name, standalone, theme colour, icons, `file_handlers` for
+    `.yaml`/`.yml`), Workbox `generateSW` precaching all JS, CSS, fonts and icons, including the engine worker chunk.
+    Off under `bun run dev`.
+  - App icon in `public/icons/` (SVG source; 192, 512, maskable 512 and Apple touch PNGs rendered from it). Replaces
+    the stock Vite favicon.
+  - `registerType: 'prompt'`: a toast offers Reload when a new build is waiting; refused while the file is modified.
+  - `launchQueue` consumer opens a file the OS passes to the installed app.
+- Done when: e2e checks the manifest and icons, and after one load goes offline, reloads, opens a household and gets a
+  recommendation from the Monte Carlo.
+
 ---
 
 ## Risks and mitigations
@@ -616,6 +631,12 @@ v1.1 notes:
   kept inherited real estate is not itemized (it is not split out).
 - **T5.4:** explanations cover the year-table and detail-strip money columns. They are built from a one-year trace
   of the same path (re-run on demand), using the engine's tax and deduction functions on the captured inputs.
+
+v1.2 notes:
+- **T6.1:** the update prompt is not in the e2e suite (it needs a second build mid-test). A one-off scripted run
+  confirmed it: the old build keeps running until Reload, then the new one loads. Not yet exercised: the refusal
+  with unsaved changes, and the file handler (Playwright cannot install the app). Install from `bun run build && bun run preview` (localhost counts as a
+  secure origin); the installed app is tied to that origin and port.
 
 Changes after v1:
 - **Percentile paths (FR-OUT-9):** the strip picks the 10th/25th/median/75th/90th after-tax-estate path; the detail
