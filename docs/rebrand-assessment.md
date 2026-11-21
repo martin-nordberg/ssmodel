@@ -237,7 +237,8 @@ What it did that now needs a replacement:
 
 ## Suggested order
 
-1. **Write one combined requirements doc** recording D1–D5 and the household shapes to support.
+1. **Write one combined requirements doc** recording D1–D5 and the household shapes to support. Draft:
+   [provisionlens-requirements.md](provisionlens-requirements.md).
 2. **Spike first, as a go/no-go check** like ssmodel's M0.
    - Open a copy of the real `.checquery` file in SQLite WASM in a worker.
    - Decrypt it with the browser scrypt and AES-GCM.
