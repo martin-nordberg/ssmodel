@@ -5,6 +5,7 @@ export default defineConfig({
   testDir: '.',
   testMatch: '**/*.spike.ts',
   workers: 1,
+  globalSetup: './globalSetup.ts',
   timeout: 180_000,
   reporter: 'list',
   use: { baseURL: 'http://localhost:5199', trace: 'retain-on-failure' },

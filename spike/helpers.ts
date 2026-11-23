@@ -3,6 +3,20 @@ import type { Page } from '@playwright/test'
 
 export const repoRoot = new URL('..', import.meta.url).pathname
 const resultsDir = new URL('./results/', import.meta.url).pathname
+export const fixtureDir = new URL('./.out/', import.meta.url).pathname
+
+/** Password for the real file, from the environment only; tests that need it skip without it. */
+export const realPassword = process.env.SPIKE_CHECQUERY_PASSWORD
+
+export interface FixtureReference {
+  password: string
+  actions: number
+  plaintexts: Record<string, string>
+}
+
+export function readReference(name: string): FixtureReference {
+  return JSON.parse(readFileSync(`${fixtureDir}${name}.reference.json`, 'utf8'))
+}
 
 /** The real Checquery file, if present locally (never committed; see CLAUDE.md on private/). */
 export const realFile = process.env.SPIKE_CHECQUERY_FILE ?? `${repoRoot}private/Nordbergs.checquery`

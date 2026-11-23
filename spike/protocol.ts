@@ -23,10 +23,21 @@ export interface RoundTripResult {
   timings: RoundTripTimings
 }
 
+export interface DecryptResult {
+  encrypted: boolean
+  /** False when the password was rejected; nothing else is filled in then. */
+  passwordOk: boolean
+  actions: number
+  /** Action id → decrypted JSON, only when requested (synthetic fixtures). */
+  plaintexts?: Record<string, string>
+  timings: { openMs: number; keyMs: number; decryptMs: number }
+}
+
 export interface Requests {
   version: { args: []; result: string }
   makeSyntheticDb: { args: [targetBytes: number]; result: Uint8Array }
   roundTrip: { args: [bytes: Uint8Array, vfs: Vfs]; result: RoundTripResult }
+  decryptFile: { args: [bytes: Uint8Array, password: string, keepPlaintexts: boolean]; result: DecryptResult }
 }
 
 export type Op = keyof Requests

@@ -1,5 +1,6 @@
 import sqlite3InitModule, { type Sqlite3Static } from '@sqlite.org/sqlite-wasm'
-import type { RequestMessage, ResponseMessage, RoundTripResult, Vfs } from './protocol.ts'
+import { decryptPayload, type FileCryptoMaterial, verifyPassword } from './crypto.ts'
+import type { DecryptResult, RequestMessage, ResponseMessage, RoundTripResult, Vfs } from './protocol.ts'
 
 // The spike's SQLite worker [NFR-ARCH-8]: loads the official SQLite WASM build and runs the measurements.
 
@@ -114,10 +115,81 @@ async function roundTrip(input: Uint8Array, vfs: Vfs): Promise<RoundTripResult> 
   }
 }
 
+type Db = InstanceType<Sqlite3Static['oo1']['DB']>
+
+/** Copies file bytes into an OPFS working copy (opfs-sahpool) and opens it, as the app will [FR-STO-2]. */
+async function openWorkingCopy(bytes: Uint8Array, name: string): Promise<Db> {
+  const util = await pool()
+  await util.importDb(name, bytes)
+  return new util.OpfsSAHPoolDb(name)
+}
+
+function readMeta(db: Db): Record<string, string> {
+  const rows = db.selectObjects('SELECT key, value FROM _checquery_meta') as { key: string; value: string }[]
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]))
+}
+
+export interface ActionRow {
+  id: string
+  action_type: string
+  hlc: string
+  iv: string
+  encrypted_payload: string
+}
+
+/** Opens a .checquery file's bytes and decrypts every action in HLC order. */
+async function decryptActions(
+  bytes: Uint8Array,
+  password: string,
+  onAction: (row: ActionRow, plaintext: string) => void,
+): Promise<Omit<DecryptResult, 'plaintexts'>> {
+  let t = now()
+  const db = await openWorkingCopy(bytes, '/working-copy.checquery')
+  try {
+    const meta = readMeta(db)
+    const rows = db.selectObjects(
+      'SELECT id, action_type, hlc, iv, encrypted_payload FROM actions ORDER BY hlc ASC',
+    ) as unknown as ActionRow[]
+    const openMs = now() - t
+    // Files predating the "encrypted" flag were always encrypted (Checquery's openExistingFile).
+    const encrypted = meta.encrypted !== 'false'
+    let key: CryptoKey | null = null
+    t = now()
+    if (encrypted) {
+      const material: FileCryptoMaterial = {
+        kdfSalt: meta.kdf_salt as string,
+        kdfParams: JSON.parse(meta.kdf_params as string),
+        verifyIv: meta.verify_iv as string,
+        verifyCiphertext: meta.verify_ciphertext as string,
+      }
+      key = await verifyPassword(password, material)
+      if (!key) return { encrypted, passwordOk: false, actions: 0, timings: { openMs, keyMs: now() - t, decryptMs: 0 } }
+    }
+    const keyMs = now() - t
+    t = now()
+    for (const row of rows) {
+      const plaintext = key ? await decryptPayload(key, row.iv, row.encrypted_payload) : row.encrypted_payload
+      onAction(row, plaintext)
+    }
+    return { encrypted, passwordOk: true, actions: rows.length, timings: { openMs, keyMs, decryptMs: now() - t } }
+  } finally {
+    db.close()
+  }
+}
+
+async function decryptFile(bytes: Uint8Array, password: string, keepPlaintexts: boolean): Promise<DecryptResult> {
+  const plaintexts: Record<string, string> = {}
+  const result = await decryptActions(bytes, password, (row, plaintext) => {
+    if (keepPlaintexts) plaintexts[row.id] = plaintext
+  })
+  return keepPlaintexts ? { ...result, plaintexts } : result
+}
+
 const handlers = {
   version: async () => (await sqlite3Promise).version.libVersion,
   makeSyntheticDb,
   roundTrip,
+  decryptFile,
 } as const
 
 self.onmessage = async (event: MessageEvent<RequestMessage>) => {
