@@ -88,13 +88,13 @@ async function bootstrapNetWorthAccount(store: LedgerStore, origId: OrigId): Pro
 export async function createLedgerFile(
   db: DbDriver,
   memory: DbDriver,
-  opts: { password: string | undefined; deviceName: string },
+  opts: { password: string | undefined; deviceName: string; fileId?: string },
 ): Promise<OpenedLedger> {
   if (opts.password !== undefined && opts.password.length === 0) {
     throw new LedgerFileError('password-required', 'A password is required.')
   }
   runMigrations(db)
-  const fileId = createId()
+  const fileId = opts.fileId ?? createId()
   const nodeId = generateNodeId()
   setMetaValue(db, 'file_id', fileId)
   setMetaValue(db, 'created_at', new Date().toISOString())

@@ -29,12 +29,16 @@ export default defineConfig({
           { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           { src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
         ],
-        // Double-clicking a household file opens it in the installed app [FR-FILE-9].
-        file_handlers: [{ action: '/', accept: { 'application/yaml': ['.yaml', '.yml'] } }],
+        // Double-clicking a household file opens it in the installed app [FR-FILE-9, FR-STO-1].
+        file_handlers: [
+          { action: '/', accept: { 'application/yaml': ['.yaml', '.yml'] } },
+          { action: '/', accept: { 'application/x-provisionlens': ['.plens'] } },
+        ],
         launch_handler: { client_mode: 'focus-existing' },
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // .wasm: SQLite for the store worker, needed offline like everything else.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
         // The main chunk (engine, rule tables, charts) is ~1.4 MB; leave headroom above Workbox's 2 MiB default,
         // which would silently drop it from the precache.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,

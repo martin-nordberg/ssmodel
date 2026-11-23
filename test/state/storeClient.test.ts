@@ -30,7 +30,13 @@ describe('StoreClient', () => {
   test('turns error responses into StoreError with the code', async () => {
     const { port, reply } = fakePort()
     const client = new StoreClient(port)
-    const p = client.request('open', { bytes: new Uint8Array(), password: 'x', deviceName: 'L', allowMigration: false })
+    const p = client.request('open', {
+      bytes: new Uint8Array(),
+      password: 'x',
+      deviceName: 'L',
+      allowMigration: false,
+      source: 'file',
+    })
     reply({ kind: 'result', id: 1, ok: false, error: { code: 'wrong-password', message: 'Incorrect password.' } })
     const err = await p.catch((e) => e)
     expect(err).toBeInstanceOf(StoreError)

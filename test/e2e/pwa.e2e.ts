@@ -18,6 +18,13 @@ test('manifest is linked and installable', async ({ page, request }) => {
   expect(sizes).toEqual(expect.arrayContaining(['192x192 any', '512x512 any', '512x512 maskable']))
   for (const icon of manifest.icons) expect((await request.get(icon.src)).ok()).toBe(true)
   expect(manifest.file_handlers[0].accept['application/yaml']).toContain('.yaml')
+  expect(manifest.file_handlers[1].accept['application/x-provisionlens']).toEqual(['.plens'])
+})
+
+// The store worker's SQLite build must be precached, or .plens files can't open offline [NFR-ARCH-7].
+test('the service worker precaches SQLite WASM', async ({ request }) => {
+  const sw = await (await request.get('/sw.js')).text()
+  expect(sw).toMatch(/assets\/sqlite3-[\w-]+\.wasm/)
 })
 
 test('runs offline once loaded', async ({ page, context }) => {

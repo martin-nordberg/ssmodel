@@ -51,9 +51,6 @@ test('exported bytes reopen with the password, and errors carry codes', async ({
     await client.request('create', { password: 'correct horse', deviceName: 'Laptop' })
     const bytes = await client.request('export', {})
     const info = await client.request('inspect', { bytes: bytes.slice() })
-    const wrong = await client
-      .request('open', { bytes: bytes.slice(), password: 'wrong', deviceName: 'Laptop', allowMigration: false })
-      .catch((e) => e.code)
     const bad = await client
       .command('accounts', 'createAccount', {
         id: 'x',
@@ -62,7 +59,22 @@ test('exported bytes reopen with the password, and errors carry codes', async ({
         name: '',
       })
       .catch((e) => e.code)
-    await client.request('open', { bytes, password: 'correct horse', deviceName: 'Laptop', allowMigration: false })
+    const wrong = await client
+      .request('open', {
+        bytes: bytes.slice(),
+        password: 'wrong',
+        deviceName: 'Laptop',
+        allowMigration: false,
+        source: 'file',
+      })
+      .catch((e) => e.code)
+    await client.request('open', {
+      bytes,
+      password: 'correct horse',
+      deviceName: 'Laptop',
+      allowMigration: false,
+      source: 'file',
+    })
     const count = await client.query('accounts', 'countAccountsAll')
     return { noFile, info, wrong, bad, count }
   })
@@ -73,4 +85,58 @@ test('exported bytes reopen with the password, and errors carry codes', async ({
     bad: 'invalid-request',
     count: 1,
   })
+})
+
+// FR-STO-2, FR-STO-3: the working copy in OPFS survives a crashed worker and is offered when newer than the file.
+test('a working copy left by a crash is detected and recovered', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const first = window.harness.newStore().client
+    await first.request('create', { password: undefined, deviceName: 'Laptop' })
+    const saved = await first.request('export', {})
+    await first.command('accountCategories', 'createAccountCategory', {
+      id: 'actgunsavedcategory000000001',
+      parentCtgId: 'actgassets000000000000000000',
+      acctType: 'ASSET',
+      name: 'Unsaved',
+    })
+    first.terminate() // a crash: no close, nothing written back to the file
+
+    const second = window.harness.newStore().client
+    const offered = await second.request('inspect', { bytes: saved.slice() })
+    await second.request('open', {
+      bytes: saved.slice(),
+      password: undefined,
+      deviceName: 'Laptop',
+      allowMigration: false,
+      source: 'working-copy',
+    })
+    const recovered = await second.query(
+      'accountCategories',
+      'findAccountCategoryById',
+      'actgunsavedcategory000000001' as never,
+    )
+    await second.request('close', { keepWorkingCopy: false })
+    const afterClose = await second.request('inspect', { bytes: saved.slice() })
+
+    // Choosing the file instead discards the working copy's changes.
+    await second.request('open', {
+      bytes: saved.slice(),
+      password: undefined,
+      deviceName: 'Laptop',
+      allowMigration: false,
+      source: 'file',
+    })
+    const fromFile = await second.query(
+      'accountCategories',
+      'findAccountCategoryById',
+      'actgunsavedcategory000000001' as never,
+    )
+    return {
+      offered: offered.newerWorkingCopy !== null && offered.newerWorkingCopy.contentVersion > offered.contentVersion,
+      recovered: recovered?.name,
+      afterClose: afterClose.newerWorkingCopy,
+      fromFile,
+    }
+  })
+  expect(result).toEqual({ offered: true, recovered: 'Unsaved', afterClose: null, fromFile: null })
 })

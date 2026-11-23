@@ -6,10 +6,18 @@ export type Settings = {
   theme: 'system' | 'light' | 'dark'
   density: 'compact' | 'comfortable'
   numberFormat: 'compact' | 'full'
+  /** The device/user name stamped on every ledger change made here [FR-LED-4]. */
+  deviceName: string
 }
 
 const KEY = 'ssmodel.settings'
-const defaults: Settings = { dollars: 'real', theme: 'system', density: 'compact', numberFormat: 'full' }
+const defaults: Settings = {
+  dollars: 'real',
+  theme: 'system',
+  density: 'compact',
+  numberFormat: 'full',
+  deviceName: 'This device',
+}
 
 function load(): Settings {
   try {

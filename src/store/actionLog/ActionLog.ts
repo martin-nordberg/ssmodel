@@ -34,6 +34,7 @@ import { OriginActionLogCmdSvc } from '@/store/actionLog/crudServices/OriginActi
 import { TransactionActionLogCmdSvc } from '@/store/actionLog/crudServices/TransactionActionLogCmdSvc.ts'
 import { VendorActionLogCmdSvc } from '@/store/actionLog/crudServices/VendorActionLogCmdSvc.ts'
 import type { PayloadCodec } from '@/store/actionLog/encryption/PayloadCodec.ts'
+import { bumpContentVersion } from '@/store/actionLog/meta.ts'
 import { runAllMigrations, runMigrations } from '@/store/actionLog/migrations/runMigrations.ts'
 import type { DbDriver } from '@/store/driver/DbDriver.ts'
 
@@ -157,6 +158,7 @@ export class ActionLog {
         encryptedPayload,
       ])
       this.db.run(`INSERT INTO ${table} (actn_id, ${column}) VALUES (?, ?)`, [actnId, resolvedEvent.id])
+      bumpContentVersion(this.db)
     })
 
     return resolvedEvent

@@ -1,4 +1,6 @@
 import { useEffect } from 'react'
+import { PlensDialogs } from '@/app/files/PlensDialogs.tsx'
+import { flushPlens, hasUnsavedPlens, openPlensHandle } from '@/app/files/plensFile.ts'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
 import { useLaunchQueue } from '@/app/pwa/useLaunchQueue.ts'
 import { usePwa } from '@/app/pwa/usePwa.ts'
@@ -22,7 +24,7 @@ export function AppShell() {
   useShortcuts()
   usePwa()
   const { openHandle } = useFileCommands()
-  useLaunchQueue(openHandle)
+  useLaunchQueue(openHandle, openPlensHandle)
   useDisplaySettings()
   useSettings((s) => s.numberFormat)
   const name = useDocument((s) => s.name)
@@ -38,9 +40,21 @@ export function AppShell() {
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (useDocument.getState().dirty) e.preventDefault()
+      if (hasUnsavedPlens()) {
+        void flushPlens()
+        e.preventDefault()
+      }
+    }
+    // Save the .plens file when the app is hidden (switching apps, closing the laptop) [FR-STO-3].
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') void flushPlens()
     }
     window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [])
 
   return (
@@ -79,6 +93,7 @@ export function AppShell() {
       <div className="min-h-0 flex-1 overflow-auto">{hasFile ? <ViewHost /> : <Welcome />}</div>
       <StatusBar />
       <NewHouseholdDialog />
+      <PlensDialogs />
       <CommandPalette />
     </div>
   )

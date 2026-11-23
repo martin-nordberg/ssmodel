@@ -26,3 +26,15 @@ export function setMetaValue(db: DbDriver, key: string, value: string): void {
     [key, value],
   )
 }
+
+/**
+ * A counter bumped by every committed change. Comparing the working copy's value with the user's file tells
+ * whether the working copy has changes the file lacks (crash recovery, FR-STO-3). Files without one count as 0.
+ */
+export function readContentVersion(db: DbDriver): number {
+  return Number(getMetaValue(db, 'content_version') ?? 0)
+}
+
+export function bumpContentVersion(db: DbDriver): void {
+  setMetaValue(db, 'content_version', String(readContentVersion(db) + 1))
+}
