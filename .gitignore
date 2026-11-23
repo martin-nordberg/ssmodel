@@ -17,3 +17,7 @@ playwright-report/
 # Tooling caches
 node_modules/.tmp/
 *.tsbuildinfo
+
+# P0 spike output (measurements and generated fixtures)
+spike/results/
+spike/.out/
