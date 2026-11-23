@@ -766,3 +766,12 @@ Goal: the first release to family and friends [FR-PRD-8].
 | Everything-in-one-release scope for one developer | Household uses each milestone as it lands; parallel milestones (P4 ∥ P5); "after the first release" list for anything that can wait |
 | Chromium file APIs change | Desktop Chromium only (D5); the FSA mock in e2e catches regressions |
 | Real data leaking into git | `private/` git-ignored; samples and fixtures generated from seeds; diagnostics never include household data |
+
+---
+
+## Implementation status (2026-11-23)
+
+- **P0 done** (P0.1–P0.4). Gate: continue as planned; see `docs/benchmarks.md`. Pending: the real file decrypted,
+  replayed and compared (P0.3), which needs its password and runs locally with `SPIKE_CHECQUERY_PASSWORD`.
+  Findings carried into P1: use the opfs-sahpool VFS; the second window (P1.8) can't share the working copy's
+  pool.

@@ -45,3 +45,62 @@ candidates and is 8 s for this household's 18. Mitigations in place:
 
 A newer laptop with more performance cores should be 2–3× faster. Rust/WASM stays the fallback if real-world use
 shows the full run is too slow (NFR-ARCH-6 says to reconsider only above 15 s after the reductions).
+
+## ProvisionLens P0 — Storage spike (2026-11-23)
+
+`bun run spike` (`spike/`, see its README): Chromium 156 (Playwright 1.64.1), SQLite WASM 3.54.1, on the
+development machine (i7-7700, 4 cores / 8 threads). Medians of three runs where repeated; milliseconds.
+
+**P0.1 — SQLite WASM in a worker.** A file's bytes imported into OPFS, opened and queried (`PRAGMA quick_check`),
+exported, written to a `FileSystemFileHandle` and read back. Every export was byte-identical to its input, and a
+row written through the VFS survived export and re-import.
+
+| File | VFS | Import | Open + check | Export | Write to handle | Read back |
+|---|---|---|---|---|---|---|
+| Synthetic, 1.1 MB | opfs-sahpool | 4.7 | 29.2 | 1.8 | 5.6 | 2.0 |
+| Synthetic, 1.1 MB | opfs | 4.7 | 35.5 | 2.0 | 5.4 | 2.1 |
+| Real Checquery file, 1.2 MB (raw SQLite) | opfs-sahpool | 4.5 | 61.9 | 2.2 | 6.5 | 2.2 |
+| Real Checquery file, 1.2 MB (raw SQLite) | opfs | 5.3 | 74.4 | 2.8 | 5.8 | 2.1 |
+
+**P0.2 — Browser crypto.** noble scrypt (N = 32768, r = 8, p = 1, Checquery's parameters) and Web Crypto AES-GCM.
+Fixtures were written by Checquery's own server code; every payload decrypted identically to Checquery's
+`node:crypto` output, and a wrong password was rejected.
+
+| Fixture | Actions | Key derivation | Decrypt all |
+|---|---|---|---|
+| small | 78 | 141 | 1.5 |
+| large (about the real file's size: 1.2 MB, 1,222 transactions) | 1,359 | 137 | 19.7 |
+
+**P0.3 — Replay and parity.** The browser decrypts and replays the log into an in-memory ledger and runs Checquery's
+balance queries. Checquery's own code (`openExistingFile`, then its services, cross-checked against its
+`buildBalanceSheet`) gives the reference. Per-account balances, section totals and net worth matched for every
+year-end from 2000, every calendar year and today, on both fixtures, including patched and deleted transactions
+and a deleted account. Breaking the replay (ignoring deletes) makes both comparisons fail.
+
+| Fixture | Working copy + read | Key | Decrypt | Replay | **Open total** | Statement queries (55) | Checquery open (Bun, native) |
+|---|---|---|---|---|---|---|---|
+| small | 31 | 141 | 3 | 12 | **183** | 9 | 84 |
+| large | 97 | 136 | 31 | 135 | **399** | 60 | 127 |
+
+**Not yet measured: the real file decrypted and replayed.** It needs the file's password, which the spike only
+reads from the environment. To run it locally (prints timings and pass/fail only, never amounts):
+
+```sh
+read -rs SPIKE_CHECQUERY_PASSWORD && export SPIKE_CHECQUERY_PASSWORD && bun run spike; unset SPIKE_CHECQUERY_PASSWORD
+```
+
+**Gate decision (P0.4): continue as planned**, on the large synthetic fixture's numbers, pending the real-file
+run above.
+
+- Open: about 0.4 s for a file the size of the household's, against the ≤ 3 s gate. Saving (export plus write to
+  the user's file) is under 10 ms, against ≤ 1 s. There is room for a file ten times larger before the 3 s
+  threshold, so snapshotting the materialized store isn't needed now.
+- Key derivation is 0.14 s in JavaScript, well under the 2 s target; scrypt in WASM isn't needed.
+- **VFS: opfs-sahpool.** It was slightly faster, and it needs no cross-origin isolation headers (COOP/COEP), which
+  static hosts such as GitHub Pages can't set (FR-PRD-1). The plain `opfs` VFS works but would need those
+  headers.
+- **Note for P1.8 (second window):** opfs-sahpool is designed for a single connection per origin; a second tab
+  can't open the same pool while the first holds it. The read-only second window (D: OQ-UI-8) should therefore get
+  its data from the writer window over the BroadcastChannel (or work from an in-memory copy), not open the working
+  copy itself. Verify when building P1.8.
+- The spike code stays under `spike/`, outside the app build, the unit tests and CI.
