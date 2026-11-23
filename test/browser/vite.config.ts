@@ -7,6 +7,11 @@ export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   resolve: { alias: { '@': fileURLToPath(new URL('../../src', import.meta.url)) } },
   server: { port: 5198, strictPort: true },
-  optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
+  // Pre-bundle everything up front: a dependency discovered mid-test makes Vite reload the page.
+  optimizeDeps: {
+    exclude: ['@sqlite.org/sqlite-wasm'],
+    include: ['zod', '@paralleldrive/cuid2', '@noble/hashes/scrypt.js', 'react'],
+    entries: ['index.html', 'harness.worker.ts', '../../src/worker/store.worker.ts'],
+  },
   worker: { format: 'es' },
 })

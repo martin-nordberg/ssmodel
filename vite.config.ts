@@ -47,6 +47,8 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+  // SQLite WASM loads its .wasm file relative to its own module, which Vite's dependency pre-bundling would break.
+  optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm'] },
   worker: { format: 'es' },
   build: { chunkSizeWarningLimit: 2000 },
 })
