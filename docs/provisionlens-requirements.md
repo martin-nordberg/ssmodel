@@ -1,9 +1,9 @@
 # Requirements: ProvisionLens
 
-Status: **draft 0.3 (2026-11-23)**, for discussion. It combines ssmodel ([requirements.md](requirements.md)) and
-Checquery, following the decisions in [rebrand-assessment.md](rebrand-assessment.md). The first round of open
-questions has been answered. The answers are in the decision log (Section 18) and in the numbered requirements, the
-same way ssmodel's requirements were developed. Follow-up questions raised by the answers are in Section 17.
+Status: **draft 0.4 (2026-11-23)**, for discussion. It combines ssmodel ([requirements.md](requirements.md)) and
+Checquery, following the decisions in [rebrand-assessment.md](rebrand-assessment.md). Two rounds of open questions
+have been answered. The answers are in the decision log (Section 18) and in the numbered requirements, the same way
+ssmodel's requirements were developed. No questions are open at present (Section 17).
 
 How this document relates to the existing ones:
 - **ssmodel's `requirements.md`** stays authoritative for the retirement engine (Social Security, taxes, accounts,
@@ -20,13 +20,13 @@ How this document relates to the existing ones:
 Conventions:
 - **MUST / SHOULD / MAY** follow RFC 2119.
 - New requirement areas use prefixes not used in ssmodel: `HH` household, `STO` storage, `LED` ledger, `IMP` import,
-  `BUD` budget, `BLD` Building Years, `RET` Retiring Years changes, `ROLE` account roles, `RPT` reports, `HLP` help,
-  `PRD` product, `MIG` migration. Continued areas (`FR-TAX`, `FR-UI`, `NFR-UI`, `NFR-SIM`, `NFR-TEST`) continue
-  ssmodel's numbering. ssmodel's IDs are kept, not renumbered *(D: OQ-DEL-2)*.
+  `BUD` budget, `BLD` Building Years, `GOAL` goals, `RET` Retiring Years changes, `ROLE` account roles, `RPT` reports,
+  `HLP` help, `PRD` product, `MIG` migration. Continued areas (`FR-TAX`, `FR-UI`, `NFR-UI`, `NFR-SIM`, `NFR-TEST`)
+  continue ssmodel's numbering. ssmodel's IDs are kept, not renumbered *(D: OQ-DEL-2)*.
 - Report catalog entries are `RPT-<area>-n` (Section 15). Functional sections cross-reference them.
-- Open questions are `OQ-<area>-n` (Section 17). A requirement that depends on an open question cites it, e.g.
-  *(OQ-BLD-34)*. Once answered, a question moves to the decision log (Section 18), and requirements cite the
-  decision, e.g. *(D: OQ-BUD-2)*.
+- Open questions are `OQ-<area>-n` (Section 17). A requirement that depends on an open question cites it as
+  *(OQ-…)*. Once answered, a question moves to the decision log (Section 18), and requirements cite the decision,
+  e.g. *(D: OQ-BUD-2)*.
 - Decisions are `D<n>` (Section 18).
 - "Person 1" and "Person 2" replace ssmodel's Primary and Spouse.
 
@@ -165,7 +165,7 @@ Added:
   - a birth date;
   - a sex, labeled "for life-expectancy tables" and used only for them, with no blended table *(D: OQ-HH-6)*;
   - a Social Security status (FR-HH-3);
-  - optionally, a planned retirement date (FR-BLD-12).
+  - optionally, a planned retirement date (FR-BLD-3).
 - **FR-HH-2** Two adults in a file are married. Unmarried partners use one file per tax household *(D: OQ-HH-1)*.
 - **FR-HH-3** Social Security status for each adult is one of:
   - **not yet claiming:** earnings record (pasted from the SSA statement, FR-SS-2) plus projected wages from
@@ -174,7 +174,7 @@ Added:
   Both, either or neither adult may be claiming.
 - **FR-HH-4** Dependents: name, birth date (future dates allowed for planned children, *D: OQ-HH-3*), and whether they
   count as a qualifying child for tax purposes. Dependent status ends at an age set per dependent (default 18, or 24
-  if a full-time student). Support for parents or adult children is budget lines and goals (FR-BLD-22, FR-BLD-23),
+  if a full-time student). Support for parents or adult children is budget lines and goals (FR-GOAL-15, FR-GOAL-16),
   with no dependent tax treatment *(D: OQ-HH-4)*.
 - **FR-HH-5** Filing status for each tax year is derived:
   - **married filing jointly** while both married adults are alive;
@@ -214,7 +214,7 @@ Added:
 ### 5.2 Accounts and roles (FR-ROLE)
 
 There is **one account concept** across ledger, budget and plan *(D9)*. An account is a Checquery ledger account.
-Budget lines attach to it (FR-BUD-2), goals are funded from it (FR-BLD-2), and the planning engines start from its
+Budget lines attach to it (FR-BUD-2), goals are funded from it (FR-GOAL-1), and the planning engines start from its
 balance (FR-LED-6). Nothing in the budget or the plan keeps a separate list of accounts.
 
 The **category tree** stays the user's own way to organize and report: names and nesting are free. A **role** tells
@@ -276,8 +276,8 @@ in the tree.
     per-person roles;
   - **investment roles:** return model and fee (FR-ACC-1 in ssmodel), cost basis for taxable accounts, inherited-IRA
     facts (FR-ACC-2 in ssmodel), optional glide path *(D: OQ-BLD-18)*;
-  - **employer plan roles:** the job (wage account) it belongs to, contribution settings and match (FR-BLD-3);
-  - **loan roles:** rate, payment, term, kind, the asset it's secured by, and optional forgiveness (FR-BLD-7);
+  - **employer plan roles:** the job (wage account) it belongs to, contribution settings and match (FR-BLD-2);
+  - **loan roles:** rate, payment, term, kind, the asset it's secured by, and optional forgiveness (FR-GOAL-5);
   - **home roles:** cost basis, appreciation, property tax, insurance and maintenance (ssmodel's home model);
   - **wage roles:** the person, the employer's name and the paycheck template (FR-LED-10);
   - **links** between accounts: mortgage interest to its mortgage, property tax to its home, an employer plan to its
@@ -359,7 +359,8 @@ in the tree.
   budgets are kept for comparison. Each budget has a **status**: draft, active (the year is underway) or closed.
   Up to **three budgets** are open at once: this year's (active), next year's and the year after's (drafts)
   *(D: OQ-BUD-18)*. Each draft starts from the year before it: next year's from this year's forecast (FR-BUD-18),
-  the year after's from next year's draft *(OQ-BUD-19)*.
+  the year after's from next year's draft. All three have the same detail: full patterns and calendar
+  *(D: OQ-BUD-19)*.
 - **FR-BUD-2** A budget is a set of **budget lines**. Each line attaches to one Checquery account *(D6)*:
   - an **INCOME** account (wages, interest, gifts received);
   - an **EXPENSE** account (groceries, utilities, giving);
@@ -466,7 +467,7 @@ in the tree.
   - One-time lines don't repeat.
   - Lines ending within the year stop.
   - "Every N years" lines repeat every N years *(D: OQ-BUD-8)*.
-- **FR-BUD-24** Budget lines to ASSET and LIABILITY accounts that are linked to a goal (FR-BLD-2) become that goal's
+- **FR-BUD-24** Budget lines to ASSET and LIABILITY accounts that are linked to a goal (FR-GOAL-1) become that goal's
   year-1 contributions or payments. The same number is never entered twice *(D: OQ-BUD-17)*.
 - **FR-BUD-25** Taxes in the budget come from the user, usually from pay stubs. Next to them, the tax engine shows
   the **estimated tax for the year** and the likely refund or amount owed *(D: OQ-BUD-12)*.
@@ -506,16 +507,16 @@ Field names are illustrative. The real schema follows Checquery's entity convent
 
 ---
 
-## 7. Building Years and goals (FR-BLD)
+## 7. Building Years and goals (FR-BLD, FR-GOAL)
 
 Building Years cover the years from the base date until the first adult retires. They run in the same simulation
-as Retiring Years (FR-BLD-12).
+as Retiring Years (FR-BLD-3).
 
 **Goals are not limited to Building Years** *(D8)*. A goal can fall in the working years, in retirement, or span
 both. Examples: a home renovation at 68, a repair reserve that lasts as long as the home, travel in the first years
 of retirement, or a legacy at the end of life. The goal model is the same in every phase. Section 7.5 covers how
-goals behave in retirement. Goal requirements keep the `FR-BLD` prefix until the goal list settles, then move to
-`FR-GOAL` *(D: OQ-DEL-4, OQ-DEL-5)*.
+goals behave in retirement. Goal requirements use the `FR-GOAL` prefix; the Building Years engine (wages, savings,
+the timeline, allocation, outputs and self-employment) keeps `FR-BLD` *(D: OQ-DEL-4, D: OQ-DEL-5)*.
 
 ### 7.1 Income and contributions
 
@@ -526,16 +527,16 @@ goals behave in retirement. Goal requirements keep the `FR-BLD` prefix until the
   Projected wages also extend each adult's Social Security earnings record for the AIME/PIA calculation (FR-SS-2).
   Wages are deterministic within a scenario; a job loss is modeled as a dated change in a scenario *(D: OQ-BLD-19)*.
   Self-employment income is in Section 7.6.
-- **FR-BLD-2** **Goals** are the core entity. Every goal has:
+- **FR-GOAL-1** **Goals** are the core entity. Every goal has:
   - a kind, a name, a target amount (today's dollars or nominal) and a target date or age;
   - an **index** for growth: general inflation, college costs, home prices, or none;
-  - a **priority** (FR-BLD-10);
+  - a **priority** (FR-GOAL-8);
   - one or more **funding accounts** (ASSET accounts in the ledger, or planned accounts, FR-ROLE-11), whose current
     balances are its starting point;
   - a **contribution plan:** fixed per month or year, a percentage of pay, or "what it takes", meaning the app
     computes the required amount.
-  - an **importance:** must-have or nice-to-have (FR-BLD-17);
-  - optionally, a **flexible date range** instead of a single target date (FR-BLD-18).
+  - an **importance:** must-have or nice-to-have (FR-GOAL-10);
+  - optionally, a **flexible date range** instead of a single target date (FR-GOAL-11).
   Kinds:
   - emergency fund, college, house down payment, debt payoff, mortgage paydown, retirement savings, vehicle, major
     purchase or event, giving goal, custom;
@@ -546,7 +547,7 @@ goals behave in retirement. Goal requirements keep the `FR-BLD` prefix until the
   - and the mainly-retirement kinds: travel phase, aging in place, last vehicle purchases, long-term care reserve,
     downsizing or relocating, and service years.
   Goals can fall in any phase of the timeline (Section 7.5).
-- **FR-BLD-3** **Pre-retirement savings** for each adult and each plan (401(k), 403(b), 457(b), traditional IRA,
+- **FR-BLD-2** **Pre-retirement savings** for each adult and each plan (401(k), 403(b), 457(b), traditional IRA,
   Roth IRA, HSA, taxable):
   - **Contributions** as a percentage of pay or a dollar amount, split between Roth and traditional where the plan
     allows.
@@ -561,10 +562,10 @@ goals behave in retirement. Goal requirements keep the `FR-BLD` prefix until the
 
 ### 7.2 Goal kinds in detail
 
-- **FR-BLD-4** **Emergency fund:** the target is N months of essential expenses, taken from the budget's essential
+- **FR-GOAL-2** **Emergency fund:** the target is N months of essential expenses, taken from the budget's essential
   and housing groups (default 6) *(D: OQ-BLD-17)*. It is funded from a cash account. When spent, it is refilled at the
   goal's priority.
-- **FR-BLD-5** **College**, one goal per child:
+- **FR-GOAL-3** **College**, one goal per child:
   - start year (default: the year the child turns 18) and number of years (default 4);
   - a cost basis: public in-state, public out-of-state, private, or custom, in today's dollars. Presets come from
     published averages (for example, College Board) as rule data with a source URL, updated yearly; the user can
@@ -576,7 +577,7 @@ goals behave in retirement. Goal requirements keep the `FR-BLD` prefix until the
     rule table.
   Withdrawals pay qualified costs. Money left over stays invested and is reported, or moves to another child. The
   529-to-Roth rollover comes later *(D: OQ-BLD-6)*.
-- **FR-BLD-6** **House purchase:**
+- **FR-GOAL-4** **House purchase:**
   - target price in today's dollars, indexed by a home-price rate; purchase date;
   - down payment percentage, closing costs, and a funding account;
   - mortgage rate and term at purchase, and PMI below 20% down until it can be dropped.
@@ -585,43 +586,43 @@ goals behave in retirement. Goal requirements keep the `FR-BLD` prefix until the
   - a home asset and a mortgage liability begin;
   - the budget's rent line (or a chosen line) stops;
   - property tax, insurance and maintenance start, using ssmodel's home model (FR-ACC in ssmodel, Q-HOME-1).
-  Moving up (selling one home and buying another) is a sale followed by a purchase. Rent vs. buy is FR-BLD-52
+  Moving up (selling one home and buying another) is a sale followed by a purchase. Rent vs. buy is FR-GOAL-41
   *(D: OQ-BLD-8)*.
-- **FR-BLD-7** **Student loans:**
+- **FR-GOAL-5** **Student loans:**
   - each loan has a balance, rate, kind (federal or private), required monthly payment, and optional forgiveness
     date and amount. Income-driven federal plans are not modeled *(D: OQ-BLD-7)*;
   - a payoff strategy: minimum payments only, extra toward the highest rate first (avalanche), extra toward the
     smallest balance first (snowball), or extra to a chosen loan;
   - the student loan interest deduction applies through the tax engine.
   Outputs: payoff date and total interest for each strategy.
-- **FR-BLD-8** **Mortgage paydown:**
+- **FR-GOAL-6** **Mortgage paydown:**
   - ssmodel's mortgage model (balance, as-of month, rate, actual monthly principal and interest), with extra
     principal as a monthly amount and/or dated lump sums;
   - refinance as a dated change of rate, term and closing costs *(D: OQ-BLD-9)*.
   Outputs: payoff date, interest saved, and a comparison with investing the same extra amount.
-- **FR-BLD-9** **Other debts** (auto loans, credit cards, HELOC, personal loans) use the same loan model and payoff
+- **FR-GOAL-7** **Other debts** (auto loans, credit cards, HELOC, personal loans) use the same loan model and payoff
   strategies as student loans. Credit card debt can be modeled as a balance with a rate and a payment.
-- **FR-BLD-10** **Vehicles and major purchases:** a one-time or "every N years" goal, for example replacing a car
+- **FR-GOAL-8** **Vehicles and major purchases:** a one-time or "every N years" goal, for example replacing a car
   every 8 years. It is paid from savings, or partly with a loan that then enters the debt model *(D: OQ-BLD-16)*.
   Vehicles carry personal property tax where the state levies it (FR-TAX-13).
-- **FR-BLD-11** **Children and dependents:**
+- **FR-GOAL-9** **Children and dependents:**
   - childcare costs by age band (infant, preschool, after-school), ending at a chosen age;
   - the child tax credit and other dependent-related tax items through the tax engine *(D: OQ-TAX-1)*;
   - costs per child added at birth for planned children.
 
 ### 7.3 Allocation, outputs and the hand-off to retirement
 
-- **FR-BLD-12** **One timeline:** each simulated path runs yearly, with monthly loan amortization inside each year
+- **FR-BLD-3** **One timeline:** each simulated path runs yearly, with monthly loan amortization inside each year
   and the budget years taken from the budget engine *(D: OQ-BLD-1)*, from the base date to the end of the last life.
   When each adult reaches their planned retirement date (or a searched one, FR-RET-8, *D: OQ-BLD-20*),
   their wages stop, and ssmodel's retirement logic applies from then on: Social Security claiming, RMDs,
   withdrawals and Medicare. The Building Years and Retiring Years engines share the same account balances, taxes
   and random draws.
-- **FR-BLD-13** **Surplus and shortfall allocation:** each period the engine computes income minus taxes, expenses,
+- **FR-BLD-4** **Surplus and shortfall allocation:** each period the engine computes income minus taxes, expenses,
   required debt payments and fixed contributions.
   - **A surplus** goes to goals in a **user-ordered priority list**, with this default order *(D: OQ-BLD-2)*:
     1. the employer match;
-    2. giving pledges due this year (FR-BLD-30) *(D: OQ-BLD-27)*;
+    2. giving pledges due this year (FR-GOAL-23) *(D: OQ-BLD-27)*;
     3. one month of emergency fund;
     4. debt above a rate threshold;
     5. the full emergency fund;
@@ -632,30 +633,30 @@ goals behave in retirement. Goal requirements keep the `FR-BLD` prefix until the
     10. extra mortgage principal;
     11. taxable investing.
 
-    This waterfall applies in years when at least one adult earns wages. Years with no wages follow FR-BLD-44.
+    This waterfall applies in years when at least one adult earns wages. Years with no wages follow FR-GOAL-37.
   - **A shortfall** draws from cash, then the emergency fund, then taxable accounts, then other sources in a
     user-set order. It is flagged.
-- **FR-BLD-14** **Outputs:**
+- **FR-BLD-5** **Outputs:**
   - **for each goal:** projected funded amount at the target date, probability of full funding (Monte Carlo), the
     date it is reached, the required contribution to be on track, and a status (on track, at risk, off track);
   - **for the household:** net worth over time (median and bands), savings rate, debt-free date, and when
     retirement becomes affordable.
   When the surplus can't fund every goal, each goal shows what it would need. Suggested changes come later
   *(D: OQ-BLD-21)*. The charts and tables are listed in the report catalog (Section 15.2, RPT-BLD and RPT-LIFE).
-- **FR-BLD-15** **Trade-offs:** levers in the Console, as in ssmodel Section 8.5, for:
+- **FR-BLD-6** **Trade-offs:** levers in the Console, as in ssmodel Section 8.5, for:
   - each goal's target, date and contribution;
   - savings rates;
   - retirement dates;
   - wage growth.
   Moving a lever shows the effect on every goal and on retirement. Pinning a baseline (FR-UI-10) works across both
   phases.
-- **FR-BLD-16** **Uncertainty:** Monte Carlo varies returns, inflation and mortality as in ssmodel (Section 4).
+- **FR-BLD-7** **Uncertainty:** Monte Carlo varies returns, inflation and mortality as in ssmodel (Section 4).
   Goal targets and wages are deterministic within a scenario *(D: OQ-BLD-3, D: OQ-BLD-19)*. Scenarios cover different
   choices, for example "house in 2029" vs "house in 2031".
-- **FR-BLD-17** **Must-have vs. nice-to-have:** within the same priority, must-have goals are funded before
+- **FR-GOAL-10** **Must-have vs. nice-to-have:** within the same priority, must-have goals are funded before
   nice-to-have ones. Reports show the probability that **all must-have goals** are fully funded, separately from
   the overall picture, for example "must-haves funded in 92% of outcomes".
-- **FR-BLD-18** **Flexible dates:** a goal can have an earliest and latest date instead of one target date. The app
+- **FR-GOAL-11** **Flexible dates:** a goal can have an earliest and latest date instead of one target date. The app
   then reports the **earliest affordable date**: the first date in the range at which the goal can be funded
   without dropping any must-have goal below its target probability *(D: OQ-BLD-22)*. Each simulated path uses one
   date per scenario; the date doesn't move path by path.
@@ -669,103 +670,103 @@ depends on wages.
 
 **Family**
 
-- **FR-BLD-19** **K–12 tuition** (private or Christian school), per child: an annual cost from a start grade to an
+- **FR-GOAL-12** **K–12 tuition** (private or Christian school), per child: an annual cost from a start grade to an
   end grade, indexed by a tuition rate. 529 withdrawals can pay K–12 tuition up to the annual cap in rule data, and
   the SC 529 deduction applies to those contributions as SC rules allow *(D: OQ-BLD-23)*.
-- **FR-BLD-20** **New child or adoption:** a one-time cost at a date (birth or adoption expenses), which also adds
-  a dependent with that birth date (FR-HH-4), starting childcare costs (FR-BLD-11) and child-related tax items. The
+- **FR-GOAL-13** **New child or adoption:** a one-time cost at a date (birth or adoption expenses), which also adds
+  a dependent with that birth date (FR-HH-4), starting childcare costs (FR-GOAL-9) and child-related tax items. The
   adoption credit is added when someone needs it *(D: OQ-TAX-1)*.
-- **FR-BLD-21** **Career break or one income:** one adult's wages drop by a percentage, or stop, between two
+- **FR-GOAL-14** **Career break or one income:** one adult's wages drop by a percentage, or stop, between two
   dates, optionally with changed childcare costs. The goal reports whether the household stays funded through the
   break, and what saving beforehand would make it work. Social Security earnings records reflect the gap.
-- **FR-BLD-22** **Helping adult children:** one-time gifts by date and child (a wedding, help with a first home, a
+- **FR-GOAL-15** **Helping adult children:** one-time gifts by date and child (a wedding, help with a first home, a
   first car), as a list. Gifts above the annual gift-tax exclusion are flagged as needing a gift tax return, with no
   tax computed *(D: OQ-BLD-24)*.
-- **FR-BLD-23** **Caring for aging parents:** recurring support (monthly or yearly, indexed by medical inflation by
+- **FR-GOAL-16** **Caring for aging parents:** recurring support (monthly or yearly, indexed by medical inflation by
   default) between dates, or a one-time cost for a parent moving in (for example, a home modification).
 
 **Home**
 
-- **FR-BLD-24** **Home project:** a renovation or addition with a cost and date, paid from savings (in retirement,
-  through withdrawals, FR-BLD-44) and optionally partly with a home equity loan, which then enters the debt model
-  (FR-BLD-9). An optional increase in home value, as a percentage of cost (default 0), is added to the home asset
+- **FR-GOAL-17** **Home project:** a renovation or addition with a cost and date, paid from savings (in retirement,
+  through withdrawals, FR-GOAL-37) and optionally partly with a home equity loan, which then enters the debt model
+  (FR-GOAL-7). An optional increase in home value, as a percentage of cost (default 0), is added to the home asset
   *(D: OQ-BLD-25)*.
-- **FR-BLD-25** **Home repair reserve:** a list of components with a replacement cost (today's dollars) and a life
+- **FR-GOAL-18** **Home repair reserve:** a list of components with a replacement cost (today's dollars) and a life
   in years, for example roof 25, HVAC 15, water heater 12, appliances 12. The last-replaced year sets the first due
   date. The reserve is funded steadily and spent when items fall due, for as long as the home is owned, through
-  retirement until a sale. A house-purchase goal (FR-BLD-6) MAY create a default reserve for the new home.
-- **FR-BLD-26** **Second home or vacation property:** a second house purchase using FR-BLD-6's logic (down payment,
+  retirement until a sale. A house-purchase goal (FR-GOAL-4) MAY create a default reserve for the new home.
+- **FR-GOAL-19** **Second home or vacation property:** a second house purchase using FR-GOAL-4's logic (down payment,
   mortgage, carrying costs), with no change to the rent line. A later sale is optional.
 
 **Independence and the shape of retirement**
 
-- **FR-BLD-27** **Financial independence:** a target date by which investable assets should support the household
+- **FR-GOAL-20** **Financial independence:** a target date by which investable assets should support the household
   without wages. The goal reports the required assets (computed by the engine from the plan's spending after that
   date, not a fixed multiple) and the probability of reaching them. It includes a **bridge** check: enough
   accessible money (cash, taxable, Roth contributions) to cover the years before age 59½ and before Social Security
   starts. The 25 × spending rule of thumb is shown beside it for reference *(D: OQ-BLD-26)*.
-- **FR-BLD-28** **Phased retirement:** part-time wages for one adult between two dates before full retirement, using
+- **FR-GOAL-21** **Phased retirement:** part-time wages for one adult between two dates before full retirement, using
   the wage-change machinery (FR-BLD-1). Retirement-plan contributions continue at a chosen rate.
-- **FR-BLD-29** **Debt-free date:** a combined goal over chosen debts (default: all, including the mortgage) with a
+- **FR-GOAL-22** **Debt-free date:** a combined goal over chosen debts (default: all, including the mortgage) with a
   target date. It reports the projected date for each payoff strategy and the extra monthly payment needed to meet
   the target.
 
 **Giving and legacy**
 
-- **FR-BLD-30** **Giving pledge:** a fixed amount per year (or a total spread over N years) to a named recipient,
+- **FR-GOAL-23** **Giving pledge:** a fixed amount per year (or a total spread over N years) to a named recipient,
   for example a church building campaign or a missions commitment. Pledges are funded before other discretionary
   goals by default *(D: OQ-BLD-27)* and appear in the giving report (FR-BUD-22).
-- **FR-BLD-31** **Legacy goal:** leave a target amount (today's dollars) to heirs or charity, building on ssmodel's
+- **FR-GOAL-24** **Legacy goal:** leave a target amount (today's dollars) to heirs or charity, building on ssmodel's
   objective (Section 7 of `requirements.md`). By default it's a soft target, reported as the probability of meeting
   it. As an option it's a hard floor: paths that end below it count as failures *(D: OQ-BLD-28)*.
-- **FR-BLD-32** **Windfall giving:** a percentage of windfalls (bonuses, inheritances, home-sale gains, other
+- **FR-GOAL-25** **Windfall giving:** a percentage of windfalls (bonuses, inheritances, home-sale gains, other
   one-time income) set aside for giving when they occur.
-- **FR-BLD-33** **Gift bunching:** give several years' planned gifts in one year (directly, or to a donor-advised
+- **FR-GOAL-26** **Gift bunching:** give several years' planned gifts in one year (directly, or to a donor-advised
   fund) so that itemizing beats the standard deduction that year. The tax engine compares bunching every N years
   with giving every year, using the itemized-deduction logic (FR-TAX-6). Only the timing of deductions is modeled;
   a donor-advised fund's balance is not the household's *(D: OQ-BLD-29)*.
 
 **Education and experiences**
 
-- **FR-BLD-34** **Adult education:** graduate school or retraining for an adult, with costs over a period, an
+- **FR-GOAL-27** **Adult education:** graduate school or retraining for an adult, with costs over a period, an
   optional wage drop during it, and an optional wage increase afterward. A 529 with the adult as beneficiary can
   fund it. The American Opportunity credit follows the first release; other education credits come when someone
   needs them *(D: OQ-TAX-1)*.
-- **FR-BLD-35** **Trips and sabbaticals:** a one-time or "every N years" trip with a cost, for example an
+- **FR-GOAL-28** **Trips and sabbaticals:** a one-time or "every N years" trip with a cost, for example an
   anniversary trip every 5 years, a big trip in the first year of retirement, or a sabbatical that combines a trip
-  with a career break (FR-BLD-21).
+  with a career break (FR-GOAL-14).
 
 **Children's own money**
 
-- **FR-BLD-36** **Child-owned accounts:** custodial (UTMA/UGMA) accounts and a Roth IRA for a child with earned
+- **FR-GOAL-29** **Child-owned accounts:** custodial (UTMA/UGMA) accounts and a Roth IRA for a child with earned
   income, owned by the child. They're shown in the household's net worth but excluded from money available for the
   parents' goals and retirement. Contributions are budget lines or goal contributions. Kiddie tax and effects on
   financial aid are not modeled *(D: OQ-BLD-30)*.
 
 **Mainly in retirement**
 
-- **FR-BLD-37** **Retirement travel phase:** extra spending for the first N years of retirement (the "go-go years"),
+- **FR-GOAL-30** **Retirement travel phase:** extra spending for the first N years of retirement (the "go-go years"),
   as an annual amount that steps down or ends at chosen ages. Assumptions also offer an optional real decline in
   spending per year of retirement *(D: OQ-BLD-33)*.
-- **FR-BLD-38** **Aging in place:** home modifications (a walk-in shower, a ramp, a first-floor bedroom) at a chosen
-  age, as a home project (FR-BLD-24).
-- **FR-BLD-39** **Last vehicle purchases:** the vehicle goal (FR-BLD-10) with an end age after which no replacement
+- **FR-GOAL-31** **Aging in place:** home modifications (a walk-in shower, a ramp, a first-floor bedroom) at a chosen
+  age, as a home project (FR-GOAL-17).
+- **FR-GOAL-32** **Last vehicle purchases:** the vehicle goal (FR-GOAL-8) with an end age after which no replacement
   is bought.
-- **FR-BLD-40** **Long-term care reserve:** a target amount set aside by a chosen age for possible care costs. It
+- **FR-GOAL-33** **Long-term care reserve:** a target amount set aside by a chosen age for possible care costs. It
   stays invested in its funding account and is spent only if the user models a care event as an expense. Modeling
   care as a random event remains out of scope (ssmodel Q-IMP-8).
-- **FR-BLD-41** **Downsizing or relocating:** sell the home and buy a smaller one, or move to rent or a retirement
+- **FR-GOAL-34** **Downsizing or relocating:** sell the home and buy a smaller one, or move to rent or a retirement
   community, at a chosen date. This uses ssmodel's sale plan (Q-HOME-1), presented as a goal with its own outputs:
   net proceeds and the change in carrying costs. A move to another state changes residence (FR-HH-6).
-- **FR-BLD-42** **Service years:** a period of reduced or no income for mission or volunteer service, for example
-  overseas service in early retirement, with any extra costs. This uses the career-break machinery (FR-BLD-21) when
+- **FR-GOAL-35** **Service years:** a period of reduced or no income for mission or volunteer service, for example
+  overseas service in early retirement, with any extra costs. This uses the career-break machinery (FR-GOAL-14) when
   wages stop, or a travel-phase style spending change when already retired.
 
 ### 7.5 Goals across the timeline
 
-- **FR-BLD-43** **Any phase:** a goal's dates can fall in Building Years, Retiring Years, or both. Goals are listed
+- **FR-GOAL-36** **Any phase:** a goal's dates can fall in Building Years, Retiring Years, or both. Goals are listed
   and reported together on one timeline, whatever phase they fall in. The phase only changes how a goal is funded
-  (FR-BLD-44, FR-BLD-45).
+  (FR-GOAL-37, FR-GOAL-38).
 
   | Usually in | Goal kinds |
   |---|---|
@@ -773,7 +774,7 @@ depends on wages.
   | **Retirement** | legacy, travel phase, aging in place, last vehicle purchases, long-term care reserve, downsizing or relocating, service years |
   | **Either or both** | emergency fund, home project, home repair reserve, second home, vehicles, helping adult children, caring for parents, debt-free date, mortgage paydown, giving pledge, windfall giving, gift bunching, trips and sabbaticals, custom |
 
-- **FR-BLD-44** **Funding in retirement:**
+- **FR-GOAL-37** **Funding in retirement:**
   - A goal's cash need in a year with no wages is added to that year's spending.
   - If the goal has its own funding account (for example a repair reserve or a travel fund), that account pays
     first.
@@ -781,56 +782,59 @@ depends on wages.
     resulting taxes, Social Security taxation and IRMAA effects computed as for any other spending.
   - Goals don't receive allocations from a surplus in retirement. A surplus (income above spending, for example from
     RMDs) goes where ssmodel sends it today.
-- **FR-BLD-45** **Saving ahead for retirement-phase goals:** a goal dated in retirement can still be saved for
+- **FR-GOAL-38** **Saving ahead for retirement-phase goals:** a goal dated in retirement can still be saved for
   during the working years. For example, a renovation at 66 can be funded by a reserve built from age 58. The
-  waterfall (FR-BLD-13) funds it at its priority until retirement. After that, the reserve is spent as in FR-BLD-44.
-- **FR-BLD-46** **Must-haves in retirement:**
+  waterfall (FR-BLD-4) funds it at its priority until retirement. After that, the reserve is spent as in FR-GOAL-37.
+- **FR-GOAL-39** **Must-haves in retirement:**
   - Must-have goals in retirement count as required spending. A path that can't pay them counts as a failure in
     ssmodel's success measure (FR-REC).
   - Nice-to-have goals are reported separately, as the probability that each one is paid in full.
   - As an option (off by default), nice-to-have goals are skipped on paths where the portfolio falls below a
     threshold. Reports then show how often each goal was skipped *(D: OQ-BLD-31)*.
-- **FR-BLD-47** **ssmodel's one-time expenses:** ssmodel's one-time expense items, its home sale plan and its
+- **FR-GOAL-40** **ssmodel's one-time expenses:** ssmodel's one-time expense items, its home sale plan and its
   inheritance-funded items become goals where a goal kind fits *(D: OQ-BLD-32)*. FR-MIG-2 maps them when importing a
   household YAML, and golden results stay unchanged (NFR-TEST-8).
 
 ### 7.6 Self-employment
 
 Self-employment is in scope from the start *(D: OQ-BLD-13)*: a sole proprietorship or single-member LLC owned by
-one adult, alongside or instead of wages. Partnerships, S corporations *(OQ-BLD-35)*, employees and rental property
-stay out.
+one adult, alongside or instead of wages. Partnerships, S corporations *(D: OQ-BLD-35)*, employees and rental
+property stay out.
 
-- **FR-BLD-48** **Self-employment income:**
+- **FR-BLD-8** **Self-employment income:**
   - In the ledger, business income and expenses are INCOME and EXPENSE accounts with self-employment roles
-    (FR-ROLE-4), so actual net profit comes from the books *(OQ-BLD-36)*.
+    (FR-ROLE-4) in the household file, usually under their own category, so actual net profit comes from the books
+    *(D: OQ-BLD-36)*.
   - In the plan, each business has a projected annual net profit with real growth and optional dated changes, like
     wages (FR-BLD-1).
   - Net earnings from self-employment extend the owner's Social Security earnings record.
-- **FR-BLD-49** **Self-employment tax:** Social Security and Medicare tax on net earnings from self-employment, with
+- **FR-BLD-9** **Self-employment tax:** Social Security and Medicare tax on net earnings from self-employment, with
   the Social Security wage base shared with any W-2 wages, Additional Medicare, and the deduction for half of the
   tax. Rates and thresholds come from rule data with IRS sources (NFR-TEST-11).
-- **FR-BLD-50** **Retirement plans for the self-employed:** SEP IRA and solo 401(k) (employee deferrals, traditional
+- **FR-BLD-10** **Retirement plans for the self-employed:** SEP IRA and solo 401(k) (employee deferrals, traditional
   or Roth, plus employer contributions based on net earnings). Limits come from rule data. The elective deferral limit
-  is shared with any employer plan the same person has (FR-BLD-3).
-- **FR-BLD-51** **Other self-employment items:**
-  - the qualified business income deduction *(OQ-BLD-34)*;
+  is shared with any employer plan the same person has (FR-BLD-2).
+- **FR-BLD-11** **Other self-employment items:**
+  - the qualified business income deduction, at 20% of qualified business income below the income threshold, with a
+    warning above it *(D: OQ-BLD-34)*;
   - the self-employed health insurance deduction;
-  - quarterly estimated tax payments as budget lines instead of withholding, with the engine's estimate beside them
-    *(OQ-BLD-37)*;
+  - quarterly estimated tax payments as budget lines instead of withholding, with the engine's estimate and
+    suggested safe-harbor amounts (based on last year's tax) beside them *(D: OQ-BLD-37)*;
   - business use of home and vehicle entered as business expenses, not computed.
 
 ### 7.7 Rent vs. buy
 
-- **FR-BLD-52** **Rent vs. buy** compares continuing to rent with buying a home over a chosen horizon
+- **FR-GOAL-41** **Rent vs. buy** compares continuing to rent with buying a home over a chosen horizon
   *(D: OQ-BLD-8)*:
   - **renting:** rent indexed by a rent growth rate; the down payment, closing costs and any monthly saving
     compared with owning stay invested;
-  - **buying:** the house purchase model (FR-BLD-6): down payment, closing costs, mortgage, PMI, property tax,
+  - **buying:** the house purchase model (FR-GOAL-4): down payment, closing costs, mortgage, PMI, property tax,
     insurance, maintenance and appreciation, with selling costs at the horizon;
   - taxes through the tax engine, so mortgage interest and property tax count only when itemizing beats the
     standard deduction.
-  Outputs: net worth under each choice over time, the break-even year, and sensitivity to home appreciation, rent
-  growth and returns *(OQ-BLD-38)*. Reported as RPT-BLD-10.
+  The two choices are a pair of scenarios generated from the house goal and run through the full engine and Monte
+  Carlo *(D: OQ-BLD-38)*. Outputs: net worth under each choice over time, the break-even year, and sensitivity to
+  home appreciation, rent growth and returns. Reported as RPT-BLD-10.
 
 ---
 
@@ -857,7 +861,7 @@ ssmodel's requirements carry forward, with these changes:
 - **FR-RET-8** **Retirement age search:** "the earliest retirement date for each adult with at least X% success" as
   an output, searched the same way as claiming dates *(D: OQ-BLD-20)*.
 - **FR-RET-9** **Goals in retirement:** goals dated in retirement are funded through the withdrawal strategy as in
-  FR-BLD-44, and must-have goals count toward success (FR-BLD-46). The Retiring Years Console shows them alongside
+  FR-GOAL-37, and must-have goals count toward success (FR-GOAL-39). The Retiring Years Console shows them alongside
   spending.
 
 ssmodel's outputs (FR-OUT-1 to FR-OUT-9) carry forward and are listed in the report catalog (Section 15.2, RPT-RET).
@@ -895,7 +899,7 @@ ssmodel's FR-TAX-1 to FR-TAX-7 carry forward. Added:
 - **FR-TAX-13** **Property taxes** *(D: OQ-TAX-5)*:
   - real property tax on each home, as in ssmodel's home model;
   - personal property tax on vehicles and other property, in states that levy it. The state rule table says whether
-    the state levies it, and the user enters the amount from the bill *(OQ-TAX-6)*;
+    the state levies it. The user enters the amount from the bill, and the plan indexes it *(D: OQ-TAX-6)*;
   - both are tracked through their roles in the ledger (FR-ROLE-4) and feed the state and local tax deduction when
     itemizing (FR-TAX-6), in budgets and in plans.
   Other local taxes, such as city income taxes, are out.
@@ -944,11 +948,13 @@ navigation. Its breadcrumb menus worked for about a dozen pages; this app has se
   - a toolbar with file commands, the command palette, settings and help;
   - a row of **top tabs**, one per section of FR-UI-19. A sidebar is not used: ssmodel's pages already use the left
     side for the lever column and the Setup section list;
-  - the section's pages as a second row of tabs (FR-UI-21) *(OQ-UI-14)*;
+  - each section tab opens a menu of the section's pages; clicking the tab itself opens the section's main page.
+    This leaves at most two rows of tabs: sections, and scenarios on scenario pages *(D: OQ-UI-14)*;
   - the page area;
   - ssmodel's status bar, plus autosave state, lock state (FR-STO-4) and whether the file is encrypted.
-- **FR-UI-21** **Within a section**, a second row of tabs switches between its pages, as in ssmodel's Retiring Years
-  views (Console, Setup, Results, Compare). Building Years and Retiring Years share one Console, with a phase
+- **FR-UI-21** **Within a section**, pages are reached from the section tab's menu (FR-UI-20), from links on the
+  section's main page, and from the command palette. ssmodel's Retiring Years views (Console, Setup, Results,
+  Compare) become pages in that menu. Building Years and Retiring Years share one Console, with a phase
   selector, since both are one simulation *(D: OQ-UI-4)*.
 - **FR-UI-22** **Breadcrumbs** appear only as a trail for drill-downs, for example "Past › Income Statement 2026 ›
   Groceries › Register". They are not the main navigation *(D: OQ-UI-7)*.
@@ -1120,7 +1126,7 @@ navigation. Its breadcrumb menus worked for about a dozen pages; this app has se
 
 Reports are listed in one catalog (15.2), and the functional sections point to it. Each entry has a status:
 - **Base:** required in the first release *(D: OQ-RPT-1, D: OQ-PRD-7)*;
-- **Candidate:** to decide before the first release *(OQ-RPT-11)*;
+- **Candidate:** proposed, to decide before the first release. None remain *(D: OQ-RPT-11)*;
 - **Later:** after the first release.
 
 ### 15.1 Common behavior
@@ -1142,7 +1148,7 @@ Reports are listed in one catalog (15.2), and the functional sections point to i
 - **FR-RPT-6** **Output:** CSV export of the table, printing (or saving as PDF) through a print stylesheet
   (no PDF library) *(D: OQ-RPT-10)*, and a table equivalent for every chart (ssmodel FR-OUT-7, FR-OUT-8).
 - **FR-RPT-7** **Saved views.** A report's filters can be saved under a name and pinned to Home or to its section's
-  page tabs. Saved views are stored in the household file *(D: OQ-RPT-3)*. There is no report builder. A read-only
+  menu. Saved views are stored in the household file *(D: OQ-RPT-3)*. There is no report builder. A read-only
   SQL page for power users may come later *(D: OQ-RPT-2)*.
 - **FR-RPT-8** **Real and nominal.** Projected reports follow the real/nominal display setting (ssmodel FR-UI-16).
   Ledger reports are always nominal.
@@ -1167,13 +1173,13 @@ Reports are listed in one catalog (15.2), and the functional sections point to i
 | RPT-LED-10 | **Vendor report**: top vendors, and one vendor's history | table, chart | Base |
 | RPT-LED-11 | **Transaction search**: date, account, vendor, amount range, text, needs-review and cleared filters; results as a register; savable | register | Base |
 | RPT-LED-12 | **Giving statement**: giving by recipient and year, deductible or not (FR-BUD-22) | table | Base |
-| RPT-LED-13 | **Tax summary**: the year's totals by tax role (wages, interest, dividends, withholding, deductible giving, mortgage interest, property tax, medical, student loan interest, HSA contributions), not mapped to tax-form lines *(D: OQ-RPT-6)* | table | Candidate |
-| RPT-LED-14 | **Cash flow statement**: income, spending, saving, principal paid, and transfers between asset accounts | table | Candidate |
-| RPT-LED-15 | **Savings rate**: saving plus principal paid as a share of gross and of net income, by month and year | chart | Candidate |
-| RPT-LED-16 | **Debt summary**: balance, interest paid by year and payoff progress per liability | table, chart | Candidate |
-| RPT-LED-17 | **Investment change**: per account, contributions, withdrawals and market change by period, with a money-weighted return (XIRR) added later *(D: OQ-RPT-8)* | table | Candidate |
+| RPT-LED-13 | **Tax summary**: the year's totals by tax role (wages, interest, dividends, withholding, deductible giving, mortgage interest, property tax, medical, student loan interest, HSA contributions), not mapped to tax-form lines *(D: OQ-RPT-6)* | table | Base |
+| RPT-LED-14 | **Cash flow statement**: income, spending, saving, principal paid, and transfers between asset accounts | table | Base |
+| RPT-LED-15 | **Savings rate**: saving plus principal paid as a share of gross and of net income, by month and year | chart | Base |
+| RPT-LED-16 | **Debt summary**: balance, interest paid by year and payoff progress per liability | table, chart | Base |
+| RPT-LED-17 | **Investment change**: per account, contributions, withdrawals and market change by period, with a money-weighted return (XIRR) added later *(D: OQ-RPT-8)* | table | Base |
 | RPT-LED-18 | **Review queue**: needs-review transactions, uncleared items older than N days, failed or stale balance assertions | list | Base |
-| RPT-LED-19 | **Money flow**: income through to spending groups and saving, top levels only *(D: OQ-RPT-5)* | Sankey | Candidate |
+| RPT-LED-19 | **Money flow**: income through to spending groups and saving, top levels only *(D: OQ-RPT-5)* | Sankey | Base |
 | RPT-LED-20 | **Recurring charges**: detected subscriptions and repeating payments, with changes in amount | table | Later |
 | RPT-LED-21 | **Large or unusual transactions** compared with the account's history | list | Later |
 
@@ -1189,8 +1195,8 @@ Reports are listed in one catalog (15.2), and the functional sections point to i
 | RPT-BUD-6 | **Giving vs. target** (FR-BUD-22) | chart | Base |
 | RPT-BUD-7 | **Draft vs. last year**: next year's draft against this year's forecast and last year's actuals | table | Base |
 | RPT-BUD-8 | **Sinking funds**: earmarked balances, set aside vs. spent (FR-BUD-20, *D: OQ-BUD-9*) | table | Base |
-| RPT-BUD-9 | **Spending pace**: cumulative actual against cumulative budget through the month or year | chart | Candidate |
-| RPT-BUD-10 | **Upcoming**: budgeted bills and paychecks over the next few weeks | list, calendar | Candidate |
+| RPT-BUD-9 | **Spending pace**: cumulative actual against cumulative budget through the month or year | chart | Base |
+| RPT-BUD-10 | **Upcoming**: budgeted bills and paychecks over the next few weeks | list, calendar | Base |
 | RPT-BUD-11 | **Budget history**: budget and actual per category over several years | chart | Later |
 
 **Goals and Building Years**
@@ -1198,15 +1204,15 @@ Reports are listed in one catalog (15.2), and the functional sections point to i
 | ID | Report | Form | Status |
 |---|---|---|---|
 | RPT-BLD-1 | **Goal timeline**: every goal on one timeline across phases, colored by status (the Goals page) | chart | Base |
-| RPT-BLD-2 | **Goal detail**: projected funding with bands, target, probability and required contribution (FR-BLD-14) | chart, table | Base |
-| RPT-BLD-3 | **Allocation by year**: where each year's surplus goes, stacked by waterfall step (FR-BLD-13) | chart | Base |
-| RPT-BLD-4 | **Debt payoff**: balance per loan over time, and strategies compared by payoff date and interest (FR-BLD-7, FR-BLD-9, FR-BLD-29) | chart, table | Base |
-| RPT-BLD-5 | **Mortgage amortization**: schedule with extra principal, interest saved, and the invest-instead comparison (FR-BLD-8) | table, chart | Base |
-| RPT-BLD-6 | **College funding**: per child, projected cost against 529 balance, and the gap (FR-BLD-5) | chart | Base |
-| RPT-BLD-7 | **Must-haves funded**: the probability that all must-have goals are funded (FR-BLD-17) | tile, chart | Base |
-| RPT-BLD-8 | **Contributions and limits**: projected contributions per account and how much of each limit is used | table | Candidate |
-| RPT-BLD-9 | **Financial independence progress**: investable assets against the requirement, and the bridge check (FR-BLD-27) | chart | Candidate |
-| RPT-BLD-10 | **Rent vs. buy**: net worth under each choice over time, break-even year, and sensitivity (FR-BLD-52) | chart, table | Base |
+| RPT-BLD-2 | **Goal detail**: projected funding with bands, target, probability and required contribution (FR-BLD-5) | chart, table | Base |
+| RPT-BLD-3 | **Allocation by year**: where each year's surplus goes, stacked by waterfall step (FR-BLD-4) | chart | Base |
+| RPT-BLD-4 | **Debt payoff**: balance per loan over time, and strategies compared by payoff date and interest (FR-GOAL-5, FR-GOAL-7, FR-GOAL-22) | chart, table | Base |
+| RPT-BLD-5 | **Mortgage amortization**: schedule with extra principal, interest saved, and the invest-instead comparison (FR-GOAL-6) | table, chart | Base |
+| RPT-BLD-6 | **College funding**: per child, projected cost against 529 balance, and the gap (FR-GOAL-3) | chart | Base |
+| RPT-BLD-7 | **Must-haves funded**: the probability that all must-have goals are funded (FR-GOAL-10) | tile, chart | Base |
+| RPT-BLD-8 | **Contributions and limits**: projected contributions per account and how much of each limit is used | table | Base |
+| RPT-BLD-9 | **Financial independence progress**: investable assets against the requirement, and the bridge check (FR-GOAL-20) | chart | Base |
+| RPT-BLD-10 | **Rent vs. buy**: net worth under each choice over time, break-even year, and sensitivity (FR-GOAL-41) | chart, table | Base |
 | RPT-BLD-11 | **Self-employment**: net profit by business and year, self-employment tax, and estimated payments against the engine's estimate (Section 7.6) | table | Base |
 
 **Retiring Years** (ssmodel's outputs carry forward)
@@ -1214,8 +1220,8 @@ Reports are listed in one catalog (15.2), and the functional sections point to i
 | ID | Report | Form | Status |
 |---|---|---|---|
 | RPT-RET-1 | **Recommendation card, claim-age curve, balance fan, year-by-year table, withdrawal schedule, sensitivity, percentile paths** (ssmodel FR-OUT-1 to FR-OUT-9) | as in ssmodel | Base |
-| RPT-RET-2 | **Joint claiming map**: success or objective for each pair of claiming dates (FR-RET-2) | heat map | Candidate |
-| RPT-RET-3 | **Earliest retirement date** for a range of success thresholds (FR-RET-8) | chart | Candidate |
+| RPT-RET-2 | **Joint claiming map**: success or objective for each pair of claiming dates (FR-RET-2) | heat map | Later |
+| RPT-RET-3 | **Earliest retirement date** for a range of success thresholds (FR-RET-8) | chart | Base |
 
 **Whole life (across phases)**
 
@@ -1225,8 +1231,8 @@ Reports are listed in one catalog (15.2), and the functional sections point to i
 | RPT-LIFE-2 | **Income sources over life**: wages, Social Security, pensions, withdrawals (extends ssmodel's income stack) | chart | Base |
 | RPT-LIFE-3 | **Taxes over life**, by kind (extends ssmodel's taxes chart) | chart | Base |
 | RPT-LIFE-4 | **Scenario comparison**: ssmodel's Compare extended to goals and the Building Years (ssmodel FR-UI-2) | table, chart | Base |
-| RPT-LIFE-5 | **Spending over life** by planning group, actual then projected | chart | Candidate |
-| RPT-LIFE-6 | **Giving over life**, actual and planned *(D: OQ-PRD-4)* | chart | Candidate |
+| RPT-LIFE-5 | **Spending over life** by planning group, actual then projected | chart | Base |
+| RPT-LIFE-6 | **Giving over life**, actual and planned *(D: OQ-PRD-4)* | chart | Base |
 
 The Home dashboard's tiles (FR-UI-34) are small versions of these reports and link to them.
 
@@ -1308,95 +1314,8 @@ place, and reference pages.
 
 ## 17. Open questions
 
-Follow-up questions raised by the round 1 answers. Each has options (where there is a choice) and a lean. The leans
-are suggestions to push back on. Record the decision under *Answer*. Answered questions move to the decision log
-(Section 18).
-
-### Budget
-
-- **OQ-BUD-19 The year-after budget.** With three budgets open (FR-BUD-1), how detailed is the year after next?
-  - *Options*:
-    1. The same as next year's: full patterns and calendar.
-    2. Annual totals per line only.
-  - *Lean*: Option 1. It reuses the same editor and engine, and starts as a copy of next year's draft, so the extra
-    detail costs the user nothing until they change it.
-  - *Answer*:
-
-### Building Years
-
-- **OQ-BLD-34 Qualified business income deduction depth.**
-  - *Options*:
-    1. Simple: 20% of qualified business income below the income threshold, with a warning above it.
-    2. The full rules above the threshold, including the specified-service and W-2 wage limits.
-  - *Lean*: Option 1. Small sole proprietors are usually below the threshold. Revisit if a user isn't.
-  - *Answer*:
-- **OQ-BLD-35 S corporations.**
-  - *Options*:
-    1. Out.
-    2. In: owner salary through payroll plus distributions.
-  - *Lean*: Option 1, unless a first user has one.
-  - *Answer*:
-- **OQ-BLD-36 Business books.**
-  - *Options*:
-    1. Business income and expenses in the household file, as accounts with business roles.
-    2. A separate file per business, with only net profit in the household file.
-  - *Lean*: Option 1. Simple for a sole proprietor; business accounts can sit under their own category.
-  - *Answer*:
-- **OQ-BLD-37 Estimated tax payments.**
-  - *Options*:
-    1. User-entered quarterly amounts, with the engine's estimate beside them.
-    2. Option 1, plus suggested safe-harbor amounts (based on last year's tax).
-  - *Lean*: Option 2. The safe-harbor rule is simple and saves users a calculation.
-  - *Answer*:
-- **OQ-BLD-38 Rent vs. buy form.**
-  - *Options*:
-    1. A pair of scenarios generated from the house goal, run through the full engine and Monte Carlo.
-    2. A standalone calculator.
-  - *Lean*: Option 1. Taxes, goals and retirement effects come for free, and the comparison uses the same numbers as
-    the plan.
-  - *Answer*:
-
-### Taxes
-
-- **OQ-TAX-6 Personal property tax amounts.**
-  - *Options*:
-    1. The user enters the annual amount per vehicle from the bill; the plan indexes it.
-    2. Rule data per state and county (assessment ratios, millage), computed from vehicle values.
-  - *Lean*: Option 1. County rates vary too much to maintain; the bill is at hand.
-  - *Answer*:
-
-### User interface
-
-- **OQ-UI-14 Rows of tabs.** Top tabs for sections, a second row for pages, and ssmodel's scenario tabs could make
-  three rows on scenario pages.
-  - *Options*:
-    1. Three compact rows on scenario pages only.
-    2. Scenario selector as a dropdown in the page header.
-    3. Section tabs with dropdown menus for their pages, leaving two rows.
-  - *Lean*: Option 1, then review it in a prototype. Scenario tabs carry ssmodel's clone, rename and reorder
-    actions, which a dropdown would hide.
-  - *Answer*:
-
-### Reports
-
-- **OQ-RPT-11 Candidate reports.** With everything in the first release (D: OQ-PRD-7), which Candidates are in?
-  RPT-LED-13 tax summary, RPT-LED-14 cash flow statement, RPT-LED-15 savings rate, RPT-LED-16 debt summary,
-  RPT-LED-17 investment change, RPT-LED-19 money flow, RPT-BUD-9 spending pace, RPT-BUD-10 upcoming, RPT-BLD-8
-  contributions and limits, RPT-BLD-9 financial independence progress, RPT-RET-2 joint claiming map, RPT-RET-3
-  earliest retirement date, RPT-LIFE-5 spending over life, RPT-LIFE-6 giving over life.
-  - *Lean*: all except RPT-LED-19 (money flow) and RPT-RET-2 (joint claiming map), which can follow. The rest are
-    small views over data the app already computes.
-  - *Answer*:
-
-### Delivery
-
-- **OQ-DEL-5 When to rename goal requirements to `FR-GOAL`** (D: OQ-DEL-4).
-  - *Options*:
-    1. Now, in the next draft.
-    2. After the next review round.
-  - *Lean*: Option 1. The goal list grew only by rent vs. buy in this round, so it is settled enough, and nothing in
-    code cites the IDs yet.
-  - *Answer*:
+None at present. New questions go here, each with options (where there is a choice), a lean and an *Answer* line.
+Answered questions move to the decision log (Section 18).
 
 ---
 
@@ -1508,39 +1427,39 @@ with their options and leans are in draft 0.2 (commit `2ba45fe`).
 
 | ID | Question | Decision | Where applied |
 |---|---|---|---|
-| OQ-BLD-1 | Time step | Yearly, with monthly amortization inside each year | FR-HH-7, FR-BLD-12 |
-| OQ-BLD-2 | Allocation | User-ordered priority list with a recommended default | FR-BLD-13 |
-| OQ-BLD-3 | Uncertain goal targets | Deterministic targets within a scenario | FR-BLD-16 |
-| OQ-BLD-4 | College cost data | Presets from published averages as rule data, with user override | FR-BLD-5 |
-| OQ-BLD-5 | Financial aid | Out; aid entered as a reduction | FR-BLD-5 |
-| OQ-BLD-6 | Money left in a 529 | Later; leftovers stay invested and are reported | FR-BLD-5 |
-| OQ-BLD-7 | Federal student loan plans | User-entered payment and optional forgiveness; no income-driven plan modeling | FR-BLD-7 |
-| OQ-BLD-8 | Rent vs. buy | **Include rent vs. buy now** (lean was later) | FR-BLD-6, FR-BLD-52 |
-| OQ-BLD-9 | Refinancing | A dated change of rate, term and costs | FR-BLD-8 |
-| OQ-BLD-10 | Employer match | Two tiers plus non-elective; no true-up | FR-BLD-3 |
-| OQ-BLD-11 | Vesting | Ignore; assume vested | FR-BLD-3 |
-| OQ-BLD-12 | Backdoor and mega-backdoor Roth | Out at first; flag ineligible Roth IRA contributions | FR-BLD-3 |
+| OQ-BLD-1 | Time step | Yearly, with monthly amortization inside each year | FR-HH-7, FR-BLD-3 |
+| OQ-BLD-2 | Allocation | User-ordered priority list with a recommended default | FR-BLD-4 |
+| OQ-BLD-3 | Uncertain goal targets | Deterministic targets within a scenario | FR-BLD-7 |
+| OQ-BLD-4 | College cost data | Presets from published averages as rule data, with user override | FR-GOAL-3 |
+| OQ-BLD-5 | Financial aid | Out; aid entered as a reduction | FR-GOAL-3 |
+| OQ-BLD-6 | Money left in a 529 | Later; leftovers stay invested and are reported | FR-GOAL-3 |
+| OQ-BLD-7 | Federal student loan plans | User-entered payment and optional forgiveness; no income-driven plan modeling | FR-GOAL-5 |
+| OQ-BLD-8 | Rent vs. buy | **Include rent vs. buy now** (lean was later) | FR-GOAL-4, FR-GOAL-41 |
+| OQ-BLD-9 | Refinancing | A dated change of rate, term and costs | FR-GOAL-6 |
+| OQ-BLD-10 | Employer match | Two tiers plus non-elective; no true-up | FR-BLD-2 |
+| OQ-BLD-11 | Vesting | Ignore; assume vested | FR-BLD-2 |
+| OQ-BLD-12 | Backdoor and mega-backdoor Roth | Out at first; flag ineligible Roth IRA contributions | FR-BLD-2 |
 | OQ-BLD-13 | Self-employment | **Include self-employment from the start** (lean was out) | §1.4, §7.6 |
 | OQ-BLD-14 | Stock compensation | Out; RSUs as bonuses | §1.4 |
 | OQ-BLD-15 | Insurance needs | Out; premiums are budget lines | §1.4 |
-| OQ-BLD-16 | Vehicle financing | Vehicle goal with optional loan share | FR-BLD-10 |
-| OQ-BLD-17 | Emergency fund target | Months of essential plus housing expenses, default 6, or a fixed amount | FR-BLD-4 |
+| OQ-BLD-16 | Vehicle financing | Vehicle goal with optional loan share | FR-GOAL-8 |
+| OQ-BLD-17 | Emergency fund target | Months of essential plus housing expenses, default 6, or a fixed amount | FR-GOAL-2 |
 | OQ-BLD-18 | Glide paths | Optional preset glide path per account | FR-ROLE-5 |
-| OQ-BLD-19 | Wage uncertainty | Deterministic; job loss as a scenario | FR-BLD-1, FR-BLD-16 |
-| OQ-BLD-20 | Retirement date | Input, plus earliest date with at least X% success as an output | FR-BLD-12, FR-RET-8 |
-| OQ-BLD-21 | Goal conflicts | Show what each goal would need; suggestions later | FR-BLD-14 |
-| OQ-BLD-22 | Earliest affordable date | Deterministic search over years, Monte Carlo to confirm | FR-BLD-18 |
-| OQ-BLD-23 | K–12 and 529 | Yes, with cap and SC rules as rule data; verify current rules first | FR-BLD-19 |
-| OQ-BLD-24 | Gift and estate tax | Flag gifts above the annual exclusion; no estate tax | FR-BLD-22 |
-| OQ-BLD-25 | Home value after projects | Optional percentage of cost, default 0 | FR-BLD-24 |
-| OQ-BLD-26 | Financial independence target | Computed from the plan, with the rule of thumb beside it | FR-BLD-27 |
-| OQ-BLD-27 | Pledge priority | Right after the employer match by default | FR-BLD-13, FR-BLD-30 |
-| OQ-BLD-28 | Legacy floor vs. objective | Soft target by default, hard floor as an option | FR-BLD-31 |
-| OQ-BLD-29 | Gift bunching | Timing of deductions only | FR-BLD-33 |
-| OQ-BLD-30 | Child-owned accounts | Out; tracked and projected only | FR-BLD-36 |
-| OQ-BLD-31 | Skipping nice-to-haves on bad paths | Skip below a threshold, as an option, off by default | FR-BLD-46 |
-| OQ-BLD-32 | ssmodel's one-time expenses | Convert all to goals | FR-BLD-47 |
-| OQ-BLD-33 | Spending shape in retirement | A goal, plus an optional real-spending decline in assumptions | FR-BLD-37 |
+| OQ-BLD-19 | Wage uncertainty | Deterministic; job loss as a scenario | FR-BLD-1, FR-BLD-7 |
+| OQ-BLD-20 | Retirement date | Input, plus earliest date with at least X% success as an output | FR-BLD-3, FR-RET-8 |
+| OQ-BLD-21 | Goal conflicts | Show what each goal would need; suggestions later | FR-BLD-5 |
+| OQ-BLD-22 | Earliest affordable date | Deterministic search over years, Monte Carlo to confirm | FR-GOAL-11 |
+| OQ-BLD-23 | K–12 and 529 | Yes, with cap and SC rules as rule data; verify current rules first | FR-GOAL-12 |
+| OQ-BLD-24 | Gift and estate tax | Flag gifts above the annual exclusion; no estate tax | FR-GOAL-15 |
+| OQ-BLD-25 | Home value after projects | Optional percentage of cost, default 0 | FR-GOAL-17 |
+| OQ-BLD-26 | Financial independence target | Computed from the plan, with the rule of thumb beside it | FR-GOAL-20 |
+| OQ-BLD-27 | Pledge priority | Right after the employer match by default | FR-BLD-4, FR-GOAL-23 |
+| OQ-BLD-28 | Legacy floor vs. objective | Soft target by default, hard floor as an option | FR-GOAL-24 |
+| OQ-BLD-29 | Gift bunching | Timing of deductions only | FR-GOAL-26 |
+| OQ-BLD-30 | Child-owned accounts | Out; tracked and projected only | FR-GOAL-29 |
+| OQ-BLD-31 | Skipping nice-to-haves on bad paths | Skip below a threshold, as an option, off by default | FR-GOAL-39 |
+| OQ-BLD-32 | ssmodel's one-time expenses | Convert all to goals | FR-GOAL-40 |
+| OQ-BLD-33 | Spending shape in retirement | A goal, plus an optional real-spending decline in assumptions | FR-GOAL-30 |
 
 **Retiring Years**
 
@@ -1557,7 +1476,7 @@ with their options and leans are in draft 0.2 (commit `2ba45fe`).
 
 | ID | Question | Decision | Where applied |
 |---|---|---|---|
-| OQ-TAX-1 | Which credits and deductions at first | Child tax credit, student loan interest, premium tax credit first; AOTC next; others when needed | FR-BLD-11, FR-BLD-20, FR-BLD-34, FR-RET-6, FR-TAX-10 |
+| OQ-TAX-1 | Which credits and deductions at first | Child tax credit, student loan interest, premium tax credit first; AOTC next; others when needed | FR-GOAL-9, FR-GOAL-13, FR-GOAL-27, FR-RET-6, FR-TAX-10 |
 | OQ-TAX-2 | Moving between states | Residence changes January 1 after the move | FR-TAX-11 |
 | OQ-TAX-3 | Order of new states | **SC, then NC, GA, FL, NY, VA, PA**, then others as suggested | FR-TAX-9 |
 | OQ-TAX-4 | State-tax interface | Parameterized model with per-state code hooks | FR-TAX-9 |
@@ -1629,6 +1548,23 @@ with their options and leans are in draft 0.2 (commit `2ba45fe`).
 | OQ-DEL-2 | Requirement IDs | Keep ssmodel's IDs and add areas | Introduction |
 | OQ-DEL-3 | Where Checquery's tests go | Port domain and storage tests; page tests become Playwright e2e | NFR-TEST-19 |
 | OQ-DEL-4 | Goal requirement IDs | Rename to `FR-GOAL` once the goal list settles (timing: OQ-DEL-5) | §7 |
+
+### 18.2 Answered questions (round 2, 2026-11-23)
+
+The full questions with their options and leans are in draft 0.3 (commit `9fe84aa`).
+
+| ID | Question | Decision | Where applied |
+|---|---|---|---|
+| OQ-BUD-19 | The year-after budget | Same detail as next year's: full patterns and calendar | FR-BUD-1 |
+| OQ-BLD-34 | Qualified business income deduction depth | Simple: 20% below the income threshold, warning above it | FR-BLD-11 |
+| OQ-BLD-35 | S corporations | Out | §7.6 |
+| OQ-BLD-36 | Business books | In the household file, as accounts with business roles | FR-BLD-8 |
+| OQ-BLD-37 | Estimated tax payments | User-entered, with the engine's estimate and suggested safe-harbor amounts | FR-BLD-11 |
+| OQ-BLD-38 | Rent vs. buy form | A pair of generated scenarios through the full engine and Monte Carlo | FR-GOAL-41 |
+| OQ-TAX-6 | Personal property tax amounts | User enters the amount from the bill; the plan indexes it | FR-TAX-13 |
+| OQ-UI-14 | Rows of tabs | **Section tabs with menus for their pages**, leaving at most two rows (lean was three rows) | FR-UI-20, FR-UI-21 |
+| OQ-RPT-11 | Candidate reports | **All Candidates become Base, including RPT-LED-19 money flow**; RPT-RET-2 joint claiming map is Later | §15, §15.2 |
+| OQ-DEL-5 | When to rename goal requirements | Now: goal requirements are `FR-GOAL`, the Building Years engine keeps `FR-BLD` | §7 |
 
 ---
 
