@@ -66,13 +66,10 @@ describe('originReadSchema', () => {
     ).toThrow()
   })
 
-  it('rejects a missing ipAddress', () => {
-    expect(() =>
-      originReadSchema.parse({
-        id: genOrigId(),
-        name: 'Jane Doe',
-      }),
-    ).toThrow()
+  // FR-LED-4: ProvisionLens origins are a device/user name with no IP address.
+  it('accepts a missing ipAddress', () => {
+    const origin = originReadSchema.parse({ id: genOrigId(), name: 'Laptop – Jane' })
+    expect(origin.ipAddress).toBeUndefined()
   })
 
   it('rejects a malformed ipAddress', () => {
@@ -129,13 +126,9 @@ describe('originCreationEventSchema', () => {
     ).toThrow()
   })
 
-  it('requires ipAddress', () => {
-    expect(() =>
-      originCreationEventSchema.parse({
-        id: genOrigId(),
-        name: 'Jane Doe',
-      }),
-    ).toThrow()
+  it('does not require ipAddress', () => {
+    const origin = originCreationEventSchema.parse({ id: genOrigId(), name: 'Laptop – Jane' })
+    expect(origin.ipAddress).toBeUndefined()
   })
 
   it('rejects unknown properties', () => {
@@ -173,7 +166,7 @@ describe('originCreationEventSchema', () => {
         },
       },
       readOnly: true,
-      required: ['id', 'name', 'ipAddress'],
+      required: ['id', 'name'],
       type: 'object',
     })
   })

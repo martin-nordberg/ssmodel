@@ -5,19 +5,20 @@ import { nameSchema } from '@/ledger/core/Name.ts'
 import { origIdSchema } from '@/ledger/origins/OrigId.ts'
 
 /**
- * Base schema for a Checquery origin's details. An origin records who (a person's name) and where (an IP
- * address) a mutation came from. Origins are immutable once created -- there is no patch or deletion event,
+ * Base schema for an origin's details. An origin records who made a change. In ProvisionLens that is a device/user
+ * name from the app's settings [FR-LED-4]; origins from Checquery files also carry the IP address of the person's
+ * session, which is kept as written. Origins are immutable once created -- there is no patch or deletion event,
  * since amending or removing the record of who made a change would defeat its purpose as an audit trail.
  */
 const originAttributesSchema = z.strictObject({
   /** The unique ID of the origin. */
   id: origIdSchema,
 
-  /** The name of the person the origin represents. */
+  /** The device/user name (or, in Checquery files, the person's name) the origin represents. */
   name: nameSchema,
 
-  /** The IP address the origin represents. */
-  ipAddress: ipAddressSchema,
+  /** The IP address of a Checquery session. Absent from origins ProvisionLens creates. */
+  ipAddress: ipAddressSchema.optional(),
 })
 
 /** Schema for an origin. */
