@@ -1,6 +1,8 @@
 import sqlite3InitModule, { type Sqlite3Static } from '@sqlite.org/sqlite-wasm'
 import { decryptPayload, type FileCryptoMaterial, verifyPassword } from './crypto.ts'
-import type { DecryptResult, RequestMessage, ResponseMessage, RoundTripResult, Vfs } from './protocol.ts'
+import type { DecryptResult, ReplayResult, RequestMessage, ResponseMessage, RoundTripResult, Vfs } from './protocol.ts'
+import { LedgerReplay } from './replay.ts'
+import { type Balance, reduceTotals } from './totals.ts'
 
 // The spike's SQLite worker [NFR-ARCH-8]: loads the official SQLite WASM build and runs the measurements.
 
@@ -185,11 +187,51 @@ async function decryptFile(bytes: Uint8Array, password: string, keepPlaintexts: 
   return keepPlaintexts ? { ...result, plaintexts } : result
 }
 
+/**
+ * Opens a .checquery file as the app will: working copy in OPFS, password check, then every action decrypted
+ * and replayed in HLC order into an in-memory ledger [NFR-ARCH-10]. Then runs the statement queries.
+ */
+async function replayFile(
+  bytes: Uint8Array,
+  password: string,
+  dates: string[],
+  years: string[],
+): Promise<ReplayResult> {
+  const sqlite3 = await sqlite3Promise
+  const memory = new sqlite3.oo1.DB(':memory:')
+  try {
+    const ledger = new LedgerReplay(memory)
+    let applyMs = 0
+    memory.exec('BEGIN')
+    const decrypted = await decryptActions(bytes, password, (row, plaintext) => {
+      const t = now()
+      ledger.apply(row.action_type, plaintext)
+      applyMs += now() - t
+    })
+    memory.exec('COMMIT')
+    const { openMs, keyMs, decryptMs } = decrypted.timings
+    const timings = { openMs, keyMs, decryptMs: decryptMs - applyMs, applyMs, queryMs: 0 }
+    if (!decrypted.passwordOk) return { passwordOk: false, actions: 0, counts: {}, timings }
+
+    const t = now()
+    const asOf: Record<string, Balance[]> = {}
+    for (const date of dates) asOf[date] = ledger.balancesAsOf(date)
+    const periods: Record<string, Balance[]> = {}
+    for (const year of years) periods[year] = ledger.balancesForPeriod(`${year}-01-01`, `${year}-12-31`)
+    const totals = reduceTotals(ledger.liveAccounts(), asOf, periods)
+    timings.queryMs = now() - t
+    return { passwordOk: true, actions: decrypted.actions, counts: ledger.counts, totals, timings }
+  } finally {
+    memory.close()
+  }
+}
+
 const handlers = {
   version: async () => (await sqlite3Promise).version.libVersion,
   makeSyntheticDb,
   roundTrip,
   decryptFile,
+  replayFile,
 } as const
 
 self.onmessage = async (event: MessageEvent<RequestMessage>) => {

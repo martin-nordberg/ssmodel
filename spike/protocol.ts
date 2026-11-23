@@ -1,3 +1,5 @@
+import type { Totals } from './totals.ts'
+
 // Messages between the spike page and its SQLite worker.
 
 export type Vfs = 'opfs' | 'sahpool'
@@ -33,10 +35,20 @@ export interface DecryptResult {
   timings: { openMs: number; keyMs: number; decryptMs: number }
 }
 
+export interface ReplayResult {
+  passwordOk: boolean
+  actions: number
+  /** Actions replayed, by type. */
+  counts: Record<string, number>
+  totals?: Totals
+  timings: { openMs: number; keyMs: number; decryptMs: number; applyMs: number; queryMs: number }
+}
+
 export interface Requests {
   version: { args: []; result: string }
   makeSyntheticDb: { args: [targetBytes: number]; result: Uint8Array }
   roundTrip: { args: [bytes: Uint8Array, vfs: Vfs]; result: RoundTripResult }
+  replayFile: { args: [bytes: Uint8Array, password: string, dates: string[], years: string[]]; result: ReplayResult }
   decryptFile: { args: [bytes: Uint8Array, password: string, keepPlaintexts: boolean]; result: DecryptResult }
 }
 

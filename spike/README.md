@@ -20,3 +20,4 @@ build, the unit tests or the e2e suite.
 | ---- | ----------------- | ------------------------------------------------------------------------------------- |
 | P0.1 | `sqlite.spike.ts` | SQLite WASM in a worker: import to OPFS, open, query, export, write to a file handle  |
 | P0.2 | `crypto.spike.ts` | scrypt (@noble/hashes) and AES-GCM (Web Crypto) against payloads written by Checquery |
+| P0.3 | `parity.spike.ts` | Decrypt and replay in the browser; statement totals against Checquery's own code      |
