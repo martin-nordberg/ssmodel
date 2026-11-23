@@ -1,5 +1,5 @@
 import type { SvcBundle } from '@/ledger/services/SvcBundle.ts'
-import type { LedgerFileInfo } from '@/store/ledger/ledgerFile.ts'
+import type { LedgerFileInfo, OpenBy } from '@/store/ledger/ledgerFile.ts'
 import type { Change, CommandInputs, Entity } from '@/store/ledger/session.ts'
 
 export type { Change, Entity }
@@ -35,8 +35,10 @@ export type CommandInput<E extends Entity, M extends CommandMethod<E>> = Command
 
 export interface OpenResult {
   fileId: string
-  origId: string
+  /** Null when read-only. */
+  origId: string | null
   encrypted: boolean
+  readOnly: boolean
 }
 
 /** What `inspect` learns from a file's bytes before its password, including any working copy left by a crash. */
@@ -67,6 +69,15 @@ export interface StoreOps {
     }
     res: OpenResult
   }
+  /**
+   * Opens a snapshot read-only, in memory, without touching OPFS: the file is open for editing in another tab
+   * (FR-STO-4). Commands are refused.
+   */
+  openReadOnly: { req: { bytes: Uint8Array; password: string | undefined }; res: OpenResult }
+  /** Replaces a read-only session's snapshot with a newer one (no password needed again). */
+  reload: { req: { bytes: Uint8Array }; res: null }
+  /** Records (or clears) which device has the file open for editing. Not a change. */
+  setOpenBy: { req: { openBy: OpenBy | null }; res: null }
   /** The whole open database, to write to the user's file. */
   export: { req: Record<string, never>; res: Uint8Array }
   /** Closes the open file. The working copy is deleted unless `keepWorkingCopy` (e.g. the last save failed). */
@@ -87,6 +98,8 @@ export type StoreErrorCode =
   | 'unsupported-version'
   | 'migration-required'
   | 'no-file-open'
+  | 'file-locked'
+  | 'read-only'
   | 'invalid-request'
   | 'internal'
 

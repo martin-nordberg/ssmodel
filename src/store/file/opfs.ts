@@ -4,59 +4,112 @@ import { WasmSqliteDriver } from '@/store/driver/wasmSqlite.ts'
 // Working copies in the origin-private file system [FR-STO-2]: on open, the user's file is copied into OPFS and
 // SQLite opens the copy, so every committed change is durable at once; autosave later writes the whole database back
 // to the user's file. Uses SQLite's opfs-sahpool VFS (chosen in P0: no cross-origin isolation headers needed, and the
-// fastest). One working copy per file, named by the file's file_id, so a copy left by a crash is found on reopen.
-// Worker only.
+// fastest).
+//
+// Each file gets its own pool (directory and VFS), named by its file_id. A pool's access handles are exclusive to one
+// tab, so two tabs can write two different files, and a working copy left by a crash is found on reopen. A pool is
+// paused (handles released) whenever its file isn't open, and never removed, since SQLite can't re-register a removed
+// VFS without a reload. Worker only.
 
-const vfsName = 'plens-working-copies'
+/** The working copy is held by another tab (FR-STO-4). */
+export class WorkingCopyLockedError extends Error {}
+
+const dbPath = '/working.plens'
+
+function poolName(fileId: string): string {
+  if (!/^[a-z0-9]+$/.test(fileId)) throw new Error(`Invalid file id: ${fileId}`)
+  return `plens-wc-${fileId}`
+}
 
 export class WorkingCopies {
   private readonly sqlite3: Sqlite3Static
-  private readonly pool: SAHPoolUtil
+  private readonly pools = new Map<string, SAHPoolUtil>()
+  private readonly open = new Set<string>()
 
-  private constructor(sqlite3: Sqlite3Static, pool: SAHPoolUtil) {
+  constructor(sqlite3: Sqlite3Static) {
     this.sqlite3 = sqlite3
-    this.pool = pool
   }
 
-  /** Installs the VFS. Fails if another tab of the app already holds it (one connection per origin, P1.8). */
-  static async install(sqlite3: Sqlite3Static): Promise<WorkingCopies> {
-    const pool = await sqlite3.installOpfsSAHPoolVfs({ name: vfsName, directory: `.${vfsName}`, initialCapacity: 6 })
-    return new WorkingCopies(sqlite3, pool)
+  private async acquire(fileId: string): Promise<SAHPoolUtil> {
+    try {
+      let pool = this.pools.get(fileId)
+      if (!pool) {
+        const name = poolName(fileId)
+        pool = await this.sqlite3.installOpfsSAHPoolVfs({ name, directory: `.${name}`, initialCapacity: 4 })
+        this.pools.set(fileId, pool)
+      } else if (pool.isPaused()) {
+        await pool.unpauseVfs()
+      }
+      return pool
+    } catch (err) {
+      // Another tab holds the pool's access handles.
+      throw new WorkingCopyLockedError(`The working copy is in use in another tab (${(err as Error).message})`)
+    }
   }
 
-  private static path(fileId: string): string {
-    if (!/^[a-z0-9]+$/.test(fileId)) throw new Error(`Invalid file id: ${fileId}`)
-    return `/wc-${fileId}.plens`
+  private release(fileId: string): void {
+    const pool = this.pools.get(fileId)
+    if (pool && !pool.isPaused() && !this.open.has(fileId)) pool.pauseVfs()
   }
 
-  /** The file ids that have a working copy. */
-  list(): string[] {
-    return this.pool
-      .getFileNames()
-      .map((name) => /^\/wc-([a-z0-9]+)\.plens$/.exec(name)?.[1])
-      .filter((id): id is string => id !== undefined)
-  }
-
-  has(fileId: string): boolean {
-    return this.pool.getFileNames().includes(WorkingCopies.path(fileId))
+  /** True if a working copy exists for the file (cheap when there is none: no pool is installed). */
+  async exists(fileId: string): Promise<boolean> {
+    if (!this.pools.has(fileId)) {
+      const root = await navigator.storage.getDirectory()
+      try {
+        await root.getDirectoryHandle(`.${poolName(fileId)}`)
+      } catch {
+        return false
+      }
+    }
+    const pool = await this.acquire(fileId)
+    try {
+      return pool.getFileNames().includes(dbPath)
+    } finally {
+      this.release(fileId)
+    }
   }
 
   /** Replaces the working copy with the given file bytes. */
   async importBytes(fileId: string, bytes: Uint8Array): Promise<void> {
-    await this.pool.reserveMinimumCapacity(this.pool.getFileCount() + 4)
-    await this.pool.importDb(WorkingCopies.path(fileId), bytes)
+    const pool = await this.acquire(fileId)
+    try {
+      await pool.importDb(dbPath, bytes)
+    } finally {
+      this.release(fileId)
+    }
   }
 
-  /** Opens (creating if needed) the working copy. */
-  async open(fileId: string): Promise<WasmSqliteDriver> {
-    await this.pool.reserveMinimumCapacity(this.pool.getFileCount() + 4)
-    const db = new this.pool.OpfsSAHPoolDb(WorkingCopies.path(fileId))
-    db.exec('PRAGMA journal_mode = DELETE')
-    return new WasmSqliteDriver(this.sqlite3, db)
+  /** Opens (creating if needed) the working copy; keep it open until closeCopy. */
+  async openCopy(fileId: string): Promise<WasmSqliteDriver> {
+    const pool = await this.acquire(fileId)
+    this.open.add(fileId)
+    try {
+      const db = new pool.OpfsSAHPoolDb(dbPath)
+      db.exec('PRAGMA journal_mode = DELETE')
+      return new WasmSqliteDriver(this.sqlite3, db)
+    } catch (err) {
+      this.open.delete(fileId)
+      this.release(fileId)
+      throw err
+    }
   }
 
-  /** Deletes a working copy (it must be closed). */
-  remove(fileId: string): void {
-    this.pool.unlink(WorkingCopies.path(fileId))
+  /** Closes the working copy, deleting it unless `keep`, and releases the pool for other tabs. */
+  closeCopy(fileId: string, db: WasmSqliteDriver, keep: boolean): void {
+    db.close()
+    this.open.delete(fileId)
+    if (!keep) this.pools.get(fileId)?.unlink(dbPath)
+    this.release(fileId)
+  }
+
+  /** Reads a value from a working copy that isn't open, then releases it. */
+  async peek<T>(fileId: string, read: (db: WasmSqliteDriver) => T): Promise<T> {
+    const db = await this.openCopy(fileId)
+    try {
+      return read(db)
+    } finally {
+      this.closeCopy(fileId, db, true)
+    }
   }
 }

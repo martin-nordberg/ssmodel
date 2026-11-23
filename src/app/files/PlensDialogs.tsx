@@ -159,6 +159,29 @@ function MigrateDialog({ prompt }: { prompt: Extract<Prompt, { kind: 'migrate' }
   )
 }
 
+function OtherDeviceDialog({ prompt }: { prompt: Extract<Prompt, { kind: 'other-device' }> }) {
+  const minutes = Math.max(1, Math.round((Date.now() - prompt.openBy.at) / 60_000))
+  return (
+    <Dialog open onOpenChange={(open) => !open && prompt.resolve(false)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{prompt.name} may be open on another device</DialogTitle>
+          <DialogDescription>
+            It was open on “{prompt.openBy.deviceName}” {minutes === 1 ? 'a minute' : `${minutes} minutes`} ago. If you
+            edit it in both places, one device's changes will overwrite the other's. Close it there first if you can.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => prompt.resolve(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => prompt.resolve(true)}>Open anyway</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function PlensDialogs() {
   const prompt = usePlensFile((s) => s.prompt)
   if (!prompt) return null
@@ -172,5 +195,7 @@ export function PlensDialogs() {
       return <RecoverDialog key={prompt.id} prompt={prompt} />
     case 'migrate':
       return <MigrateDialog key={prompt.id} prompt={prompt} />
+    case 'other-device':
+      return <OtherDeviceDialog key={prompt.id} prompt={prompt} />
   }
 }

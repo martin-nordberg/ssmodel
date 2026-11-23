@@ -82,13 +82,17 @@ export class InvalidRequestError extends Error {}
 
 type Method = (...args: unknown[]) => Promise<unknown>
 
+/** A command sent to a read-only session (a second tab, FR-STO-4). */
+export class ReadOnlyError extends Error {}
+
 export class LedgerSession {
   readonly store: LedgerStore
-  readonly origId: OrigId
+  /** The session's origin; null for a read-only session, which refuses every command. */
+  readonly origId: OrigId | null
   private readonly onChange: (change: Change) => void
   private writes: Promise<unknown> = Promise.resolve()
 
-  constructor(store: LedgerStore, origId: OrigId, onChange: (change: Change) => void) {
+  constructor(store: LedgerStore, origId: OrigId | null, onChange: (change: Change) => void) {
     this.store = store
     this.origId = origId
     this.onChange = onChange
@@ -119,6 +123,7 @@ export class LedgerSession {
   /** Validates, stamps and runs one command after any in-flight one finishes, then reports the change. */
   command(entity: string, method: string, input: unknown): Promise<unknown> {
     const run = async () => {
+      if (this.origId === null) throw new ReadOnlyError('This file is open for editing in another tab or window.')
       const schema = (commandSchemas as Record<string, z.ZodType>)[`${entity}.${method}`]
       if (!schema) throw new InvalidRequestError(`Unknown command: ${entity}.${method}`)
       const parsed = schema.safeParse({ ...(input as object), origId: this.origId })

@@ -1,14 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { acctIdNetWorth } from '@/ledger/accounts/NetWorthAccount.ts'
-import { setMetaValue } from '@/store/actionLog/meta.ts'
+import { readContentVersion, setMetaValue } from '@/store/actionLog/meta.ts'
 import { openBunDriver, openBunDriverFromBytes } from '@/store/driver/bunSqlite.ts'
 import {
   createLedgerFile,
   inspectLedgerFile,
   type LedgerFileErrorCode,
   openLedgerFile,
+  readOpenBy,
+  writeOpenBy,
 } from '@/store/ledger/ledgerFile.ts'
+import { LedgerSession, ReadOnlyError } from '@/store/ledger/session.ts'
 
 // FR-STO-5, FR-STO-7, FR-LED-4: creating and opening ledger files, without a file system.
 
@@ -104,5 +107,72 @@ describe('openLedgerFile', () => {
     expect(await code(reopen(bytes, fixturePassword))).toBe('migration-required')
     const opened = await reopen(bytes, fixturePassword, 'Laptop', true)
     expect(await opened.store.svcs.transactions.countTransactionsAll()).toBeGreaterThan(50)
+  })
+})
+
+describe('read-only opening and the open-by marker (FR-STO-4)', () => {
+  test('a read-only open writes nothing: no origin, no migration, same bytes', async () => {
+    const { bytes } = await newFile('correct horse')
+    const db = openBunDriverFromBytes(bytes)
+    const before = db.exportBytes()
+    const opened = await openLedgerFile(db, openBunDriver(), {
+      password: 'correct horse',
+      deviceName: 'Desktop',
+      allowMigration: false,
+      readOnly: true,
+    })
+    expect(opened.origId).toBeNull()
+    expect(await opened.store.svcs.origins.countOriginsAll()).toBe(1)
+    expect(db.exportBytes()).toEqual(before)
+    const checquery = readFileSync(`${fixture}small.checquery`)
+    expect(
+      await code(
+        openLedgerFile(openBunDriverFromBytes(checquery), openBunDriver(), {
+          password: fixturePassword,
+          deviceName: 'x',
+          allowMigration: true,
+          readOnly: true,
+        }),
+      ),
+    ).toBe('migration-required')
+  })
+
+  test("a snapshot reopens with the first open's codec, without the password", async () => {
+    const { bytes } = await newFile('correct horse')
+    const first = await reopen(bytes, 'correct horse')
+    const again = await openLedgerFile(openBunDriverFromBytes(bytes), openBunDriver(), {
+      password: undefined,
+      codec: first.codec,
+      deviceName: '',
+      allowMigration: false,
+      readOnly: true,
+    })
+    expect(await again.store.svcs.accounts.countAccountsAll()).toBe(1)
+  })
+
+  test('the open-by marker round-trips, clears, and is not a change', async () => {
+    const db = openBunDriver()
+    await createLedgerFile(db, openBunDriver(), { password: undefined, deviceName: 'Laptop' })
+    const version = readContentVersion(db)
+    const openBy = { deviceId: 'd1', deviceName: 'Laptop', at: 1_700_000_000_000 }
+    writeOpenBy(db, openBy)
+    expect(inspectLedgerFile(db).openBy).toEqual(openBy)
+    writeOpenBy(db, null)
+    expect(readOpenBy(db)).toBeNull()
+    expect(readContentVersion(db)).toBe(version)
+  })
+
+  test('a read-only session refuses commands', async () => {
+    const { bytes } = await newFile(undefined)
+    const opened = await openLedgerFile(openBunDriverFromBytes(bytes), openBunDriver(), {
+      password: undefined,
+      deviceName: '',
+      allowMigration: false,
+      readOnly: true,
+    })
+    const session = new LedgerSession(opened.store, opened.origId, () => {})
+    await expect(session.command('accountCategories', 'createAccountCategory', {})).rejects.toBeInstanceOf(
+      ReadOnlyError,
+    )
   })
 })

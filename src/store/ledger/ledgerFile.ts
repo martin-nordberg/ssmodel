@@ -32,10 +32,12 @@ import { MaterializedStore } from '@/store/materialized/MaterializedStore.ts'
 
 export interface OpenedLedger {
   store: LedgerStore
-  /** The origin stamped on every change made in this session [FR-LED-4]. */
-  origId: OrigId
+  /** The origin stamped on every change made in this session [FR-LED-4]; null when opened read-only. */
+  origId: OrigId | null
   fileId: string
   encrypted: boolean
+  /** The payload codec (holding the file key), reusable to reopen a fresh snapshot without the password. */
+  codec: PayloadCodec
 }
 
 export type LedgerFileErrorCode =
@@ -117,7 +119,7 @@ export async function createLedgerFile(
   const store = await LedgerStore.open(actionLog, new MaterializedStore(memory))
   const origId = await bootstrapOrigin(store, opts.deviceName)
   await bootstrapNetWorthAccount(store, origId)
-  return { store, origId, fileId, encrypted: opts.password !== undefined }
+  return { store, origId, fileId, encrypted: opts.password !== undefined, codec }
 }
 
 /** Facts about a file readable before its password: is it a ledger, is it encrypted, does it need migrating. */
@@ -126,6 +128,32 @@ export interface LedgerFileInfo {
   encrypted: boolean
   schemaVersion: number
   needsMigration: boolean
+  /** The device that has (or last had) the file open for editing, if it didn't close it [FR-STO-4]. */
+  openBy: OpenBy | null
+}
+
+/** Who has a file open for editing, refreshed by a heartbeat and cleared on close [FR-STO-4, D: OQ-STO-5]. */
+export interface OpenBy {
+  deviceId: string
+  deviceName: string
+  /** Last heartbeat, ms since the epoch. */
+  at: number
+}
+
+export function readOpenBy(db: DbDriver): OpenBy | null {
+  const value = getMetaValue(db, 'open_by')
+  if (!value) return null
+  try {
+    const parsed = JSON.parse(value) as OpenBy
+    return typeof parsed.deviceId === 'string' && typeof parsed.at === 'number' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/** Records (or with null, clears) who has the file open. Not a change: content_version is untouched. */
+export function writeOpenBy(db: DbDriver, openBy: OpenBy | null): void {
+  setMetaValue(db, 'open_by', openBy ? JSON.stringify(openBy) : '')
 }
 
 export function inspectLedgerFile(db: DbDriver): LedgerFileInfo {
@@ -146,6 +174,7 @@ export function inspectLedgerFile(db: DbDriver): LedgerFileInfo {
     encrypted: getMetaValue(db, 'encrypted') !== 'false',
     schemaVersion,
     needsMigration: hasPendingMigrations(db),
+    openBy: readOpenBy(db),
   }
 }
 
@@ -160,30 +189,39 @@ function cryptoMaterial(db: DbDriver): FileCryptoMaterial {
   return { kdfSalt, kdfParams: JSON.parse(kdfParams), verifyIv, verifyCiphertext }
 }
 
+export interface OpenLedgerOptions {
+  password: string | undefined
+  deviceName: string
+  allowMigration: boolean
+  /** Opens without writing anything: no migration, no origin (a second tab's snapshot, FR-STO-4). */
+  readOnly?: boolean
+  /** A codec from an earlier open of the same file, instead of the password. */
+  codec?: PayloadCodec
+}
+
 /**
  * Opens an existing ledger file (ProvisionLens or Checquery): checks it, verifies the password, migrates it (only
  * with `allowMigration`, since a migrated file can't be opened by an older build [FR-STO-7]), replays the log into
  * the materialized store and records the session's origin.
  */
-export async function openLedgerFile(
-  db: DbDriver,
-  memory: DbDriver,
-  opts: { password: string | undefined; deviceName: string; allowMigration: boolean },
-): Promise<OpenedLedger> {
+export async function openLedgerFile(db: DbDriver, memory: DbDriver, opts: OpenLedgerOptions): Promise<OpenedLedger> {
   const info = inspectLedgerFile(db)
-  if (info.needsMigration && !opts.allowMigration) {
+  if (info.needsMigration && (!opts.allowMigration || opts.readOnly)) {
     throw new LedgerFileError('migration-required', 'This file needs to be upgraded before it can be opened.')
   }
   let codec: PayloadCodec
-  if (info.encrypted) {
+  if (opts.codec) {
+    codec = opts.codec
+  } else if (info.encrypted) {
     const key = await verifyPassword(opts.password ?? '', cryptoMaterial(db))
     if (!key) throw new LedgerFileError('wrong-password', 'Incorrect password.')
     codec = new AesGcmCodec(key)
   } else {
     codec = new PlaintextCodec()
   }
-  const actionLog = await ActionLog.open(db, codec, getMetaValue(db, 'node_id')!)
+  const nodeId = getMetaValue(db, 'node_id')!
+  const actionLog = opts.readOnly ? new ActionLog(db, codec, nodeId) : await ActionLog.open(db, codec, nodeId)
   const store = await LedgerStore.open(actionLog, new MaterializedStore(memory))
-  const origId = await bootstrapOrigin(store, opts.deviceName)
-  return { store, origId, fileId: info.fileId, encrypted: info.encrypted }
+  const origId = opts.readOnly ? null : await bootstrapOrigin(store, opts.deviceName)
+  return { store, origId, fileId: info.fileId, encrypted: info.encrypted, codec }
 }

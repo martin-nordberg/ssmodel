@@ -29,7 +29,7 @@ function PlensStatus() {
   if (!file) return null
   return (
     <span data-testid="status-plens" title={autosave.error ?? undefined}>
-      {file.name} • {autosaveText[autosave.state]}
+      {file.name} • {file.readOnly ? 'Read-only: open for editing in another window' : autosaveText[autosave.state]}
       {file.encrypted ? '' : ' • not encrypted'}
     </span>
   )

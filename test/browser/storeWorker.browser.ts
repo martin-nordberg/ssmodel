@@ -140,3 +140,50 @@ test('a working copy left by a crash is detected and recovered', async ({ page }
   })
   expect(result).toEqual({ offered: true, recovered: 'Unsaved', afterClose: null, fromFile: null })
 })
+
+// FR-STO-4: each file's working copy is exclusive to one tab; another tab can open a snapshot read-only and reload it.
+test('working copies are per file and exclusive; a read-only snapshot follows by reloading', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const a = window.harness.newStore().client
+    await a.request('create', { password: 'pw', deviceName: 'A' })
+    const bytes = await a.request('export', {})
+    const b = window.harness.newStore().client
+    const other = await b.request('create', { password: undefined, deviceName: 'B' }).then(
+      () => 'ok',
+      (e) => e.code,
+    )
+
+    const c = window.harness.newStore().client
+    const locked = await c
+      .request('open', { bytes: bytes.slice(), password: 'pw', deviceName: 'C', allowMigration: false, source: 'file' })
+      .catch((e) => e.code)
+    const ro = await c.request('openReadOnly', { bytes: bytes.slice(), password: 'pw' })
+    const refused = await c
+      .command('accountCategories', 'createAccountCategory', {
+        id: 'actgreadonlycategory00000001',
+        parentCtgId: 'actgassets000000000000000000',
+        acctType: 'ASSET',
+        name: 'Nope',
+      })
+      .catch((e) => e.code)
+    await a.command('accountCategories', 'createAccountCategory', {
+      id: 'actgwritercategory0000000001',
+      parentCtgId: 'actgassets000000000000000000',
+      acctType: 'ASSET',
+      name: 'From A',
+    })
+    const before = await c.query('accountCategories', 'countAccountCategoriesAll')
+    await c.request('reload', { bytes: await a.request('export', {}) })
+    const after = await c.query('accountCategories', 'countAccountCategoriesAll')
+    return { other, locked, readOnly: ro.readOnly, origId: ro.origId, refused, before, after }
+  })
+  expect(result).toEqual({
+    other: 'ok',
+    locked: 'file-locked',
+    readOnly: true,
+    origId: null,
+    refused: 'read-only',
+    before: 0,
+    after: 1,
+  })
+})

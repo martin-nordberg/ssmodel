@@ -1,7 +1,8 @@
 import { expect, type Page, test } from '@playwright/test'
 import { installFsaMock, readDiskBytes, setPickers } from './fsaMock.ts'
 
-// NFR-TEST-14 (storage): autosave and reopen, and crash recovery from the working copy [FR-STO-1 … FR-STO-3].
+// NFR-TEST-14 (storage): autosave and reopen, crash recovery from the working copy, and a second tab refused by the
+// lock [FR-STO-1 … FR-STO-4].
 // Until the ledger pages exist (P2), edits go through the store worker (`?e2e` exposes its client).
 
 const category = {
@@ -62,7 +63,13 @@ test('autosave and reopen', async ({ page, browser }) => {
   const page2 = await context.newPage()
   await installFsaMock(page2, { 'Household.plens': saved ?? [] })
   await page2.goto('/?e2e')
+  // Another browser profile is another device, and the file says it's open on the first one [FR-STO-4].
   await plensMenu(page2, 'Open ProvisionLens file…')
+  await expect(page2.getByText('Household.plens may be open on another device')).toBeVisible()
+  await page2.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page2.getByTestId('status-plens')).toHaveCount(0)
+  await plensMenu(page2, 'Open ProvisionLens file…')
+  await page2.getByRole('button', { name: 'Open anyway' }).click()
   await page2.getByLabel('Password').fill('wrong')
   await page2.getByRole('button', { name: 'Open' }).click()
   await expect(page2.getByText('That password is not right. Try again.')).toBeVisible()
@@ -113,4 +120,35 @@ test('discarding the working copy opens the file as saved', async ({ page, conte
   await page2.getByRole('button', { name: 'Discard them and open the file' }).click()
   await expect(page2.getByTestId('status-plens')).toHaveText('Household.plens • Saved • not encrypted')
   expect(await store(page2, 'query', 'accountCategories', 'findAccountCategoryById', category.id)).toBeNull()
+})
+
+test('a second tab is read-only and shows an edit made in the first within a second', async ({ page, context }) => {
+  await installFsaMock(page)
+  await page.goto('/?e2e&autosaveMs=300')
+  await createFile(page, 'correct horse')
+  const bytes = await readDiskBytes(page, 'Household.plens')
+
+  const page2 = await context.newPage()
+  await installFsaMock(page2, { 'Household.plens': bytes ?? [] })
+  await page2.goto('/?e2e')
+  await plensMenu(page2, 'Open ProvisionLens file…')
+  await page2.getByLabel('Password').fill('correct horse')
+  await page2.getByRole('button', { name: 'Open' }).click()
+  await expect(page2.getByTestId('status-plens')).toHaveText(
+    'Household.plens • Read-only: open for editing in another window',
+  )
+
+  await store(page, 'command', 'accountCategories', 'createAccountCategory', category)
+  await expect
+    .poll(() => store(page2, 'query', 'accountCategories', 'findAccountCategoryById', category.id), { timeout: 1000 })
+    .toMatchObject({ name: 'Bank' })
+
+  const refused = await page2.evaluate(
+    (c) =>
+      (window as unknown as { provisionlensStore: { command(...a: unknown[]): Promise<unknown> } }).provisionlensStore
+        .command('accountCategories', 'createAccountCategory', { ...c, id: 'actge2ecategory0000000000002' })
+        .catch((e: { code: string }) => e.code),
+    category,
+  )
+  expect(refused).toBe('read-only')
 })

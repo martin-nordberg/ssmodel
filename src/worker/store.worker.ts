@@ -1,17 +1,19 @@
 /// <reference lib="webworker" />
 import { createId } from '@paralleldrive/cuid2'
+import type { PayloadCodec } from '@/store/actionLog/encryption/PayloadCodec.ts'
 import { readContentVersion } from '@/store/actionLog/meta.ts'
 import type { DbDriver } from '@/store/driver/DbDriver.ts'
-import { loadSqlite, openWasmMemory } from '@/store/driver/wasmSqlite.ts'
-import { WorkingCopies } from '@/store/file/opfs.ts'
+import { loadSqlite, openWasmMemory, type WasmSqliteDriver } from '@/store/driver/wasmSqlite.ts'
+import { WorkingCopies, WorkingCopyLockedError } from '@/store/file/opfs.ts'
 import {
   createLedgerFile,
   inspectLedgerFile,
   LedgerFileError,
   type OpenedLedger,
   openLedgerFile,
+  writeOpenBy,
 } from '@/store/ledger/ledgerFile.ts'
-import { InvalidRequestError, LedgerSession } from '@/store/ledger/session.ts'
+import { InvalidRequestError, LedgerSession, ReadOnlyError } from '@/store/ledger/session.ts'
 import type {
   Change,
   Op,
@@ -23,24 +25,38 @@ import type {
 } from '@/worker/storeProtocol.ts'
 
 // The store worker [NFR-ARCH-8]: owns SQLite WASM, the open file's working copy in OPFS [FR-STO-2] and its in-memory
-// materialized store. Requests are answered in order of arrival; commands are additionally serialized by the session.
+// materialized store. A file open for editing elsewhere is opened read-only, as an in-memory snapshot that the tab
+// replaces as the writer saves changes (FR-STO-4). Requests are answered in order of arrival; commands are also
+// serialized by the session.
 
 declare const self: DedicatedWorkerGlobalScope
 
 interface Open {
+  fileId: string
+  /** The working copy, or for a read-only session an in-memory snapshot. */
   file: DbDriver
   memory: DbDriver
   session: LedgerSession
-  fileId: string
+  codec: PayloadCodec
+  readOnly: boolean
 }
 
 let current: Open | null = null
 let seq = 0
-let workingCopiesPromise: Promise<WorkingCopies> | undefined
+let copies: WorkingCopies | undefined
 
-function workingCopies(): Promise<WorkingCopies> {
-  workingCopiesPromise ??= loadSqlite().then((sqlite3) => WorkingCopies.install(sqlite3))
-  return workingCopiesPromise
+async function workingCopies(): Promise<WorkingCopies> {
+  copies ??= new WorkingCopies(await loadSqlite())
+  return copies
+}
+
+class StoreFailure extends Error {
+  readonly code: StoreErrorCode
+
+  constructor(code: StoreErrorCode, message: string) {
+    super(message)
+    this.code = code
+  }
 }
 
 function post(message: StoreMessage, transfer: Transferable[] = []): void {
@@ -53,29 +69,34 @@ function onChange(change: Change): void {
 
 async function closeCurrent(keepWorkingCopy: boolean): Promise<void> {
   if (!current) return
-  const { fileId } = current
-  current.memory.close()
-  current.file.close()
+  const { fileId, file, memory, readOnly } = current
   current = null
-  if (!keepWorkingCopy) (await workingCopies()).remove(fileId)
+  memory.close()
+  if (readOnly) file.close()
+  else (await workingCopies()).closeCopy(fileId, file as WasmSqliteDriver, keepWorkingCopy)
   post({ kind: 'session', state: 'closed' })
 }
 
-/** Opens a ledger on the working copy `file`; the previous file (if another) is closed only once this succeeds. */
-async function start(file: DbDriver, open: (memory: DbDriver) => Promise<OpenedLedger>): Promise<OpenResult> {
-  const sqlite3 = await loadSqlite()
-  const memory = openWasmMemory(sqlite3)
+/** Opens a ledger on `file` (a working copy or a snapshot) with a fresh materialized store. */
+async function start(
+  file: DbDriver,
+  readOnly: boolean,
+  open: (memory: DbDriver) => Promise<OpenedLedger>,
+  onFailure: () => void,
+): Promise<OpenResult> {
+  const memory = openWasmMemory(await loadSqlite())
   let opened: OpenedLedger
   try {
     opened = await open(memory)
   } catch (err) {
     memory.close()
-    file.close()
+    onFailure()
     throw err
   }
-  current = { file, memory, session: new LedgerSession(opened.store, opened.origId, onChange), fileId: opened.fileId }
+  const session = new LedgerSession(opened.store, opened.origId, onChange)
+  current = { fileId: opened.fileId, file, memory, session, codec: opened.codec, readOnly }
   post({ kind: 'session', state: 'open', fileId: opened.fileId })
-  return { fileId: opened.fileId, origId: opened.origId, encrypted: opened.encrypted }
+  return { fileId: opened.fileId, origId: opened.origId, encrypted: opened.encrypted, readOnly }
 }
 
 function requireOpen(): Open {
@@ -83,19 +104,17 @@ function requireOpen(): Open {
   return current
 }
 
-class StoreFailure extends Error {
-  readonly code: StoreErrorCode
-
-  constructor(code: StoreErrorCode, message: string) {
-    super(message)
-    this.code = code
-  }
+function requireWriter(): Open {
+  const open = requireOpen()
+  if (open.readOnly) throw new StoreFailure('read-only', 'This file is open for editing in another tab or window.')
+  return open
 }
 
-/** The file id from file bytes (closing the temporary database). */
-function inspectBytes(db: DbDriver): string {
+/** Inspects file bytes in a temporary in-memory database. */
+async function inspectBytes(bytes: Uint8Array) {
+  const db = openWasmMemory(await loadSqlite(), bytes)
   try {
-    return inspectLedgerFile(db).fileId
+    return { info: inspectLedgerFile(db), contentVersion: readContentVersion(db) }
   } finally {
     db.close()
   }
@@ -107,63 +126,108 @@ const handlers: Handlers = {
   async version() {
     return (await loadSqlite()).version.libVersion
   },
+
   async create({ password, deviceName }) {
     if (current) await closeCurrent(true)
+    const wcs = await workingCopies()
     const fileId = createId()
-    const file = await (await workingCopies()).open(fileId)
-    try {
-      return await start(file, (memory) => createLedgerFile(file, memory, { password, deviceName, fileId }))
-    } catch (err) {
-      ;(await workingCopies()).remove(fileId)
-      throw err
-    }
+    const file = await wcs.openCopy(fileId)
+    return start(
+      file,
+      false,
+      (memory) => createLedgerFile(file, memory, { password, deviceName, fileId }),
+      () => wcs.closeCopy(fileId, file, false),
+    )
   },
+
   async inspect({ bytes }) {
-    const db = openWasmMemory(await loadSqlite(), bytes)
-    let info: ReturnType<typeof inspectLedgerFile>
-    let contentVersion: number
-    try {
-      info = inspectLedgerFile(db)
-      contentVersion = readContentVersion(db)
-    } finally {
-      db.close()
-    }
+    const { info, contentVersion } = await inspectBytes(bytes)
     let workingVersion: number | null = null
     if (current?.fileId === info.fileId) {
-      workingVersion = readContentVersion(current.file)
-    } else if ((await workingCopies()).has(info.fileId)) {
-      const wc = await (await workingCopies()).open(info.fileId)
+      if (!current.readOnly) workingVersion = readContentVersion(current.file)
+    } else {
       try {
-        workingVersion = readContentVersion(wc)
+        const wcs = await workingCopies()
+        if (await wcs.exists(info.fileId)) workingVersion = await wcs.peek(info.fileId, readContentVersion)
       } catch {
-        workingVersion = null // an unreadable leftover: ignore it, opening from the file replaces it
-      } finally {
-        wc.close()
+        // Held by another tab, or an unreadable leftover: nothing to offer here.
       }
     }
     const newerWorkingCopy =
       workingVersion !== null && workingVersion > contentVersion ? { contentVersion: workingVersion } : null
     return { ...info, contentVersion, newerWorkingCopy }
   },
+
   async open({ bytes, password, deviceName, allowMigration, source }) {
-    const wcs = await workingCopies()
-    const fileId = inspectBytes(openWasmMemory(await loadSqlite(), bytes))
+    const { info } = await inspectBytes(bytes)
     // The main thread closes (and saves) a file before opening another; an implicit close keeps its working copy.
     if (current) await closeCurrent(true)
-    if (source === 'file' || !wcs.has(fileId)) await wcs.importBytes(fileId, bytes)
-    const file = await wcs.open(fileId)
-    return start(file, (memory) => openLedgerFile(file, memory, { password, deviceName, allowMigration }))
+    const wcs = await workingCopies()
+    if (source === 'file' || !(await wcs.exists(info.fileId))) await wcs.importBytes(info.fileId, bytes)
+    const file = await wcs.openCopy(info.fileId)
+    return start(
+      file,
+      false,
+      (memory) => openLedgerFile(file, memory, { password, deviceName, allowMigration }),
+      () => wcs.closeCopy(info.fileId, file, true),
+    )
   },
+
+  async openReadOnly({ bytes, password }) {
+    if (current) await closeCurrent(true)
+    const file = openWasmMemory(await loadSqlite(), bytes)
+    return start(
+      file,
+      true,
+      (memory) => openLedgerFile(file, memory, { password, deviceName: '', allowMigration: false, readOnly: true }),
+      () => file.close(),
+    )
+  },
+
+  async reload({ bytes }) {
+    const open = requireOpen()
+    if (!open.readOnly) throw new StoreFailure('invalid-request', 'Only a read-only session reloads a snapshot.')
+    const { fileId, codec } = open
+    const file = openWasmMemory(await loadSqlite(), bytes)
+    if (inspectLedgerFile(file).fileId !== fileId) {
+      file.close()
+      throw new StoreFailure('invalid-request', 'The snapshot is of a different file.')
+    }
+    await closeCurrent(true)
+    await start(
+      file,
+      true,
+      (memory) =>
+        openLedgerFile(file, memory, {
+          password: undefined,
+          codec,
+          deviceName: '',
+          allowMigration: false,
+          readOnly: true,
+        }),
+      () => file.close(),
+    )
+    return null
+  },
+
+  async setOpenBy({ openBy }) {
+    writeOpenBy(requireWriter().file, openBy)
+    return null
+  },
+
   async export() {
     return requireOpen().file.exportBytes()
   },
+
   async close({ keepWorkingCopy }) {
     await closeCurrent(keepWorkingCopy)
     return null
   },
+
   query({ entity, method, args }) {
     return requireOpen().session.query(entity, method, args)
   },
+
   command({ entity, method, input }) {
     return requireOpen().session.command(entity, method, input)
   },
@@ -172,6 +236,8 @@ const handlers: Handlers = {
 function errorOf(err: unknown): { code: StoreErrorCode; message: string } {
   if (err instanceof StoreFailure || err instanceof LedgerFileError) return { code: err.code, message: err.message }
   if (err instanceof InvalidRequestError) return { code: 'invalid-request', message: err.message }
+  if (err instanceof ReadOnlyError) return { code: 'read-only', message: err.message }
+  if (err instanceof WorkingCopyLockedError) return { code: 'file-locked', message: err.message }
   return { code: 'internal', message: err instanceof Error ? err.message : String(err) }
 }
 
