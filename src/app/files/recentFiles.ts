@@ -27,6 +27,26 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) =>
   })
 }
 
+/** Reads a value kept alongside the recent files (e.g. the backup folder handle). */
+export async function getStored<T>(key: string): Promise<T | undefined> {
+  try {
+    return (await withStore('readonly', (s) => s.get(key))) as T | undefined
+  } catch {
+    return undefined
+  }
+}
+
+export async function putStored(key: string, value: unknown): Promise<void> {
+  try {
+    await withStore(
+      'readwrite',
+      (s) => (value === undefined ? s.delete(key) : s.put(value, key)) as IDBRequest<unknown>,
+    )
+  } catch {
+    // Storage may be unavailable (private window).
+  }
+}
+
 export async function listRecent(kind: RecentKind = 'yaml'): Promise<RecentFile[]> {
   try {
     return ((await withStore('readonly', (s) => s.get(keyOf(kind)))) as RecentFile[] | undefined) ?? []

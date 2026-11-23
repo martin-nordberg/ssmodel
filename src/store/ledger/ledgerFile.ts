@@ -7,12 +7,8 @@ import { genOrigId, type OrigId } from '@/ledger/origins/OrigId.ts'
 import { originCreationEventSchema } from '@/ledger/origins/Origin.ts'
 import { ActionLog } from '@/store/actionLog/ActionLog.ts'
 import { AesGcmCodec } from '@/store/actionLog/encryption/AesGcmCodec.ts'
-import {
-  type FileCryptoMaterial,
-  generateFileCryptoMaterial,
-  generateNodeId,
-  verifyPassword,
-} from '@/store/actionLog/encryption/crypto.ts'
+import { generateNodeId } from '@/store/actionLog/encryption/crypto.ts'
+import { setUpEncryption, unlockWithPassword, unlockWithRecoveryKey } from '@/store/actionLog/encryption/keys.ts'
 import type { PayloadCodec } from '@/store/actionLog/encryption/PayloadCodec.ts'
 import { PlaintextCodec } from '@/store/actionLog/encryption/PlaintextCodec.ts'
 import { getMetaValue, metaTableExists, setMetaValue } from '@/store/actionLog/meta.ts'
@@ -38,11 +34,14 @@ export interface OpenedLedger {
   encrypted: boolean
   /** The payload codec (holding the file key), reusable to reopen a fresh snapshot without the password. */
   codec: PayloadCodec
+  /** A new file's recovery key, to show once [FR-STO-5]; null otherwise. */
+  recoveryWords: string[] | null
 }
 
 export type LedgerFileErrorCode =
   | 'not-a-ledger-file'
   | 'wrong-password'
+  | 'wrong-recovery-key'
   | 'password-required'
   | 'unsupported-version'
   | 'migration-required'
@@ -103,23 +102,21 @@ export async function createLedgerFile(
   setMetaValue(db, 'node_id', nodeId)
 
   let codec: PayloadCodec
+  let recoveryWords: string[] | null = null
   if (opts.password !== undefined) {
-    const { material, key } = await generateFileCryptoMaterial(opts.password)
-    setMetaValue(db, 'kdf_salt', material.kdfSalt)
-    setMetaValue(db, 'kdf_params', JSON.stringify(material.kdfParams))
-    setMetaValue(db, 'verify_iv', material.verifyIv)
-    setMetaValue(db, 'verify_ciphertext', material.verifyCiphertext)
+    const { key, words } = await setUpEncryption(db, opts.password)
     codec = new AesGcmCodec(key)
+    recoveryWords = words
   } else {
     codec = new PlaintextCodec()
+    setMetaValue(db, 'encrypted', 'false')
   }
-  setMetaValue(db, 'encrypted', opts.password !== undefined ? 'true' : 'false')
 
   const actionLog = await ActionLog.open(db, codec, nodeId)
   const store = await LedgerStore.open(actionLog, new MaterializedStore(memory))
   const origId = await bootstrapOrigin(store, opts.deviceName)
   await bootstrapNetWorthAccount(store, origId)
-  return { store, origId, fileId, encrypted: opts.password !== undefined, codec }
+  return { store, origId, fileId, encrypted: opts.password !== undefined, codec, recoveryWords }
 }
 
 /** Facts about a file readable before its password: is it a ledger, is it encrypted, does it need migrating. */
@@ -178,15 +175,12 @@ export function inspectLedgerFile(db: DbDriver): LedgerFileInfo {
   }
 }
 
-function cryptoMaterial(db: DbDriver): FileCryptoMaterial {
-  const kdfSalt = getMetaValue(db, 'kdf_salt')
-  const kdfParams = getMetaValue(db, 'kdf_params')
-  const verifyIv = getMetaValue(db, 'verify_iv')
-  const verifyCiphertext = getMetaValue(db, 'verify_ciphertext')
-  if (!kdfSalt || !kdfParams || !verifyIv || !verifyCiphertext) {
-    throw new LedgerFileError('not-a-ledger-file', 'This file is missing its encryption metadata.')
+function checkCryptoMaterial(db: DbDriver): void {
+  for (const key of ['kdf_salt', 'kdf_params', 'verify_iv', 'verify_ciphertext']) {
+    if (!getMetaValue(db, key)) {
+      throw new LedgerFileError('not-a-ledger-file', 'This file is missing its encryption metadata.')
+    }
   }
-  return { kdfSalt, kdfParams: JSON.parse(kdfParams), verifyIv, verifyCiphertext }
 }
 
 export interface OpenLedgerOptions {
@@ -197,6 +191,8 @@ export interface OpenLedgerOptions {
   readOnly?: boolean
   /** A codec from an earlier open of the same file, instead of the password. */
   codec?: PayloadCodec
+  /** The recovery key's words, instead of the password [FR-STO-5]. */
+  recoveryWords?: string
 }
 
 /**
@@ -213,9 +209,16 @@ export async function openLedgerFile(db: DbDriver, memory: DbDriver, opts: OpenL
   if (opts.codec) {
     codec = opts.codec
   } else if (info.encrypted) {
-    const key = await verifyPassword(opts.password ?? '', cryptoMaterial(db))
-    if (!key) throw new LedgerFileError('wrong-password', 'Incorrect password.')
-    codec = new AesGcmCodec(key)
+    checkCryptoMaterial(db)
+    if (opts.recoveryWords !== undefined) {
+      const key = await unlockWithRecoveryKey(db, opts.recoveryWords)
+      if (!key) throw new LedgerFileError('wrong-recovery-key', 'That recovery key is not right for this file.')
+      codec = new AesGcmCodec(key)
+    } else {
+      const key = await unlockWithPassword(db, opts.password ?? '')
+      if (!key) throw new LedgerFileError('wrong-password', 'Incorrect password.')
+      codec = new AesGcmCodec(key)
+    }
   } else {
     codec = new PlaintextCodec()
   }
@@ -223,5 +226,5 @@ export async function openLedgerFile(db: DbDriver, memory: DbDriver, opts: OpenL
   const actionLog = opts.readOnly ? new ActionLog(db, codec, nodeId) : await ActionLog.open(db, codec, nodeId)
   const store = await LedgerStore.open(actionLog, new MaterializedStore(memory))
   const origId = opts.readOnly ? null : await bootstrapOrigin(store, opts.deviceName)
-  return { store, origId, fileId: info.fileId, encrypted: info.encrypted, codec }
+  return { store, origId, fileId: info.fileId, encrypted: info.encrypted, codec, recoveryWords: null }
 }

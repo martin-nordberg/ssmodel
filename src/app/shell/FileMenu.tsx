@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { closePlens, newPlens, openPlens, openRecentPlens, savePlensCopy, usePlensFile } from '@/app/files/plensFile.ts'
+import {
+  closePlens,
+  newPlens,
+  openPlens,
+  openPlensSettings,
+  openRecentPlens,
+  savePlensCopy,
+  usePlensFile,
+} from '@/app/files/plensFile.ts'
 import { listRecent, type RecentFile } from '@/app/files/recentFiles.ts'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
 import { Button } from '@/components/ui/button'
@@ -87,6 +95,9 @@ export function FileMenu() {
             </DropdownMenuSub>
             <DropdownMenuItem disabled={!hasPlens} onSelect={() => void savePlensCopy()}>
               Save a copy…
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!hasPlens} onSelect={() => openPlensSettings()}>
+              File settings…
             </DropdownMenuItem>
             <DropdownMenuItem disabled={!hasPlens} onSelect={() => void closePlens()}>
               Close ProvisionLens file

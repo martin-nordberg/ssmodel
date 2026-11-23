@@ -3,7 +3,8 @@ import type { PayloadCodec } from '@/store/actionLog/encryption/PayloadCodec.ts'
 
 /** The encrypting codec: AES-256-GCM under the file key, with a fresh IV per row (see crypto.ts). */
 export class AesGcmCodec implements PayloadCodec {
-  private readonly key: CryptoKey
+  /** The file's data key (kept in the store worker; needed to rewrap it when the password changes). */
+  readonly key: CryptoKey
 
   constructor(key: CryptoKey) {
     this.key = key

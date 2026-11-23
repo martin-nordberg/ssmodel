@@ -1,10 +1,19 @@
 /// <reference lib="webworker" />
 import { createId } from '@paralleldrive/cuid2'
+import { AesGcmCodec } from '@/store/actionLog/encryption/AesGcmCodec.ts'
+import { hasRecoveryKey } from '@/store/actionLog/encryption/keys.ts'
 import type { PayloadCodec } from '@/store/actionLog/encryption/PayloadCodec.ts'
 import { readContentVersion } from '@/store/actionLog/meta.ts'
 import type { DbDriver } from '@/store/driver/DbDriver.ts'
 import { loadSqlite, openWasmMemory, type WasmSqliteDriver } from '@/store/driver/wasmSqlite.ts'
 import { WorkingCopies, WorkingCopyLockedError } from '@/store/file/opfs.ts'
+import {
+  changeFilePassword,
+  EncryptionSettingsError,
+  newRecoveryKey,
+  turnEncryptionOff,
+  turnEncryptionOn,
+} from '@/store/ledger/encryptionSettings.ts'
 import {
   createLedgerFile,
   inspectLedgerFile,
@@ -96,7 +105,13 @@ async function start(
   const session = new LedgerSession(opened.store, opened.origId, onChange)
   current = { fileId: opened.fileId, file, memory, session, codec: opened.codec, readOnly }
   post({ kind: 'session', state: 'open', fileId: opened.fileId })
-  return { fileId: opened.fileId, origId: opened.origId, encrypted: opened.encrypted, readOnly }
+  return {
+    fileId: opened.fileId,
+    origId: opened.origId,
+    encrypted: opened.encrypted,
+    readOnly,
+    recoveryWords: opened.recoveryWords,
+  }
 }
 
 function requireOpen(): Open {
@@ -158,7 +173,7 @@ const handlers: Handlers = {
     return { ...info, contentVersion, newerWorkingCopy }
   },
 
-  async open({ bytes, password, deviceName, allowMigration, source }) {
+  async open({ bytes, password, recoveryWords, deviceName, allowMigration, source }) {
     const { info } = await inspectBytes(bytes)
     // The main thread closes (and saves) a file before opening another; an implicit close keeps its working copy.
     if (current) await closeCurrent(true)
@@ -168,18 +183,25 @@ const handlers: Handlers = {
     return start(
       file,
       false,
-      (memory) => openLedgerFile(file, memory, { password, deviceName, allowMigration }),
+      (memory) => openLedgerFile(file, memory, { password, recoveryWords, deviceName, allowMigration }),
       () => wcs.closeCopy(info.fileId, file, true),
     )
   },
 
-  async openReadOnly({ bytes, password }) {
+  async openReadOnly({ bytes, password, recoveryWords }) {
     if (current) await closeCurrent(true)
     const file = openWasmMemory(await loadSqlite(), bytes)
     return start(
       file,
       true,
-      (memory) => openLedgerFile(file, memory, { password, deviceName: '', allowMigration: false, readOnly: true }),
+      (memory) =>
+        openLedgerFile(file, memory, {
+          password,
+          recoveryWords,
+          deviceName: '',
+          allowMigration: false,
+          readOnly: true,
+        }),
       () => file.close(),
     )
   },
@@ -215,6 +237,35 @@ const handlers: Handlers = {
     return null
   },
 
+  async encryptionInfo() {
+    const { file, codec } = requireOpen()
+    return { encrypted: codec instanceof AesGcmCodec, hasRecoveryKey: hasRecoveryKey(file) }
+  },
+
+  async changePassword({ newPassword }) {
+    const open = requireWriter()
+    await open.session.exclusive(() => changeFilePassword(open.file, open.codec, newPassword))
+    return null
+  },
+
+  async newRecoveryKey() {
+    const open = requireWriter()
+    return { words: await open.session.exclusive(() => newRecoveryKey(open.file, open.codec)) }
+  },
+
+  async setEncryption({ password }) {
+    const open = requireWriter()
+    if (password === undefined) {
+      open.codec = await open.session.exclusive(() => turnEncryptionOff(open.file, open.session.store, open.codec))
+      return { recoveryWords: null }
+    }
+    const result = await open.session.exclusive(() =>
+      turnEncryptionOn(open.file, open.session.store, open.codec, password),
+    )
+    open.codec = result.codec
+    return { recoveryWords: result.words }
+  },
+
   async export() {
     return requireOpen().file.exportBytes()
   },
@@ -235,7 +286,9 @@ const handlers: Handlers = {
 
 function errorOf(err: unknown): { code: StoreErrorCode; message: string } {
   if (err instanceof StoreFailure || err instanceof LedgerFileError) return { code: err.code, message: err.message }
-  if (err instanceof InvalidRequestError) return { code: 'invalid-request', message: err.message }
+  if (err instanceof InvalidRequestError || err instanceof EncryptionSettingsError) {
+    return { code: 'invalid-request', message: err.message }
+  }
   if (err instanceof ReadOnlyError) return { code: 'read-only', message: err.message }
   if (err instanceof WorkingCopyLockedError) return { code: 'file-locked', message: err.message }
   return { code: 'internal', message: err instanceof Error ? err.message : String(err) }

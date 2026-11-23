@@ -120,6 +120,14 @@ export class LedgerSession {
     }
   }
 
+  /** Runs `fn` in the write queue, so no command interleaves with it (file-level operations, e.g. encryption). */
+  exclusive<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.origId === null) return Promise.reject(new ReadOnlyError('This file is open read-only.'))
+    const result = this.writes.then(fn, fn)
+    this.writes = result.catch(() => undefined)
+    return result
+  }
+
   /** Validates, stamps and runs one command after any in-flight one finishes, then reports the change. */
   command(entity: string, method: string, input: unknown): Promise<unknown> {
     const run = async () => {

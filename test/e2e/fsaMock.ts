@@ -56,11 +56,67 @@ export async function installFsaMock(page: Page, files: Record<string, string | 
       }
       return h
     }
-    const state = { disk, nextOpen: Object.keys(initial)[0] ?? '', nextSave: 'saved.yaml', writes: 0 }
+    // Folders (the backup folder): name → file name → content.
+    const folders: Record<string, Record<string, Content>> = {}
+    const folderHandle = (folderName: string) => {
+      folders[folderName] ??= {}
+      const files = folders[folderName]
+      const fileIn = (name: string): FakeHandle => {
+        const h = handle(`${folderName}/${name}`)
+        return {
+          ...h,
+          name,
+          getFile: async () => new File([files[name] as BlobPart], name),
+          createWritable: async () => {
+            const parts: BlobPart[] = []
+            return {
+              write: async (data: string | BufferSource | Blob) => {
+                parts.push(data as BlobPart)
+              },
+              close: async () => {
+                files[name] = new Uint8Array(await new Blob(parts).arrayBuffer())
+              },
+              abort: async () => {},
+            }
+          },
+        }
+      }
+      return {
+        kind: 'directory' as const,
+        name: folderName,
+        async getFileHandle(name: string, opts?: { create?: boolean }) {
+          if (!(name in files)) {
+            if (!opts?.create) throw new DOMException(`${name} not found`, 'NotFoundError')
+            files[name] = new Uint8Array()
+          }
+          return fileIn(name)
+        },
+        async removeEntry(name: string) {
+          delete files[name]
+        },
+        async *keys() {
+          yield* Object.keys(files)
+        },
+        async *entries() {
+          for (const name of Object.keys(files)) yield [name, fileIn(name)] as const
+        },
+        isSameEntry: async (o: unknown) => (o as { name?: string })?.name === folderName,
+        queryPermission: async () => 'granted' as PermissionState,
+        requestPermission: async () => 'granted' as PermissionState,
+      }
+    }
+    const state = {
+      disk,
+      folders,
+      nextOpen: Object.keys(initial)[0] ?? '',
+      nextSave: 'saved.yaml',
+      nextFolder: 'Backups',
+    }
     Object.assign(window, {
       __fsa: state,
       showOpenFilePicker: async () => [handle(state.nextOpen)],
       showSaveFilePicker: async () => handle(state.nextSave),
+      showDirectoryPicker: async () => folderHandle(state.nextFolder),
     })
   }, files)
 }
@@ -87,4 +143,12 @@ export async function setPickers(page: Page, pick: { open?: string; save?: strin
     if (p.open !== undefined) fsa.nextOpen = p.open
     if (p.save !== undefined) fsa.nextSave = p.save
   }, pick)
+}
+
+/** The names of the files in a picked folder. */
+export async function readFolder(page: Page, folder: string): Promise<string[]> {
+  return page.evaluate(
+    (f) => Object.keys((window as unknown as { __fsa: { folders: Record<string, object> } }).__fsa.folders[f] ?? {}),
+    folder,
+  )
 }

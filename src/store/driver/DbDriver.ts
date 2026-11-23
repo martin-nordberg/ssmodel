@@ -49,3 +49,20 @@ export function savepointTransaction<T>(driver: Pick<DbDriver, 'exec'>, depth: {
     depth.n--
   }
 }
+
+/**
+ * Like DbDriver.transaction, but `fn` may await between statements. Only safe when nothing else writes to the database
+ * meanwhile: the store runs these through the session's write queue (LedgerSession.exclusive).
+ */
+export async function exclusiveAsyncTransaction<T>(driver: Pick<DbDriver, 'exec'>, fn: () => Promise<T>): Promise<T> {
+  driver.exec('SAVEPOINT exclusive_async')
+  try {
+    const result = await fn()
+    driver.exec('RELEASE exclusive_async')
+    return result
+  } catch (err) {
+    driver.exec('ROLLBACK TO exclusive_async')
+    driver.exec('RELEASE exclusive_async')
+    throw err
+  }
+}

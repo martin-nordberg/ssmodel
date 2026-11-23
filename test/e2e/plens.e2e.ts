@@ -1,49 +1,10 @@
-import { expect, type Page, test } from '@playwright/test'
-import { installFsaMock, readDiskBytes, setPickers } from './fsaMock.ts'
+import { expect, test } from '@playwright/test'
+import { installFsaMock, readDiskBytes } from './fsaMock.ts'
+import { category, createFile, plensMenu, store } from './plensHelpers.ts'
 
 // NFR-TEST-14 (storage): autosave and reopen, crash recovery from the working copy, and a second tab refused by the
 // lock [FR-STO-1 … FR-STO-4].
 // Until the ledger pages exist (P2), edits go through the store worker (`?e2e` exposes its client).
-
-const category = {
-  id: 'actge2ecategory0000000000001',
-  parentCtgId: 'actgassets000000000000000000',
-  acctType: 'ASSET',
-  name: 'Bank',
-}
-
-async function plensMenu(page: Page, item: string) {
-  await page.getByRole('button', { name: 'File' }).click()
-  await page.getByRole('menuitem', { name: 'ProvisionLens file (preview)' }).click()
-  await page.getByRole('menuitem', { name: item }).click()
-}
-
-async function createFile(page: Page, password: string | undefined) {
-  await setPickers(page, { save: 'Household.plens' })
-  await plensMenu(page, 'New ProvisionLens file…')
-  if (password === undefined) {
-    await page.getByRole('button', { name: 'Create without encryption…' }).click()
-  } else {
-    await page.getByLabel('Password', { exact: true }).fill(password)
-    await page.getByLabel('Confirm password').fill(password)
-  }
-  await page.getByRole('button', { name: 'Create', exact: true }).click()
-  await expect(page.getByTestId('status-plens')).toHaveText(
-    `Household.plens • Saved${password === undefined ? ' • not encrypted' : ''}`,
-  )
-}
-
-/** Runs a store command or query in the page. */
-function store<T>(page: Page, fn: string, ...args: unknown[]): Promise<T> {
-  return page.evaluate(
-    ([f, a]) => {
-      const client = (window as unknown as { provisionlensStore: Record<string, (...x: unknown[]) => unknown> })
-        .provisionlensStore
-      return client[f as string]!(...(a as unknown[])) as Promise<T>
-    },
-    [fn, args] as const,
-  )
-}
 
 test('autosave and reopen', async ({ page, browser }) => {
   await installFsaMock(page)

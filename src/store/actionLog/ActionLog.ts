@@ -86,7 +86,7 @@ export class ActionLog {
   readonly cmdSvcs: CmdSvcBundle
 
   private readonly db: DbDriver
-  private readonly codec: PayloadCodec
+  private codec: PayloadCodec
   private readonly nodeId: string
 
   /**
@@ -182,6 +182,29 @@ export class ActionLog {
     }
 
     return { id: row.id, actionType: row.action_type, hlc: row.hlc, payload } as Action
+  }
+
+  /** Switches codecs after every payload has been rewritten with the new one (encryption turned on or off). */
+  setCodec(codec: PayloadCodec): void {
+    this.codec = codec
+  }
+
+  /**
+   * Re-encodes every payload with `to` (decoding with the current codec), in the caller's transaction, then switches
+   * to it. For turning encryption on or off [FR-STO-5].
+   */
+  async rewritePayloads(to: PayloadCodec): Promise<void> {
+    const rows = this.db.all<ActionRow>('SELECT id, action_type, hlc, iv, encrypted_payload FROM actions')
+    const updates: { id: string; iv: string; payload: string }[] = []
+    for (const row of rows) {
+      const plaintext = JSON.stringify((await this.decodeRow(row)).payload)
+      const { iv, payload } = await to.encode(plaintext)
+      updates.push({ id: row.id, iv, payload })
+    }
+    for (const u of updates) {
+      this.db.run('UPDATE actions SET iv = ?, encrypted_payload = ? WHERE id = ?', [u.iv, u.payload, u.id])
+    }
+    this.codec = to
   }
 
   /** Total number of rows in the actions table -- a lightweight count, unlike readActions() which decrypts

@@ -39,6 +39,14 @@ export interface OpenResult {
   origId: string | null
   encrypted: boolean
   readOnly: boolean
+  /** A new file's recovery key, shown once [FR-STO-5]; null when opening an existing file. */
+  recoveryWords: string[] | null
+}
+
+/** The open file's encryption state, for the file settings. */
+export interface EncryptionInfo {
+  encrypted: boolean
+  hasRecoveryKey: boolean
 }
 
 /** What `inspect` learns from a file's bytes before its password, including any working copy left by a crash. */
@@ -63,6 +71,8 @@ export interface StoreOps {
     req: {
       bytes: Uint8Array
       password: string | undefined
+      /** The recovery key's words, instead of the password. */
+      recoveryWords?: string
       deviceName: string
       allowMigration: boolean
       source: 'file' | 'working-copy'
@@ -73,11 +83,18 @@ export interface StoreOps {
    * Opens a snapshot read-only, in memory, without touching OPFS: the file is open for editing in another tab
    * (FR-STO-4). Commands are refused.
    */
-  openReadOnly: { req: { bytes: Uint8Array; password: string | undefined }; res: OpenResult }
+  openReadOnly: { req: { bytes: Uint8Array; password: string | undefined; recoveryWords?: string }; res: OpenResult }
   /** Replaces a read-only session's snapshot with a newer one (no password needed again). */
   reload: { req: { bytes: Uint8Array }; res: null }
   /** Records (or clears) which device has the file open for editing. Not a change. */
   setOpenBy: { req: { openBy: OpenBy | null }; res: null }
+  encryptionInfo: { req: Record<string, never>; res: EncryptionInfo }
+  /** Rewraps the file key with a new password; the recovery key keeps working. */
+  changePassword: { req: { newPassword: string }; res: null }
+  /** Replaces the recovery key (the old one stops working); returns the new words to show once. */
+  newRecoveryKey: { req: Record<string, never>; res: { words: string[] } }
+  /** Turns encryption on (with a password; returns the new recovery key) or off (`password` undefined). */
+  setEncryption: { req: { password: string | undefined }; res: { recoveryWords: string[] | null } }
   /** The whole open database, to write to the user's file. */
   export: { req: Record<string, never>; res: Uint8Array }
   /** Closes the open file. The working copy is deleted unless `keepWorkingCopy` (e.g. the last save failed). */
@@ -94,6 +111,7 @@ export type StoreRequest<K extends Op = Op> = { id: number; op: K } & StoreOps[K
 export type StoreErrorCode =
   | 'not-a-ledger-file'
   | 'wrong-password'
+  | 'wrong-recovery-key'
   | 'password-required'
   | 'unsupported-version'
   | 'migration-required'

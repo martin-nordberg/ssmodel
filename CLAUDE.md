@@ -7,7 +7,8 @@ plan: `docs/plan.md` (tasks T0.1 …).
 
 - `bun run dev` — Vite dev server (runs under Bun)
 - `bun test` — unit tests (`*.test.ts`)
-- `bun run e2e` — Playwright (`test/e2e/*.e2e.ts`, Chromium only)
+- `bun run e2e` — Playwright, Chromium only: `test/e2e/*.e2e.ts` against the built app, and `test/browser/*.browser.ts`
+  (browser-only store code in a worker, on its own Vite dev server)
 - `bun run typecheck` — `tsc -b` (TypeScript 7)
 - `bun run lint` / `bun run format` — Biome
 - Bun version is pinned in `mise.toml`. Never use npm/node directly.
@@ -16,7 +17,10 @@ plan: `docs/plan.md` (tasks T0.1 …).
 
 - `src/engine/` — pure TypeScript calculation engine. **No React/DOM imports.** Testable with `bun test`.
 - `src/schema/` — Zod schemas (source of truth for input types), YAML I/O, migrations.
-- `src/worker/` — Web Worker pool and protocol.
+- `src/worker/` — engine worker pool and protocol; the store worker (`store.worker.ts`) and its protocol.
+- `src/ledger/` — ledger domain ported from Checquery (Zod schemas, service interfaces). Amounts are integer cents.
+- `src/store/` — storage, no React: driver interface (`bun:sqlite` in tests, SQLite WASM in the worker), change log,
+  materialized store, `.plens` file handling (OPFS working copy, autosave, locks, backups).
 - `src/state/` — Zustand store (scenarios, what-if overrides, undo/redo).
 - `src/app/` — React UI. `src/components/ui/` is shadcn-generated; add with `bunx --bun shadcn@latest add <name>`.
 - `data/rules/` — versioned rule tables (JSON) with `effectiveYear` and `sourceUrl`. Update via `docs/rule-data.md`.

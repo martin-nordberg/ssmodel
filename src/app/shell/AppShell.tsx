@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { PlensDialogs } from '@/app/files/PlensDialogs.tsx'
+import { PlensSettingsDialog } from '@/app/files/PlensSettingsDialog.tsx'
 import { flushPlens, hasUnsavedPlens, openPlensHandle } from '@/app/files/plensFile.ts'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
 import { useLaunchQueue } from '@/app/pwa/useLaunchQueue.ts'
@@ -93,6 +94,7 @@ export function AppShell() {
       <div className="min-h-0 flex-1 overflow-auto">{hasFile ? <ViewHost /> : <Welcome />}</div>
       <StatusBar />
       <NewHouseholdDialog />
+      <PlensSettingsDialog />
       <PlensDialogs />
       <CommandPalette />
     </div>

@@ -775,3 +775,24 @@ Goal: the first release to family and friends [FR-PRD-8].
   it decrypts, replays and matches Checquery's balances, and opens in about 0.4 s.
   Findings carried into P1: use the opfs-sahpool VFS; the second window (P1.8) can't share the working copy's
   pool.
+- **P1 done** (P1.1–P1.9). The P1 exit holds: a `.plens` file can be created, encrypted, edited through the store
+  worker, autosaved, recovered, backed up and reopened in Chromium with no server. Edits go through the store worker
+  directly (`?e2e` exposes its client) until the ledger pages arrive in P2. The file commands live in a temporary
+  File › ProvisionLens file (preview) submenu, and the file settings in a dialog, until the P2 shell. Where the
+  build differs from the plan:
+  - P1.2: `src/store/driver` has no `prepare`. The WASM driver caches prepared statements per SQL string instead.
+    Browser-only code is tested in a second Playwright project (`test/browser`, its own Vite dev server).
+  - P1.3: the encryption codecs are asynchronous (Web Crypto), so change-log reads are async iterators. The meta table
+    keeps Checquery's name, `_checquery_meta`. Origins are a device/user name; Checquery's IP address is optional.
+  - P1.4: migration 0004 rewrites payloads, so it needs the key. It runs from `ActionLog.open`
+    (`runAllMigrations`), and `runMigrations` runs only the schema migrations.
+  - P1.6: commands carry no `origId`; the worker stamps the session's origin.
+  - P1.7: a `content_version` counter in the meta table, bumped by every change, detects a working copy newer than
+    the file.
+  - P1.8: each file's working copy is its own opfs-sahpool pool, paused when closed. Two tabs can edit two different
+    files, and a second tab on the same file gets an in-memory snapshot from the editing tab. The device heartbeat
+    is an `open_by` meta value: written at open and every 5 minutes, cleared on close, and warning when under
+    15 minutes old.
+  - P1.9: a random data key encrypts the payloads, and the password key and the recovery key each wrap it.
+    Checquery's files keep their scrypt key as the data key, wrapped on the first password change. The recovery key
+    is 24 BIP39 words (`@scure/bip39`).

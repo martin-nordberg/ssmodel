@@ -3,12 +3,13 @@ import { create } from 'zustand'
 import { useSettings } from '@/state/settingsStore.ts'
 import { getStoreClient, StoreError } from '@/state/storeClient.ts'
 import { Autosaver, type AutosaveStatus } from '@/store/file/autosave.ts'
+import { readRollingBackup, saveRollingBackup, writeFolderBackup } from '@/store/file/backup.ts'
 import { FileChannel } from '@/store/file/broadcast.ts'
 import { pickPlensToOpen, pickPlensToSave, readBytes, writeBytes } from '@/store/file/handles.ts'
 import { deviceId, type FileLock, tryLockFile } from '@/store/file/lock.ts'
 import type { OpenBy } from '@/store/ledger/ledgerFile.ts'
 import { ensurePermission } from './fileAccess.ts'
-import { forgetRecent, type RecentFile, rememberRecent } from './recentFiles.ts'
+import { forgetRecent, getStored, putStored, type RecentFile, rememberRecent } from './recentFiles.ts'
 
 // The open .plens file [FR-STO-1 … FR-STO-4, FR-STO-7]: New, Open…, Close, Save a copy… and recent files, with the
 // working copy in the store worker and autosave back to the user's file. One tab edits a file (Web Lock); another tab
@@ -16,9 +17,15 @@ import { forgetRecent, type RecentFile, rememberRecent } from './recentFiles.ts'
 // file with a heartbeat, so opening it on another device warns first. Questions for the user are posted as a
 // `prompt` that PlensDialogs renders and answers.
 
+/** How the user unlocks an encrypted file: its password, or its recovery key's words [FR-STO-5]. */
+export type Unlock = { password: string } | { recoveryWords: string }
+
 export type Prompt = { id: number } & (
   | { kind: 'new-password'; resolve: (answer: { password: string | undefined } | null) => void }
-  | { kind: 'password'; name: string; error: string | null; resolve: (password: string | null) => void }
+  | { kind: 'password'; name: string; error: string | null; resolve: (answer: Unlock | null) => void }
+  | { kind: 'set-password'; title: string; description: string; resolve: (password: string | null) => void }
+  | { kind: 'recovery-key'; words: string[]; resolve: (done: true) => void }
+  | { kind: 'confirm'; title: string; description: string; action: string; resolve: (ok: boolean) => void }
   | { kind: 'recover'; name: string; resolve: (source: 'working-copy' | 'file' | null) => void }
   | { kind: 'migrate'; name: string; resolve: (ok: boolean) => void }
   | { kind: 'other-device'; name: string; openBy: OpenBy; resolve: (ok: boolean) => void }
@@ -37,12 +44,14 @@ interface PlensState {
   file: OpenPlens | null
   autosave: AutosaveStatus
   prompt: Prompt | null
+  settingsOpen: boolean
 }
 
 export const usePlensFile = create<PlensState>()(() => ({
   file: null,
   autosave: { state: 'saved', lastSavedAt: null, error: null },
   prompt: null,
+  settingsOpen: false,
 }))
 
 /** How often the editing tab refreshes the file's open-by marker, and how old a marker is taken as stale. */
@@ -163,6 +172,7 @@ export async function closePlens(): Promise<boolean> {
       )
       if (!close) return false
     }
+    if (saved) await backUp(file)
     autosaver.dispose()
     channel.announceClosed()
   }
@@ -189,31 +199,42 @@ export async function newPlens(): Promise<void> {
     if (!lock) throw new Error('the new file is locked by another tab')
     const file = { name: handle.name, handle, fileId: opened.fileId, encrypted: opened.encrypted }
     await attachWriter(file, lock, new FileChannel(opened.fileId))
+    if (opened.recoveryWords) await showRecoveryKey(opened.recoveryWords)
     toast.success(`Created ${handle.name}`)
   } catch (err) {
     toast.error(`Could not create the file: ${errorText(err)}`)
   }
 }
 
-/** Asks for the password until it's right (or the user cancels), then opens with it. */
-async function withPassword<T>(
+/**
+ * Asks for the password (or the recovery key) until it's right or the user cancels, then opens with it. Resolves
+ * with the result and whether the recovery key was used.
+ */
+async function withUnlock<T>(
   name: string,
   encrypted: boolean,
-  open: (password: string | undefined) => Promise<T>,
-): Promise<T | null> {
+  open: (unlock: { password: string | undefined; recoveryWords?: string }) => Promise<T>,
+): Promise<{ result: T; usedRecoveryKey: boolean } | null> {
+  if (!encrypted) return { result: await open({ password: undefined }), usedRecoveryKey: false }
   let error: string | null = null
   for (;;) {
-    let password: string | undefined
-    if (encrypted) {
-      const answer = await ask<Extract<Prompt, { kind: 'password' }>>({ kind: 'password', name, error })
-      if (answer === null) return null
-      password = answer
-    }
+    const answer = await ask<Extract<Prompt, { kind: 'password' }>>({ kind: 'password', name, error })
+    if (answer === null) return null
     try {
-      return await open(password)
+      if ('recoveryWords' in answer) {
+        return {
+          result: await open({ password: undefined, recoveryWords: answer.recoveryWords }),
+          usedRecoveryKey: true,
+        }
+      }
+      return { result: await open({ password: answer.password }), usedRecoveryKey: false }
     } catch (err) {
-      if (err instanceof StoreError && err.code === 'wrong-password' && encrypted) {
+      if (err instanceof StoreError && err.code === 'wrong-password') {
         error = 'That password is not right. Try again.'
+        continue
+      }
+      if (err instanceof StoreError && err.code === 'wrong-recovery-key') {
+        error = "Those words aren't this file's recovery key. Check them and try again."
         continue
       }
       throw err
@@ -237,9 +258,9 @@ export async function openPlensHandle(handle: FileSystemFileHandle): Promise<voi
     if (!lock) {
       // Open for editing in another tab or window: follow it read-only [FR-STO-4].
       const reader = channel
-      const opened = await withPassword(handle.name, info.encrypted, async (password) => {
+      const opened = await withUnlock(handle.name, info.encrypted, async (unlock) => {
         const snapshot = (await reader.requestSnapshot()) ?? bytes
-        return client.request('openReadOnly', { bytes: snapshot, password })
+        return client.request('openReadOnly', { bytes: snapshot, ...unlock })
       })
       if (!opened) return reader.close()
       attachReader(file, reader)
@@ -267,10 +288,10 @@ export async function openPlensHandle(handle: FileSystemFileHandle): Promise<voi
       })
       if (!ok) return cancel()
     }
-    const opened = await withPassword(handle.name, info.encrypted, (password) =>
+    const opened = await withUnlock(handle.name, info.encrypted, (unlock) =>
       client.request('open', {
         bytes: bytes.slice(),
-        password,
+        ...unlock,
         deviceName: deviceName(),
         allowMigration: info.needsMigration,
         source,
@@ -278,6 +299,15 @@ export async function openPlensHandle(handle: FileSystemFileHandle): Promise<voi
     )
     if (!opened) return cancel()
     await attachWriter(file, lock, channel)
+    if (opened.usedRecoveryKey) {
+      // Opened with the recovery key: the password was forgotten, so set a new one now.
+      const password = await ask<Extract<Prompt, { kind: 'set-password' }>>({
+        kind: 'set-password',
+        title: 'Set a new password',
+        description: `You opened ${handle.name} with its recovery key. Choose a new password; the recovery key keeps working.`,
+      })
+      if (password) await changePlensPassword(password)
+    }
     toast.success(source === 'working-copy' ? `Recovered unsaved changes in ${handle.name}` : `Opened ${handle.name}`)
   } catch (err) {
     cancel()
@@ -331,4 +361,149 @@ export function flushPlens(): Promise<boolean> {
 export function hasUnsavedPlens(): boolean {
   const { file, autosave } = usePlensFile.getState()
   return file !== null && !file.readOnly && autosave.state !== 'saved'
+}
+
+/** Shows a recovery key once, until the user confirms they've kept it [FR-STO-5]. */
+async function showRecoveryKey(words: string[]): Promise<void> {
+  await ask<Extract<Prompt, { kind: 'recovery-key' }>>({ kind: 'recovery-key', words })
+}
+
+/** A change made outside the change log (password, encryption): save it now. */
+async function saveFileChange(): Promise<void> {
+  session?.autosaver?.noteChange()
+  await flushPlens()
+}
+
+/** Copies the file to the rolling OPFS backups and, at most daily, to the backup folder [FR-STO-6]. */
+async function backUp(file: OpenPlens): Promise<void> {
+  try {
+    const bytes = await getStoreClient().request('export', {})
+    await saveRollingBackup(file.fileId, bytes)
+    const folder = await backupFolder()
+    if (folder && (await ensurePermission(folder as unknown as FileSystemFileHandle))) {
+      await writeFolderBackup(folder, file.name, bytes)
+    }
+  } catch (err) {
+    toast.warning(`The backup of ${file.name} failed: ${errorText(err)}`)
+  }
+}
+
+// File settings [FR-STO-5, FR-STO-6].
+
+export function openPlensSettings(open = true): void {
+  usePlensFile.setState({ settingsOpen: open })
+}
+
+export async function changePlensPassword(password?: string): Promise<void> {
+  const next =
+    password ??
+    (await ask<Extract<Prompt, { kind: 'set-password' }>>({
+      kind: 'set-password',
+      title: 'Change password',
+      description: 'The recovery key keeps working with the new password.',
+    }))
+  if (!next) return
+  try {
+    await getStoreClient().request('changePassword', { newPassword: next })
+    await saveFileChange()
+    toast.success('Password changed')
+  } catch (err) {
+    toast.error(`Could not change the password: ${errorText(err)}`)
+  }
+}
+
+export async function replacePlensRecoveryKey(): Promise<void> {
+  const ok = await ask<Extract<Prompt, { kind: 'confirm' }>>({
+    kind: 'confirm',
+    title: 'Create a new recovery key?',
+    description: 'The current recovery key will stop working. Keep the new one somewhere safe.',
+    action: 'Create new key',
+  })
+  if (!ok) return
+  try {
+    const { words } = await getStoreClient().request('newRecoveryKey', {})
+    await saveFileChange()
+    await showRecoveryKey(words)
+  } catch (err) {
+    toast.error(`Could not create a recovery key: ${errorText(err)}`)
+  }
+}
+
+export async function setPlensEncryption(on: boolean): Promise<void> {
+  const { file } = usePlensFile.getState()
+  if (!file) return
+  let password: string | undefined
+  if (on) {
+    const answer = await ask<Extract<Prompt, { kind: 'set-password' }>>({
+      kind: 'set-password',
+      title: 'Turn on encryption',
+      description: 'Choose the password that will be needed to open this file.',
+    })
+    if (!answer) return
+    password = answer
+  } else {
+    const ok = await ask<Extract<Prompt, { kind: 'confirm' }>>({
+      kind: 'confirm',
+      title: 'Turn off encryption?',
+      description:
+        "Anyone who gets the file, or a backup of it, will be able to read your household's finances. Use this only for test files.",
+      action: 'Turn off encryption',
+    })
+    if (!ok) return
+  }
+  try {
+    const { recoveryWords } = await getStoreClient().request('setEncryption', { password })
+    usePlensFile.setState({ file: { ...file, encrypted: on } })
+    await saveFileChange()
+    if (recoveryWords) await showRecoveryKey(recoveryWords)
+    toast.success(on ? 'Encryption turned on' : 'Encryption turned off')
+  } catch (err) {
+    toast.error(`Could not change encryption: ${errorText(err)}`)
+  }
+}
+
+/** The backup folder: kept in memory for this session and in IndexedDB across sessions. */
+let backupFolderHandle: FileSystemDirectoryHandle | null | undefined
+
+async function backupFolder(): Promise<FileSystemDirectoryHandle | null> {
+  if (backupFolderHandle === undefined) {
+    backupFolderHandle = (await getStored<FileSystemDirectoryHandle>('backupFolder')) ?? null
+  }
+  return backupFolderHandle
+}
+
+export async function chooseBackupFolder(): Promise<string | null> {
+  try {
+    const folder = await window.showDirectoryPicker!({ id: 'plens-backups', mode: 'readwrite' })
+    backupFolderHandle = folder
+    await putStored('backupFolder', folder)
+    return folder.name
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') return null
+    toast.error(`Could not use that folder: ${errorText(e)}`)
+    return null
+  }
+}
+
+export async function stopBackupFolder(): Promise<void> {
+  backupFolderHandle = null
+  await putStored('backupFolder', undefined)
+}
+
+export async function backupFolderName(): Promise<string | null> {
+  return (await backupFolder())?.name ?? null
+}
+
+/** Saves one of the open file's rolling backups as a new file. */
+export async function saveRollingBackupAs(name: string): Promise<void> {
+  const { file } = usePlensFile.getState()
+  if (!file) return
+  const handle = await pickPlensToSave(`${file.name.replace(/\.plens$/, '')} backup ${name.slice(0, 10)}.plens`)
+  if (!handle) return
+  try {
+    await writeBytes(handle, await readRollingBackup(file.fileId, name))
+    toast.success(`Saved the backup as ${handle.name}`)
+  } catch (err) {
+    toast.error(`Could not save the backup: ${errorText(err)}`)
+  }
 }
