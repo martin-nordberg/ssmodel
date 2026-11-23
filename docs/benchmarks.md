@@ -70,27 +70,28 @@ Fixtures were written by Checquery's own server code; every payload decrypted id
 |---|---|---|---|
 | small | 78 | 141 | 1.5 |
 | large (about the real file's size: 1.2 MB, 1,222 transactions) | 1,359 | 137 | 19.7 |
+| real household file | 1,342 | 135 | 19.2 |
 
 **P0.3 — Replay and parity.** The browser decrypts and replays the log into an in-memory ledger and runs Checquery's
 balance queries. Checquery's own code (`openExistingFile`, then its services, cross-checked against its
 `buildBalanceSheet`) gives the reference. Per-account balances, section totals and net worth matched for every
-year-end from 2000, every calendar year and today, on both fixtures, including patched and deleted transactions
+year-end from 2000, every calendar year and today, on both fixtures and on the real household file, including patched and deleted transactions
 and a deleted account. Breaking the replay (ignoring deletes) makes both comparisons fail.
 
 | Fixture | Working copy + read | Key | Decrypt | Replay | **Open total** | Statement queries (55) | Checquery open (Bun, native) |
 |---|---|---|---|---|---|---|---|
 | small | 31 | 141 | 3 | 12 | **183** | 9 | 84 |
 | large | 97 | 136 | 31 | 135 | **399** | 60 | 127 |
+| real household file | 98 | 134 | 32 | 141 | **405** | 50 | 125 |
 
-**Not yet measured: the real file decrypted and replayed.** It needs the file's password, which the spike only
-reads from the environment. To run it locally (prints timings and pass/fail only, never amounts):
+The real-file rows were run locally with the password supplied through `SPIKE_CHECQUERY_PASSWORD` (timings and
+pass/fail only; no amounts were printed or recorded):
 
 ```sh
 read -rs SPIKE_CHECQUERY_PASSWORD && export SPIKE_CHECQUERY_PASSWORD && bun run spike; unset SPIKE_CHECQUERY_PASSWORD
 ```
 
-**Gate decision (P0.4): continue as planned**, on the large synthetic fixture's numbers, pending the real-file
-run above.
+**Gate decision (P0.4): continue as planned**, confirmed on the real household file.
 
 - Open: about 0.4 s for a file the size of the household's, against the ≤ 3 s gate. Saving (export plus write to
   the user's file) is under 10 ms, against ≤ 1 s. There is room for a file ten times larger before the 3 s

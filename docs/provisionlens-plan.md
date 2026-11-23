@@ -771,7 +771,7 @@ Goal: the first release to family and friends [FR-PRD-8].
 
 ## Implementation status (2026-11-23)
 
-- **P0 done** (P0.1–P0.4). Gate: continue as planned; see `docs/benchmarks.md`. Pending: the real file decrypted,
-  replayed and compared (P0.3), which needs its password and runs locally with `SPIKE_CHECQUERY_PASSWORD`.
+- **P0 done** (P0.1–P0.4). Gate: continue as planned; see `docs/benchmarks.md`. Confirmed on the real household file:
+  it decrypts, replays and matches Checquery's balances, and opens in about 0.4 s.
   Findings carried into P1: use the opfs-sahpool VFS; the second window (P1.8) can't share the working copy's
   pool.
