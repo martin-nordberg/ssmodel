@@ -1,13 +1,13 @@
 import { z } from 'zod'
-import { type CurrencyAmt, toCents } from '@/ledger/core/CurrencyAmt.ts'
+import type { Cents } from '@/ledger/core/money.ts'
 import { entryReadSchema, entryWriteSchema } from '@/ledger/transactions/Entry.ts'
 
-const totalsBalance = (entries: readonly { debit: CurrencyAmt; credit: CurrencyAmt }[]): boolean => {
+const totalsBalance = (entries: readonly { debit: Cents; credit: Cents }[]): boolean => {
   let totalDr = 0
   let totalCr = 0
   for (const entry of entries) {
-    totalDr += toCents(entry.debit)
-    totalCr += toCents(entry.credit)
+    totalDr += entry.debit
+    totalCr += entry.credit
   }
   return totalDr === totalCr
 }

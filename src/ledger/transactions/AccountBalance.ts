@@ -1,5 +1,5 @@
 import type { AcctId } from '@/ledger/accounts/AcctId.ts'
-import type { CurrencyAmt } from '@/ledger/core/CurrencyAmt.ts'
+import type { Cents } from '@/ledger/core/money.ts'
 
 /** Net debit/credit totals for one account as of some date -- raw output of
  *  ITransactionQrySvc.findAccountBalancesAsOf. Not a persisted entity (no creation/patch/deletion variants,
@@ -10,6 +10,6 @@ import type { CurrencyAmt } from '@/ledger/core/CurrencyAmt.ts'
  *  Notes, the Net Worth (EQUITY) row here must never be used for that purpose. */
 export type AccountBalance = {
   acctId: AcctId
-  debit: CurrencyAmt
-  credit: CurrencyAmt
+  debit: Cents
+  credit: Cents
 }

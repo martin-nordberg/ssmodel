@@ -10,4 +10,8 @@ Changes from the source:
 - Changes needed for this repo's stricter TypeScript settings (`noUncheckedIndexedAccess`, `erasableSyntaxOnly`).
 - The JSON-schema tests check structure only. Zod 4.6 adds keywords that the exact snapshots didn't expect.
 
-Later P1 tasks change the domain itself: integer cents (P1.4) and device-named origins (P1.3).
+Domain changes made in ProvisionLens:
+
+- Origins are a device/user name. Checquery's IP address is optional (P1.3, FR-LED-4).
+- Amounts are integer cents (`core/money.ts`, P1.4, D: OQ-LED-2). `core/CurrencyAmt.ts` is kept only for Checquery's
+  old string format. Change-log migration 0004 rewrites stored amounts once.

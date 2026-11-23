@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { acctIdSchema } from '@/ledger/accounts/AcctId.ts'
 import { asrtIdSchema } from '@/ledger/balanceAssertions/AsrtId.ts'
-import { currencyAmtSchema } from '@/ledger/core/CurrencyAmt.ts'
 import { hlcSchema } from '@/ledger/core/HybridLogicalClock.ts'
 import { isoDateSchema } from '@/ledger/core/IsoDate.ts'
+import { centsSchema } from '@/ledger/core/money.ts'
 import { origIdSchema } from '@/ledger/origins/OrigId.ts'
 
 /**
@@ -31,8 +31,8 @@ const balanceAssertionAttributesSchema = z.strictObject({
   /** The as-of date the asserted balance applies to. */
   assertionDate: isoDateSchema,
 
-  /** The asserted balance as of assertionDate. */
-  balance: currencyAmtSchema,
+  /** The asserted balance as of assertionDate, in cents. */
+  balance: centsSchema,
 })
 
 /** Schema for a balance assertion. */

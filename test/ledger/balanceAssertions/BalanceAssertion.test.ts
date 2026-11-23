@@ -22,26 +22,26 @@ describe('balanceAssertionReadSchema', () => {
         origId,
         acctId,
         assertionDate: '2026-01-31',
-        balance: '$1,234.56',
+        balance: 123456,
       })
 
       expect(assertion.id).toBe(id)
       expect(assertion.origId).toBe(origId)
       expect(assertion.acctId).toBe(acctId)
       expect(assertion.assertionDate as string).toBe('2026-01-31')
-      expect(assertion.balance as string).toBe('$1,234.56')
+      expect(assertion.balance).toBe(123456)
     })
 
-    it('parses a negative balance expressed in parentheses', () => {
+    it('parses a negative balance', () => {
       const assertion = balanceAssertionReadSchema.parse({
         id: genAsrtId(),
         origId: genOrigId(),
         acctId: genAcctId(),
         assertionDate: '2026-01-31',
-        balance: '($500.00)',
+        balance: -50000,
       })
 
-      expect(assertion.balance as string).toBe('($500.00)')
+      expect(assertion.balance).toBe(-50000)
     })
   })
 
@@ -52,7 +52,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -64,7 +64,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -76,7 +76,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -89,7 +89,7 @@ describe('balanceAssertionReadSchema', () => {
           id: genAsrtId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -101,7 +101,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: 'not-an-orig-id',
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -113,7 +113,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genAcctId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -126,7 +126,7 @@ describe('balanceAssertionReadSchema', () => {
           id: genAsrtId(),
           origId: genOrigId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -138,7 +138,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: 'not-an-acct-id',
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -150,7 +150,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: genVndrId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -163,7 +163,7 @@ describe('balanceAssertionReadSchema', () => {
           id: genAsrtId(),
           origId: genOrigId(),
           acctId: genAcctId(),
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -175,7 +175,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026/01/31',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -187,7 +187,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026-02-30',
-          balance: '$100.00',
+          balance: 10000,
         }),
       ).toThrow()
     })
@@ -217,7 +217,7 @@ describe('balanceAssertionReadSchema', () => {
       ).toThrow()
     })
 
-    it('rejects an invalid currency format - missing cents', () => {
+    it('rejects a currency string (amounts are integer cents)', () => {
       expect(() =>
         balanceAssertionReadSchema.parse({
           id: genAsrtId(),
@@ -229,14 +229,14 @@ describe('balanceAssertionReadSchema', () => {
       ).toThrow()
     })
 
-    it('rejects an invalid currency format - too many decimal places', () => {
+    it('rejects a fraction of a cent', () => {
       expect(() =>
         balanceAssertionReadSchema.parse({
           id: genAsrtId(),
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.000',
+          balance: 100.5,
         }),
       ).toThrow()
     })
@@ -250,7 +250,7 @@ describe('balanceAssertionReadSchema', () => {
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
           unknownField: 'should fail',
         }),
       ).toThrow()
@@ -268,14 +268,14 @@ describe('balanceAssertionCreationEventSchema', () => {
       origId,
       acctId,
       assertionDate: '2026-01-31',
-      balance: '$1,234.56',
+      balance: 123456,
     })
 
     expect(assertion.id).toBe(id)
     expect(assertion.origId).toBe(origId)
     expect(assertion.acctId).toBe(acctId)
     expect(assertion.assertionDate as string).toBe('2026-01-31')
-    expect(assertion.balance as string).toBe('$1,234.56')
+    expect(assertion.balance).toBe(123456)
   })
 
   it('requires id', () => {
@@ -284,7 +284,7 @@ describe('balanceAssertionCreationEventSchema', () => {
         origId: genOrigId(),
         acctId: genAcctId(),
         assertionDate: '2026-01-31',
-        balance: '$100.00',
+        balance: 10000,
       }),
     ).toThrow()
   })
@@ -295,7 +295,7 @@ describe('balanceAssertionCreationEventSchema', () => {
         id: genAsrtId(),
         acctId: genAcctId(),
         assertionDate: '2026-01-31',
-        balance: '$100.00',
+        balance: 10000,
       }),
     ).toThrow()
   })
@@ -306,7 +306,7 @@ describe('balanceAssertionCreationEventSchema', () => {
         id: genAsrtId(),
         origId: genOrigId(),
         assertionDate: '2026-01-31',
-        balance: '$100.00',
+        balance: 10000,
       }),
     ).toThrow()
   })
@@ -317,7 +317,7 @@ describe('balanceAssertionCreationEventSchema', () => {
         id: genAsrtId(),
         origId: genOrigId(),
         acctId: genAcctId(),
-        balance: '$100.00',
+        balance: 10000,
       }),
     ).toThrow()
   })
@@ -340,7 +340,7 @@ describe('balanceAssertionCreationEventSchema', () => {
         origId: genOrigId(),
         acctId: genAcctId(),
         assertionDate: '2026-01-31',
-        balance: '$100.00',
+        balance: 10000,
         unknownField: 'should fail',
       }),
     ).toThrow()
@@ -404,14 +404,14 @@ describe('balanceAssertionPatchEventSchema', () => {
       origId,
       acctId,
       assertionDate: '2026-02-28',
-      balance: '$500.00',
+      balance: 50000,
     })
 
     expect(assertion.id).toBe(id)
     expect(assertion.origId).toBe(origId)
     expect(assertion.acctId).toBe(acctId)
     expect(assertion.assertionDate as string).toBe('2026-02-28')
-    expect(assertion.balance as string).toBe('$500.00')
+    expect(assertion.balance).toBe(50000)
   })
 
   it('allows an update that only changes the balance', () => {
@@ -419,13 +419,13 @@ describe('balanceAssertionPatchEventSchema', () => {
     const assertion = balanceAssertionPatchEventSchema.parse({
       id,
       origId: genOrigId(),
-      balance: '$750.00',
+      balance: 75000,
     })
 
     expect(assertion.id).toBe(id)
     expect(assertion.acctId).toBeUndefined()
     expect(assertion.assertionDate).toBeUndefined()
-    expect(assertion.balance as string).toBe('$750.00')
+    expect(assertion.balance).toBe(75000)
   })
 
   it('allows an update that only changes the assertionDate', () => {
@@ -457,7 +457,7 @@ describe('balanceAssertionPatchEventSchema', () => {
     expect(() =>
       balanceAssertionPatchEventSchema.parse({
         origId: genOrigId(),
-        balance: '$100.00',
+        balance: 10000,
       }),
     ).toThrow()
   })
@@ -466,7 +466,7 @@ describe('balanceAssertionPatchEventSchema', () => {
     expect(() =>
       balanceAssertionPatchEventSchema.parse({
         id: genAsrtId(),
-        balance: '$100.00',
+        balance: 10000,
       }),
     ).toThrow()
   })
@@ -521,7 +521,7 @@ describe('hlc field in balance assertion event schemas', () => {
         origId: genOrigId(),
         acctId: genAcctId(),
         assertionDate: '2026-01-31',
-        balance: '$100.00',
+        balance: 10000,
         hlc,
       })
       expect(assertion.hlc).toBe(hlc)
@@ -533,7 +533,7 @@ describe('hlc field in balance assertion event schemas', () => {
         origId: genOrigId(),
         acctId: genAcctId(),
         assertionDate: '2026-01-31',
-        balance: '$100.00',
+        balance: 10000,
       })
       expect(assertion.hlc).toBeUndefined()
     })
@@ -545,7 +545,7 @@ describe('hlc field in balance assertion event schemas', () => {
           origId: genOrigId(),
           acctId: genAcctId(),
           assertionDate: '2026-01-31',
-          balance: '$100.00',
+          balance: 10000,
           hlc: 'not-valid',
         }),
       ).toThrow()

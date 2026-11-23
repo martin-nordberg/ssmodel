@@ -9,44 +9,34 @@ describe('entryReadSchema', () => {
       const acctId = genAcctId()
       const entry = entryReadSchema.parse({
         acctId,
-        debit: '$100.00',
-        credit: '$0.00',
+        debit: 10000,
+        credit: 0,
       })
 
       expect(entry.acctId).toBe(acctId)
-      expect(entry.debit as string).toBe('$100.00')
-      expect(entry.credit as string).toBe('$0.00')
+      expect(entry.debit).toBe(10000)
+      expect(entry.credit).toBe(0)
     })
 
     it('parses an entry with a credit', () => {
       const entry = entryReadSchema.parse({
         acctId: genAcctId(),
-        debit: '$0.00',
-        credit: '$100.00',
+        debit: 0,
+        credit: 10000,
       })
 
-      expect(entry.debit as string).toBe('$0.00')
-      expect(entry.credit as string).toBe('$100.00')
+      expect(entry.debit).toBe(0)
+      expect(entry.credit).toBe(10000)
     })
 
     it('parses large amounts with comma grouping', () => {
       const entry = entryReadSchema.parse({
         acctId: genAcctId(),
-        debit: '$1,234,567.89',
-        credit: '$0.00',
+        debit: 123456789,
+        credit: 0,
       })
 
-      expect(entry.debit as string).toBe('$1,234,567.89')
-    })
-
-    it('treats a parenthesized zero credit as zero', () => {
-      const entry = entryReadSchema.parse({
-        acctId: genAcctId(),
-        debit: '$100.00',
-        credit: '($0.00)',
-      })
-
-      expect(entry.credit as string).toBe('($0.00)')
+      expect(entry.debit).toBe(123456789)
     })
   })
 
@@ -55,8 +45,8 @@ describe('entryReadSchema', () => {
       expect(() =>
         entryReadSchema.parse({
           acctId: genAcctId(),
-          debit: '$100.00',
-          credit: '$50.00',
+          debit: 10000,
+          credit: 5000,
         }),
       ).toThrow()
     })
@@ -65,18 +55,8 @@ describe('entryReadSchema', () => {
       expect(() =>
         entryReadSchema.parse({
           acctId: genAcctId(),
-          debit: '$0.00',
-          credit: '$0.00',
-        }),
-      ).toThrow()
-    })
-
-    it('rejects an entry where credit is zero via parentheses and debit is also zero', () => {
-      expect(() =>
-        entryReadSchema.parse({
-          acctId: genAcctId(),
-          debit: '($0.00)',
-          credit: '$0.00',
+          debit: 0,
+          credit: 0,
         }),
       ).toThrow()
     })
@@ -84,8 +64,8 @@ describe('entryReadSchema', () => {
     it('rejects missing acctId', () => {
       expect(() =>
         entryReadSchema.parse({
-          debit: '$100.00',
-          credit: '$0.00',
+          debit: 10000,
+          credit: 0,
         }),
       ).toThrow()
     })
@@ -94,8 +74,8 @@ describe('entryReadSchema', () => {
       expect(() =>
         entryReadSchema.parse({
           acctId: 'not-an-acct-id',
-          debit: '$100.00',
-          credit: '$0.00',
+          debit: 10000,
+          credit: 0,
         }),
       ).toThrow()
     })
@@ -104,48 +84,31 @@ describe('entryReadSchema', () => {
       expect(() =>
         entryReadSchema.parse({
           acctId: genTxnId(),
-          debit: '$100.00',
-          credit: '$0.00',
+          debit: 10000,
+          credit: 0,
         }),
       ).toThrow()
     })
 
-    it('rejects invalid currency format - missing dollar sign', () => {
-      expect(() =>
-        entryReadSchema.parse({
-          acctId: genAcctId(),
-          debit: '100.00',
-          credit: '$0.00',
-        }),
-      ).toThrow()
+    // D: OQ-LED-2: amounts are integer cents, no longer Checquery's `$#,###.##` strings.
+    it('rejects a currency string', () => {
+      expect(() => entryReadSchema.parse({ acctId: genAcctId(), debit: '$100.00', credit: 0 })).toThrow()
     })
 
-    it('rejects invalid currency format - missing cents', () => {
-      expect(() =>
-        entryReadSchema.parse({
-          acctId: genAcctId(),
-          debit: '$100',
-          credit: '$0.00',
-        }),
-      ).toThrow()
+    it('rejects a fraction of a cent', () => {
+      expect(() => entryReadSchema.parse({ acctId: genAcctId(), debit: 100.5, credit: 0 })).toThrow()
     })
 
-    it('rejects invalid currency format - too many decimal places', () => {
-      expect(() =>
-        entryReadSchema.parse({
-          acctId: genAcctId(),
-          debit: '$100.000',
-          credit: '$0.00',
-        }),
-      ).toThrow()
+    it('rejects an amount beyond the safe integer range', () => {
+      expect(() => entryReadSchema.parse({ acctId: genAcctId(), debit: 2 ** 53, credit: 0 })).toThrow()
     })
 
     it('rejects unknown properties', () => {
       expect(() =>
         entryReadSchema.parse({
           acctId: genAcctId(),
-          debit: '$100.00',
-          credit: '$0.00',
+          debit: 10000,
+          credit: 0,
           unknownField: 'should fail',
         }),
       ).toThrow()
@@ -159,41 +122,41 @@ describe('entryWriteSchema', () => {
       const acctId = genAcctId()
       const entry = entryWriteSchema.parse({
         acctId,
-        debit: '$100.00',
-        credit: '$0.00',
+        debit: 10000,
+        credit: 0,
       })
 
       expect(entry.acctId).toBe(acctId)
-      expect(entry.debit as string).toBe('$100.00')
-      expect(entry.credit as string).toBe('$0.00')
+      expect(entry.debit).toBe(10000)
+      expect(entry.credit).toBe(0)
     })
 
-    it('defaults credit to $0.00 when absent', () => {
+    it('defaults credit to 0 when absent', () => {
       const entry = entryWriteSchema.parse({
         acctId: genAcctId(),
-        debit: '$100.00',
+        debit: 10000,
       })
 
-      expect(entry.credit as string).toBe('$0.00')
+      expect(entry.credit).toBe(0)
     })
 
-    it('defaults debit to $0.00 when absent', () => {
+    it('defaults debit to 0 when absent', () => {
       const entry = entryWriteSchema.parse({
         acctId: genAcctId(),
-        credit: '$100.00',
+        credit: 10000,
       })
 
-      expect(entry.debit as string).toBe('$0.00')
+      expect(entry.debit).toBe(0)
     })
 
-    it('parses a negative amount expressed in parentheses', () => {
+    it('parses a negative amount', () => {
       const entry = entryWriteSchema.parse({
         acctId: genAcctId(),
-        debit: '($50.00)',
-        credit: '$0.00',
+        debit: -5000,
+        credit: 0,
       })
 
-      expect(entry.debit as string).toBe('($50.00)')
+      expect(entry.debit).toBe(-5000)
     })
   })
 
@@ -202,8 +165,8 @@ describe('entryWriteSchema', () => {
       expect(() =>
         entryWriteSchema.parse({
           acctId: genAcctId(),
-          debit: '$100.00',
-          credit: '$50.00',
+          debit: 10000,
+          credit: 5000,
         }),
       ).toThrow()
     })
@@ -220,8 +183,8 @@ describe('entryWriteSchema', () => {
       expect(() =>
         entryWriteSchema.parse({
           acctId: genAcctId(),
-          debit: '$0.00',
-          credit: '$0.00',
+          debit: 0,
+          credit: 0,
         }),
       ).toThrow()
     })
@@ -229,7 +192,7 @@ describe('entryWriteSchema', () => {
     it('rejects missing acctId', () => {
       expect(() =>
         entryWriteSchema.parse({
-          debit: '$100.00',
+          debit: 10000,
         }),
       ).toThrow()
     })
@@ -238,8 +201,8 @@ describe('entryWriteSchema', () => {
       expect(() =>
         entryWriteSchema.parse({
           acctId: genAcctId(),
-          debit: '$100.00',
-          credit: '$0.00',
+          debit: 10000,
+          credit: 0,
           unknownField: 'should fail',
         }),
       ).toThrow()
@@ -268,12 +231,12 @@ describe('entryPatchSchema', () => {
 
     it('allows a patch that changes both debit and credit together', () => {
       const patch = entryPatchSchema.parse({
-        debit: '$0.00',
-        credit: '$75.00',
+        debit: 0,
+        credit: 7500,
       })
 
-      expect(patch.debit as string).toBe('$0.00')
-      expect(patch.credit as string).toBe('$75.00')
+      expect(patch.debit).toBe(0)
+      expect(patch.credit).toBe(7500)
     })
   })
 
@@ -281,7 +244,7 @@ describe('entryPatchSchema', () => {
     it('rejects a patch that supplies only credit, omitting debit', () => {
       expect(() =>
         entryPatchSchema.parse({
-          credit: '$75.00',
+          credit: 7500,
         }),
       ).toThrow()
     })
@@ -289,7 +252,7 @@ describe('entryPatchSchema', () => {
     it('rejects a patch that supplies only debit, omitting credit', () => {
       expect(() =>
         entryPatchSchema.parse({
-          debit: '$75.00',
+          debit: 7500,
         }),
       ).toThrow()
     })
@@ -297,8 +260,8 @@ describe('entryPatchSchema', () => {
     it('rejects a patch where both debit and credit are non-zero', () => {
       expect(() =>
         entryPatchSchema.parse({
-          debit: '$50.00',
-          credit: '$50.00',
+          debit: 5000,
+          credit: 5000,
         }),
       ).toThrow()
     })
@@ -306,8 +269,8 @@ describe('entryPatchSchema', () => {
     it('rejects a patch where both debit and credit are zero', () => {
       expect(() =>
         entryPatchSchema.parse({
-          debit: '$0.00',
-          credit: '$0.00',
+          debit: 0,
+          credit: 0,
         }),
       ).toThrow()
     })

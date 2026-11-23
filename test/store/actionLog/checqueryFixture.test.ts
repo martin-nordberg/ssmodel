@@ -37,11 +37,12 @@ async function openLog(db: DbDriver): Promise<ActionLog> {
 }
 
 describe('a Checquery-written file', () => {
-  test('is at a schema version this build knows, so migrations are a no-op', () => {
+  test("is at Checquery's last schema version, with only ProvisionLens's payload migration pending", () => {
     const db = openFixture()
-    expect(readSchemaVersion(db)).toBeLessThanOrEqual(latestKnownVersion)
-    runMigrations(db)
-    expect(readSchemaVersion(db)).toBe(latestKnownVersion)
+    expect(readSchemaVersion(db)).toBe(3)
+    runMigrations(db) // schema migrations only: nothing to do, and 0004 needs the key
+    expect(readSchemaVersion(db)).toBe(3)
+    expect(latestKnownVersion).toBe(4)
   })
 
   test('accepts its password and rejects a wrong one', async () => {

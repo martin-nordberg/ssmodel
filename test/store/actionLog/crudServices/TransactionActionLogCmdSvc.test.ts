@@ -11,8 +11,8 @@ import { genVndrId } from '@/ledger/vendors/VndrId.ts'
 import { collect, createInMemoryActionLog } from '../inMemory.ts'
 
 const balancedEntries = [
-  { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-  { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+  { acctId: genAcctId(), debit: 10000, credit: 0 },
+  { acctId: genAcctId(), debit: 0, credit: 10000 },
 ]
 
 describe('TransactionActionLogCmdSvc', () => {

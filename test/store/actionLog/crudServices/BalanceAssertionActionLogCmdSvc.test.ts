@@ -17,7 +17,7 @@ describe('BalanceAssertionActionLogCmdSvc', () => {
       origId: genOrigId(),
       acctId: genAcctId(),
       assertionDate: '2026-01-31',
-      balance: '$1,234.56',
+      balance: 123456,
     })
 
     const result = await log.cmdSvcs.balanceAssertions.createBalanceAssertion(event)
@@ -25,7 +25,7 @@ describe('BalanceAssertionActionLogCmdSvc', () => {
 
     const [action] = await collect(log.readActions())
     expect(action!.actionType).toBe('create-balance-assertion')
-    expect((action!.payload as { balance: string }).balance as string).toBe('$1,234.56')
+    expect((action!.payload as { balance: number }).balance).toBe(123456)
   })
 
   it('patchBalanceAssertion appends an update-balance-assertion row', async () => {
@@ -33,7 +33,7 @@ describe('BalanceAssertionActionLogCmdSvc', () => {
     const patch = balanceAssertionPatchEventSchema.parse({
       id: genAsrtId(),
       origId: genOrigId(),
-      balance: '$750.00',
+      balance: 75000,
     })
 
     await log.cmdSvcs.balanceAssertions.patchBalanceAssertion(patch)

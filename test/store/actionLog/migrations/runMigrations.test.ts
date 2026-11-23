@@ -2,7 +2,11 @@ import { describe, expect, it } from 'bun:test'
 import { setMetaValue } from '@/store/actionLog/meta.ts'
 import { up as up0001 } from '@/store/actionLog/migrations/0001_meta.ts'
 import { up as up0002 } from '@/store/actionLog/migrations/0002_actions.ts'
-import { latestKnownVersion, readSchemaVersion, runMigrations } from '@/store/actionLog/migrations/runMigrations.ts'
+import { readSchemaVersion, runMigrations } from '@/store/actionLog/migrations/runMigrations.ts'
+
+// runMigrations runs the schema migrations (1–3); the payload migration 0004 needs the key (see cents.test.ts).
+const lastSchemaVersion = 3
+
 import { openBunDriver } from '@/store/driver/bunSqlite.ts'
 import type { DbDriver } from '@/store/driver/DbDriver.ts'
 
@@ -25,7 +29,7 @@ describe('runMigrations', () => {
   it('brings a fresh database to the latest schema_version', () => {
     const db = openBunDriver()
     runMigrations(db)
-    expect(readSchemaVersion(db)).toBe(latestKnownVersion)
+    expect(readSchemaVersion(db)).toBe(lastSchemaVersion)
   })
 
   it('creates _checquery_meta, actions, and the six per-entity lookup tables', () => {
@@ -136,7 +140,7 @@ describe('runMigrations', () => {
 
     expect(() => runMigrations(db)).not.toThrow()
 
-    expect(readSchemaVersion(db)).toBe(latestKnownVersion)
+    expect(readSchemaVersion(db)).toBe(lastSchemaVersion)
     expect(tableNames(db)).not.toContain('vendor_category_actions')
     // The action row itself is untouched -- only the now-unused lookup table is gone.
     const row = db.get(`SELECT action_type FROM actions WHERE id = 'actn1'`) as { action_type: string }
@@ -147,7 +151,7 @@ describe('runMigrations', () => {
     const db = openBunDriver()
     runMigrations(db)
     expect(() => runMigrations(db)).not.toThrow()
-    expect(readSchemaVersion(db)).toBe(latestKnownVersion)
+    expect(readSchemaVersion(db)).toBe(lastSchemaVersion)
   })
 
   it('leaves an unrelated pre-existing schema_version key alone as the migration checkpoint', () => {

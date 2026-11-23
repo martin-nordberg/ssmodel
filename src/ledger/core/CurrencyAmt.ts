@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+// Checquery's stored amount format (`$#,###.##`, negatives in parentheses). The domain now uses integer cents
+// (money.ts); this module remains to parse amounts in actions written before migration 0004.
+
 /** Schema for a Checquery currency amount. */
 export const currencyAmtMaxLength = 20
 

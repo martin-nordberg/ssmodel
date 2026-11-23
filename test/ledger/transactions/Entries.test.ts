@@ -5,8 +5,8 @@ import { entriesReadSchema, entriesWriteSchema } from '@/ledger/transactions/Ent
 describe('entriesWriteSchema', () => {
   it('parses two balanced entries', () => {
     const entries = entriesWriteSchema.parse([
-      { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-      { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+      { acctId: genAcctId(), debit: 10000, credit: 0 },
+      { acctId: genAcctId(), debit: 0, credit: 10000 },
     ])
 
     expect(entries).toHaveLength(2)
@@ -14,26 +14,26 @@ describe('entriesWriteSchema', () => {
 
   it('parses more than two balanced entries', () => {
     const entries = entriesWriteSchema.parse([
-      { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-      { acctId: genAcctId(), debit: '$30.00', credit: '$0.00' },
-      { acctId: genAcctId(), debit: '$0.00', credit: '$130.00' },
+      { acctId: genAcctId(), debit: 10000, credit: 0 },
+      { acctId: genAcctId(), debit: 3000, credit: 0 },
+      { acctId: genAcctId(), debit: 0, credit: 13000 },
     ])
 
     expect(entries).toHaveLength(3)
   })
 
-  it('applies each entry write default (credit defaults to $0.00)', () => {
+  it('applies each entry write default (credit defaults to 0)', () => {
     const entries = entriesWriteSchema.parse([
-      { acctId: genAcctId(), debit: '$100.00' },
-      { acctId: genAcctId(), credit: '$100.00' },
+      { acctId: genAcctId(), debit: 10000 },
+      { acctId: genAcctId(), credit: 10000 },
     ])
 
-    expect(entries[0]!.credit as string).toBe('$0.00')
-    expect(entries[1]!.debit as string).toBe('$0.00')
+    expect(entries[0]!.credit).toBe(0)
+    expect(entries[1]!.debit).toBe(0)
   })
 
   it('rejects a single entry', () => {
-    expect(() => entriesWriteSchema.parse([{ acctId: genAcctId(), debit: '$100.00', credit: '$0.00' }])).toThrow()
+    expect(() => entriesWriteSchema.parse([{ acctId: genAcctId(), debit: 10000, credit: 0 }])).toThrow()
   })
 
   it('rejects an empty entries array', () => {
@@ -43,8 +43,8 @@ describe('entriesWriteSchema', () => {
   it('rejects unbalanced entries - debits exceed credits', () => {
     expect(() =>
       entriesWriteSchema.parse([
-        { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-        { acctId: genAcctId(), debit: '$0.00', credit: '$50.00' },
+        { acctId: genAcctId(), debit: 10000, credit: 0 },
+        { acctId: genAcctId(), debit: 0, credit: 5000 },
       ]),
     ).toThrow()
   })
@@ -52,8 +52,8 @@ describe('entriesWriteSchema', () => {
   it('rejects unbalanced entries - credits exceed debits', () => {
     expect(() =>
       entriesWriteSchema.parse([
-        { acctId: genAcctId(), debit: '$50.00', credit: '$0.00' },
-        { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+        { acctId: genAcctId(), debit: 5000, credit: 0 },
+        { acctId: genAcctId(), debit: 0, credit: 10000 },
       ]),
     ).toThrow()
   })
@@ -61,16 +61,16 @@ describe('entriesWriteSchema', () => {
   it('rejects a set where one entry is individually invalid (both debit and credit non-zero)', () => {
     expect(() =>
       entriesWriteSchema.parse([
-        { acctId: genAcctId(), debit: '$100.00', credit: '$100.00' },
-        { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+        { acctId: genAcctId(), debit: 10000, credit: 10000 },
+        { acctId: genAcctId(), debit: 0, credit: 10000 },
       ]),
     ).toThrow()
   })
 
   it('balances amounts expressed with comma grouping', () => {
     const entries = entriesWriteSchema.parse([
-      { acctId: genAcctId(), debit: '$1,000.00', credit: '$0.00' },
-      { acctId: genAcctId(), debit: '$0.00', credit: '$1,000.00' },
+      { acctId: genAcctId(), debit: 100000, credit: 0 },
+      { acctId: genAcctId(), debit: 0, credit: 100000 },
     ])
 
     expect(entries).toHaveLength(2)
@@ -80,15 +80,15 @@ describe('entriesWriteSchema', () => {
 describe('entriesReadSchema', () => {
   it('parses two balanced entries', () => {
     const entries = entriesReadSchema.parse([
-      { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-      { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+      { acctId: genAcctId(), debit: 10000, credit: 0 },
+      { acctId: genAcctId(), debit: 0, credit: 10000 },
     ])
 
     expect(entries).toHaveLength(2)
   })
 
   it('rejects a single entry', () => {
-    expect(() => entriesReadSchema.parse([{ acctId: genAcctId(), debit: '$100.00', credit: '$0.00' }])).toThrow()
+    expect(() => entriesReadSchema.parse([{ acctId: genAcctId(), debit: 10000, credit: 0 }])).toThrow()
   })
 
   it('rejects an empty entries array', () => {
@@ -98,8 +98,8 @@ describe('entriesReadSchema', () => {
   it('rejects unbalanced entries', () => {
     expect(() =>
       entriesReadSchema.parse([
-        { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-        { acctId: genAcctId(), debit: '$0.00', credit: '$50.00' },
+        { acctId: genAcctId(), debit: 10000, credit: 0 },
+        { acctId: genAcctId(), debit: 0, credit: 5000 },
       ]),
     ).toThrow()
   })
@@ -107,8 +107,8 @@ describe('entriesReadSchema', () => {
   it('rejects a set where one entry is individually invalid (both debit and credit non-zero)', () => {
     expect(() =>
       entriesReadSchema.parse([
-        { acctId: genAcctId(), debit: '$100.00', credit: '$100.00' },
-        { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+        { acctId: genAcctId(), debit: 10000, credit: 10000 },
+        { acctId: genAcctId(), debit: 0, credit: 10000 },
       ]),
     ).toThrow()
   })

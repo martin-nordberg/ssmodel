@@ -34,7 +34,7 @@ import { OriginActionLogCmdSvc } from '@/store/actionLog/crudServices/OriginActi
 import { TransactionActionLogCmdSvc } from '@/store/actionLog/crudServices/TransactionActionLogCmdSvc.ts'
 import { VendorActionLogCmdSvc } from '@/store/actionLog/crudServices/VendorActionLogCmdSvc.ts'
 import type { PayloadCodec } from '@/store/actionLog/encryption/PayloadCodec.ts'
-import { runMigrations } from '@/store/actionLog/migrations/runMigrations.ts'
+import { runAllMigrations, runMigrations } from '@/store/actionLog/migrations/runMigrations.ts'
 import type { DbDriver } from '@/store/driver/DbDriver.ts'
 
 type ActionRow = {
@@ -87,6 +87,15 @@ export class ActionLog {
   private readonly db: DbDriver
   private readonly codec: PayloadCodec
   private readonly nodeId: string
+
+  /**
+   * Runs every pending migration, including payload migrations that need the codec (such as 0004, amounts to
+   * cents), then wraps the database. How the app opens a log; the constructor alone runs only schema migrations.
+   */
+  static async open(db: DbDriver, codec: PayloadCodec, nodeId: string): Promise<ActionLog> {
+    await runAllMigrations(db, codec)
+    return new ActionLog(db, codec, nodeId)
+  }
 
   constructor(db: DbDriver, codec: PayloadCodec, nodeId: string) {
     this.db = db

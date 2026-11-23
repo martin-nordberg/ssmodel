@@ -14,8 +14,8 @@ import { genTxnId } from '@/ledger/transactions/TxnId.ts'
 import { genVndrId } from '@/ledger/vendors/VndrId.ts'
 
 const validEntries = [
-  { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-  { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+  { acctId: genAcctId(), debit: 10000, credit: 0 },
+  { acctId: genAcctId(), debit: 0, credit: 10000 },
 ]
 
 describe('transactionReadSchema', () => {
@@ -88,9 +88,9 @@ describe('transactionReadSchema', () => {
         description: 'Split purchase',
         needsReview: false,
         entries: [
-          { acctId: genAcctId(), debit: '$50.00', credit: '$0.00' },
-          { acctId: genAcctId(), debit: '$50.00', credit: '$0.00' },
-          { acctId: genAcctId(), debit: '$0.00', credit: '$100.00' },
+          { acctId: genAcctId(), debit: 5000, credit: 0 },
+          { acctId: genAcctId(), debit: 5000, credit: 0 },
+          { acctId: genAcctId(), debit: 0, credit: 10000 },
         ],
       })
 
@@ -386,8 +386,8 @@ describe('transactionReadSchema', () => {
           description: 'x',
           needsReview: false,
           entries: [
-            { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-            { acctId: genAcctId(), debit: '$0.00', credit: '$50.00' },
+            { acctId: genAcctId(), debit: 10000, credit: 0 },
+            { acctId: genAcctId(), debit: 0, credit: 5000 },
           ],
         }),
       ).toThrow()
@@ -726,8 +726,8 @@ describe('transactionCreationEventSchema', () => {
         postDate: '2026-01-15',
         vndrId: genVndrId(),
         entries: [
-          { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-          { acctId: genAcctId(), debit: '$0.00', credit: '$50.00' },
+          { acctId: genAcctId(), debit: 10000, credit: 0 },
+          { acctId: genAcctId(), debit: 0, credit: 5000 },
         ],
       }),
     ).toThrow()
@@ -933,8 +933,8 @@ describe('transactionPatchEventSchema', () => {
         id: genTxnId(),
         origId: genOrigId(),
         entries: [
-          { acctId: genAcctId(), debit: '$100.00', credit: '$0.00' },
-          { acctId: genAcctId(), debit: '$0.00', credit: '$50.00' },
+          { acctId: genAcctId(), debit: 10000, credit: 0 },
+          { acctId: genAcctId(), debit: 0, credit: 5000 },
         ],
       }),
     ).toThrow()
