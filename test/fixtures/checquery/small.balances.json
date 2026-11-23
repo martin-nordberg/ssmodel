@@ -1,0 +1,622 @@
+{
+  "accounts": [
+    {
+      "id": "acctytwsjtxibanzv10ia3thzpqv",
+      "acctType": "ASSET",
+      "name": "Checking",
+      "parentCtgId": "actgkivqr7owaynvgwc1biwmwlq1"
+    },
+    {
+      "id": "acctymf35hiz2p73je5g3ordipaw",
+      "acctType": "EXPENSE",
+      "name": "Dining",
+      "parentCtgId": "actghi9jwn47pbey4d98sn6druvd"
+    },
+    {
+      "id": "acctd32k6yb0einp87vov2m2ykc8",
+      "acctType": "EXPENSE",
+      "name": "Groceries",
+      "parentCtgId": "actgdlqbqvtmzatvi7aa7jbjlb1h"
+    },
+    {
+      "id": "acctlzjchvw35dj7waiwgsws0p7r",
+      "acctType": "ASSET",
+      "name": "High-yield savings",
+      "parentCtgId": "actgkivqr7owaynvgwc1biwmwlq1"
+    },
+    {
+      "id": "acctcg2124suynwei6yrtvspl0a4",
+      "acctType": "INCOME",
+      "name": "Interest",
+      "parentCtgId": "actge3kdjvrmrrw5wz9ozdgnugdg"
+    },
+    {
+      "id": "acctnetworth0000000000000000",
+      "acctType": "EQUITY",
+      "name": "Net Worth",
+      "parentCtgId": "actgequity000000000000000000"
+    },
+    {
+      "id": "accta0toz82xdyqy6w65vz0lj0os",
+      "acctType": "INCOME",
+      "name": "Salary",
+      "parentCtgId": "actge3kdjvrmrrw5wz9ozdgnugdg"
+    },
+    {
+      "id": "acctlspefmrfxwzn9lozntijfjez",
+      "acctType": "EXPENSE",
+      "name": "Utilities",
+      "parentCtgId": "actgdlqbqvtmzatvi7aa7jbjlb1h"
+    },
+    {
+      "id": "acctlodu22ayirplvvr9i096xeut",
+      "acctType": "LIABILITY",
+      "name": "Visa",
+      "parentCtgId": "actgbhwlrury3ywxs3hxqgbvfiuv"
+    }
+  ],
+  "categories": [
+    {
+      "id": "actgkivqr7owaynvgwc1biwmwlq1",
+      "acctType": "ASSET",
+      "name": "Bank",
+      "parentCtgId": "actgassets000000000000000000"
+    },
+    {
+      "id": "actgbhwlrury3ywxs3hxqgbvfiuv",
+      "acctType": "LIABILITY",
+      "name": "Cards",
+      "parentCtgId": "actgliabilities0000000000000"
+    },
+    {
+      "id": "actghi9jwn47pbey4d98sn6druvd",
+      "acctType": "EXPENSE",
+      "name": "Fun",
+      "parentCtgId": "actgexpenses0000000000000000"
+    },
+    {
+      "id": "actgdlqbqvtmzatvi7aa7jbjlb1h",
+      "acctType": "EXPENSE",
+      "name": "Household",
+      "parentCtgId": "actgexpenses0000000000000000"
+    },
+    {
+      "id": "actge3kdjvrmrrw5wz9ozdgnugdg",
+      "acctType": "INCOME",
+      "name": "Work",
+      "parentCtgId": "actgincome000000000000000000"
+    }
+  ],
+  "asOf": {
+    "2025-06-30": [],
+    "2025-07-15": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 620369
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 31083,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 0,
+        "credit": 36380
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 5297,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 620369,
+        "credit": 0
+      }
+    ],
+    "2025-07-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 620369
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 724
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 43776,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 75156,
+        "credit": 63159
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 50724,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 19383,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 620369,
+        "credit": 125156
+      }
+    ],
+    "2025-08-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 1246781
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 1399
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 88314,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 148972,
+        "credit": 124328
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 21900,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 101399,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 36014,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 1246781,
+        "credit": 270872
+      }
+    ],
+    "2025-09-30": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 1869009
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 5184
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 128058,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 231460,
+        "credit": 187054
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 44594,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 155184,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 58996,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 1869009,
+        "credit": 426054
+      }
+    ],
+    "2025-10-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 2493347
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 5184
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 168855,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 310833,
+        "credit": 247074
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 62434,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 205184,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 78219,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 2493347,
+        "credit": 573267
+      }
+    ],
+    "2025-12-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 2493347
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 5184
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 168855,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 310833,
+        "credit": 247074
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 62434,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 205184,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 78219,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 2493347,
+        "credit": 573267
+      }
+    ],
+    "2026-12-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 2493347
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 5184
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 168855,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 310833,
+        "credit": 247074
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 62434,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 205184,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 78219,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 2493347,
+        "credit": 573267
+      }
+    ]
+  },
+  "forPeriod": {
+    "2025-07-01..2025-07-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 620369
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 724
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 43776,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 75156,
+        "credit": 63159
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 50724,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 19383,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 620369,
+        "credit": 125156
+      }
+    ],
+    "2025-08-01..2025-08-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 626412
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 675
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 44538,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 73816,
+        "credit": 61169
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 21900,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 50675,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 16631,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 626412,
+        "credit": 145716
+      }
+    ],
+    "2025-09-01..2025-09-30": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 622228
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 3785
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 39744,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 82488,
+        "credit": 62726
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 22694,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 53785,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 22982,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 622228,
+        "credit": 155182
+      }
+    ],
+    "2025-10-01..2025-10-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 624338
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 40797,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 79373,
+        "credit": 60020
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 17840,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 50000,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 19223,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 624338,
+        "credit": 147213
+      }
+    ],
+    "2025-07-10..2025-08-20": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 936722
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 724
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 58709,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 148972,
+        "credit": 85441
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 21900,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 50724,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 26732,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 936722,
+        "credit": 220872
+      }
+    ],
+    "2025-01-01..2025-12-31": [
+      {
+        "acctId": "accta0toz82xdyqy6w65vz0lj0os",
+        "debit": 0,
+        "credit": 2493347
+      },
+      {
+        "acctId": "acctcg2124suynwei6yrtvspl0a4",
+        "debit": 0,
+        "credit": 5184
+      },
+      {
+        "acctId": "acctd32k6yb0einp87vov2m2ykc8",
+        "debit": 168855,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlodu22ayirplvvr9i096xeut",
+        "debit": 310833,
+        "credit": 247074
+      },
+      {
+        "acctId": "acctlspefmrfxwzn9lozntijfjez",
+        "debit": 62434,
+        "credit": 0
+      },
+      {
+        "acctId": "acctlzjchvw35dj7waiwgsws0p7r",
+        "debit": 205184,
+        "credit": 0
+      },
+      {
+        "acctId": "acctymf35hiz2p73je5g3ordipaw",
+        "debit": 78219,
+        "credit": 0
+      },
+      {
+        "acctId": "acctytwsjtxibanzv10ia3thzpqv",
+        "debit": 2493347,
+        "credit": 573267
+      }
+    ],
+    "2026-01-01..2026-12-31": []
+  },
+  "netWorth": {
+    "2025-06-30": 0,
+    "2025-07-15": 583989,
+    "2025-07-31": 557934,
+    "2025-08-31": 1101952,
+    "2025-09-30": 1642545,
+    "2025-10-31": 2189023,
+    "2025-12-31": 2189023,
+    "2026-12-31": 2189023
+  }
+}
