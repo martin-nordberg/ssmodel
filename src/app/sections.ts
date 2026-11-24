@@ -34,6 +34,13 @@ export const sections: SectionDef[] = [
     pages: [
       { label: 'Overview', to: '/past', description: 'Registers and reports of what has happened.' },
       { label: 'Registers', to: '/past/registers', description: 'Every account’s transactions, by search or list.' },
+      { label: 'Income Log', to: '/past/income-log', description: 'Each income account’s transactions.' },
+      { label: 'Expense Log', to: '/past/expense-log', description: 'Each expense account’s transactions.' },
+      {
+        label: 'Balance checks',
+        to: '/past/balance-checks',
+        description: 'Statement balances, and whether each register agrees.',
+      },
     ],
   },
   {

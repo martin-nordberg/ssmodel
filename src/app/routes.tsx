@@ -4,6 +4,7 @@ import { AboutPage } from './pages/help/AboutPage.tsx'
 import { HelpPage } from './pages/help/HelpPage.tsx'
 import { TemplateGalleryPage } from './pages/help/TemplateGalleryPage.tsx'
 import { HomePage } from './pages/home/HomePage.tsx'
+import { BalanceChecksPage, LogsPage } from './pages/past/LogsPage.tsx'
 import { PastPage } from './pages/past/PastPage.tsx'
 import { RegistersPage } from './pages/past/RegistersPage.tsx'
 import { RegisterPage } from './pages/past/register/RegisterPage.tsx'
@@ -27,6 +28,21 @@ const registersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'past/registers',
   component: RegistersPage,
+})
+const incomeLogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'past/income-log',
+  component: () => <LogsPage type="INCOME" />,
+})
+const expenseLogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'past/expense-log',
+  component: () => <LogsPage type="EXPENSE" />,
+})
+const balanceChecksRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'past/balance-checks',
+  component: BalanceChecksPage,
 })
 
 /** Pages reached by drilling down accept the trail back up [FR-UI-22]. */
@@ -83,6 +99,9 @@ const routeTree = rootRoute.addChildren([
   homeRoute,
   pastRoute,
   registersRoute,
+  incomeLogRoute,
+  expenseLogRoute,
+  balanceChecksRoute,
   registerRoute,
   placeholder('this-year', 'thisYear'),
   placeholder('next-year', 'nextYear'),

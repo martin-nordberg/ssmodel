@@ -110,7 +110,22 @@ export function AmountField({
   onChange,
   className,
   allowNegative,
-}: FieldProps & { cents: number | null; onChange: (cents: number | null) => void; allowNegative?: boolean }) {
+  autoFocus,
+}: FieldProps & {
+  cents: number | null
+  onChange: (cents: number | null) => void
+  allowNegative?: boolean
+  autoFocus?: boolean
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: focuses once, when the editor opens
+  useEffect(() => {
+    if (autoFocus) {
+      ref.current?.focus()
+      ref.current?.select()
+    }
+  }, [])
+
   const id = useId()
   const toText = (c: number | null) => (c === null || c === 0 ? '' : (c / 100).toFixed(2))
   const [text, setText] = useState(toText(cents))
@@ -134,6 +149,7 @@ export function AmountField({
       <FieldLabel htmlFor={id} label={label} tip={tip} />
       <input
         id={id}
+        ref={ref}
         className={cn(inputClass, 'text-right')}
         value={text}
         inputMode="decimal"

@@ -10,7 +10,8 @@ import type { LedgerStore } from '@/store/ledger/LedgerStore.ts'
 // - something in use (an account with entries or a vendor default, a category with children, a vendor with
 //   transactions) can't be deleted;
 // - references (a vendor's default account, a transaction's accounts and vendor) point at live records;
-// - Net Worth can't be changed or deleted.
+// - Net Worth can't be changed or deleted;
+// - balance checks are for asset and liability accounts, at most one per account and date.
 
 /** A command that breaks a ledger rule. The message is shown to the user. */
 export class LedgerRuleError extends Error {}
@@ -146,6 +147,25 @@ export async function checkLedgerRules(store: LedgerStore, command: string, even
         if (vndrId === undefined && description.trim() === '') {
           throw new LedgerRuleError('A transaction needs a vendor or a description.')
         }
+      }
+      return
+    }
+    case 'balanceAssertions.createBalanceAssertion':
+    case 'balanceAssertions.patchBalanceAssertion': {
+      const all = await store.svcs.balanceAssertions.findBalanceAssertionsAll()
+      const current = all.find((a) => a.id === id)
+      if (command === 'balanceAssertions.patchBalanceAssertion' && !current) {
+        throw new LedgerRuleError('That balance check no longer exists.')
+      }
+      const acctId = (event.acctId as string | undefined) ?? current!.acctId
+      const date = (event.assertionDate as string | undefined) ?? current!.assertionDate
+      const account = (await store.svcs.accounts.findAccountsAll()).find((a) => a.id === acctId)
+      if (!account) throw new LedgerRuleError('That account no longer exists.')
+      if (account.acctType !== 'ASSET' && account.acctType !== 'LIABILITY') {
+        throw new LedgerRuleError('Balance checks are for asset and liability accounts, which have statements.')
+      }
+      if (all.some((a) => a.id !== id && a.acctId === acctId && a.assertionDate === date)) {
+        throw new LedgerRuleError('This account already has a balance check for that date.')
       }
       return
     }

@@ -1,76 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
 import { installFsaMock } from './fsaMock.ts'
-import { createFile, store } from './plensHelpers.ts'
+import { ids, seed } from './ledgerSeed.ts'
+import { createFile } from './plensHelpers.ts'
 
 // FR-LED-3, FR-UI-31, D: OQ-UI-13: an account's register, entered and edited by keyboard only.
-
-/** A CUID2-shaped id: prefix plus 24 lowercase letters or digits. */
-const id = (prefix: string, name: string) =>
-  `${prefix}${name
-    .replace(/[^a-z0-9]/g, '')
-    .padEnd(24, '0')
-    .slice(0, 24)}`
-const ids = {
-  bank: id('actg', 'bank'),
-  work: id('actg', 'work'),
-  food: id('actg', 'food'),
-  taxes: id('actg', 'taxes'),
-  checking: id('acct', 'checking'),
-  salary: id('acct', 'salary'),
-  groceries: id('acct', 'groceries'),
-  federal: id('acct', 'federal'),
-  grocer: id('vndr', 'grocer'),
-}
-
-/** Accounts and a vendor, set up through the store worker. */
-async function seed(page: Page) {
-  const c = (entity: string, method: string, input: object) => store(page, 'command', entity, method, input)
-  await c('accountCategories', 'createAccountCategory', {
-    id: ids.bank,
-    parentCtgId: 'actgassets000000000000000000',
-    acctType: 'ASSET',
-    name: 'Bank',
-  })
-  await c('accountCategories', 'createAccountCategory', {
-    id: ids.work,
-    parentCtgId: 'actgincome000000000000000000',
-    acctType: 'INCOME',
-    name: 'Work',
-  })
-  await c('accountCategories', 'createAccountCategory', {
-    id: ids.food,
-    parentCtgId: 'actgexpenses0000000000000000',
-    acctType: 'EXPENSE',
-    name: 'Food',
-  })
-  await c('accountCategories', 'createAccountCategory', {
-    id: ids.taxes,
-    parentCtgId: 'actgexpenses0000000000000000',
-    acctType: 'EXPENSE',
-    name: 'Taxes',
-  })
-  await c('accounts', 'createAccount', {
-    id: ids.checking,
-    parentCtgId: ids.bank,
-    acctType: 'ASSET',
-    name: 'Checking',
-    isPrimary: true,
-  })
-  await c('accounts', 'createAccount', { id: ids.salary, parentCtgId: ids.work, acctType: 'INCOME', name: 'Salary' })
-  await c('accounts', 'createAccount', {
-    id: ids.groceries,
-    parentCtgId: ids.food,
-    acctType: 'EXPENSE',
-    name: 'Groceries',
-  })
-  await c('accounts', 'createAccount', {
-    id: ids.federal,
-    parentCtgId: ids.taxes,
-    acctType: 'EXPENSE',
-    name: 'Federal',
-  })
-  await c('vendors', 'createVendor', { id: ids.grocer, name: 'Corner Grocer', defaultAcctId: ids.groceries })
-}
 
 const rows = (page: Page) => page.getByRole('grid', { name: 'Register' }).locator('tbody tr[id^="register-row-"]')
 const key = (page: Page, ...keys: string[]) =>

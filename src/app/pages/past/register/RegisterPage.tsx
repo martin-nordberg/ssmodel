@@ -8,6 +8,7 @@ import { runCommand, useAccounts, useCategories, useEditable, useVendors } from 
 import type { Crumb } from '@/app/shell/Breadcrumbs.tsx'
 import { Button } from '@/components/ui/button'
 import { accountCategoryPath } from '@/ledger/accountCategories/accountTree.ts'
+import type { BalanceAssertion } from '@/ledger/balanceAssertions/BalanceAssertion.ts'
 import { buildRegisterLines, buildRegisterRows, type RegisterRow } from '@/ledger/transactions/register.ts'
 import type { Transaction } from '@/ledger/transactions/Transaction.ts'
 import { todayIso } from '@/lib/dateShortcuts.ts'
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { getStoreClient, useStoreQuery } from '@/state/storeClient.ts'
 import { NoPlensFile } from '../../home/NoPlensFile.tsx'
 import { PageHeader } from '../../PageHeader.tsx'
+import { BalanceCheckEditor } from './BalanceCheckEditor.tsx'
 import { amountCell, amountLabels } from './registerFields.tsx'
 import { TransactionEditor } from './TransactionEditor.tsx'
 
@@ -52,11 +54,13 @@ function Register() {
     useStoreQuery(client, 'balanceAssertions', 'findBalanceAssertionsByAccount', acctId as never).data ?? NONE
   const account = accounts.find((a) => a.id === acctId)
 
+  // Income and expense accounts get a log: no running balance and no balance checks (no statements to match).
+  const hasBalance = account?.acctType === 'ASSET' || account?.acctType === 'LIABILITY'
   const rows = useMemo(() => {
     if (!account) return []
     const lines = buildRegisterLines(transactions, accounts, vendors, acctId, account.acctType)
-    return buildRegisterRows(lines, assertions)
-  }, [transactions, accounts, vendors, assertions, account, acctId])
+    return buildRegisterRows(lines, hasBalance ? assertions : [])
+  }, [transactions, accounts, vendors, assertions, account, acctId, hasBalance])
 
   if (!account) {
     return (
@@ -74,7 +78,11 @@ function Register() {
     <div className="flex h-full flex-col p-4">
       <PageHeader
         title={accountCategoryPath(account, categories)}
-        description={`${account.acctType === 'LIABILITY' ? 'Owed' : 'Balance'}: ${formatCents(balance?.kind === 'transaction' ? balance.line.balance : 0)}`}
+        description={
+          hasBalance
+            ? `${account.acctType === 'LIABILITY' ? 'Owed' : 'Balance'}: ${formatCents(balance?.kind === 'transaction' ? balance.line.balance : 0)}`
+            : `${account.acctType === 'INCOME' ? 'Income Log' : 'Expense Log'}: every transaction filed here`
+        }
         trail={trail as Crumb[] | undefined}
         actions={
           <Link
@@ -91,6 +99,7 @@ function Register() {
         acctId={acctId}
         acctType={account.acctType}
         rows={rows}
+        hasBalance={hasBalance}
         accounts={accounts}
         categories={categories}
         vendors={vendors}
@@ -101,12 +110,17 @@ function Register() {
 }
 
 /** The open editor; `n` remounts the new-transaction editor after each save, ready for the next. */
-type Editing = { kind: 'new'; n: number } | { kind: 'edit'; txn: Transaction } | null
+type Editing =
+  | { kind: 'new'; n: number }
+  | { kind: 'edit'; txn: Transaction }
+  | { kind: 'check'; date: string; balance: number; assertion?: BalanceAssertion }
+  | null
 
 function RegisterGrid({
   acctId,
   acctType,
   rows,
+  hasBalance,
   accounts,
   categories,
   vendors,
@@ -115,6 +129,7 @@ function RegisterGrid({
   acctId: string
   acctType: Parameters<typeof TransactionEditor>[0]['acctType']
   rows: RegisterRow[]
+  hasBalance: boolean
   accounts: Parameters<typeof TransactionEditor>[0]['accounts']
   categories: Parameters<typeof TransactionEditor>[0]['categories']
   vendors: Parameters<typeof TransactionEditor>[0]['vendors']
@@ -139,10 +154,10 @@ function RegisterGrid({
       { id: 'payee', header: 'Vendor or description' },
       { id: 'account', header: 'Account' },
       ...labels.order.map((which) => ({ id: which, header: labels[which] })),
-      { id: 'balance', header: acctType === 'LIABILITY' ? 'Owed' : 'Balance' },
+      ...(hasBalance ? [{ id: 'balance', header: acctType === 'LIABILITY' ? 'Owed' : 'Balance' }] : []),
       { id: 'review', header: 'Review' },
     ],
-    [labels, acctType],
+    [labels, acctType, hasBalance],
   )
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel() })
 
@@ -153,8 +168,17 @@ function RegisterGrid({
     setConfirmDelete(false)
     if (current?.kind === 'transaction')
       await runCommand('transactions', 'deleteTransaction', { id: current.line.txn.id })
+    if (current?.kind === 'assertion')
+      await runCommand('balanceAssertions', 'deleteBalanceAssertion', { id: current.assertion.id })
     focusGrid()
   }
+
+  /** The register's balance at the end of a date (the newest line on or before it). */
+  const balanceAt = (date: string): number => {
+    for (const r of rows) if (r.kind === 'transaction' && r.line.date <= date) return r.line.balance
+    return 0
+  }
+  const newCheck = (date: string) => setEditing({ kind: 'check', date, balance: balanceAt(date) })
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return // keys inside the editor are its own
@@ -186,6 +210,22 @@ function RegisterGrid({
         if (editable && current?.kind === 'transaction') {
           e.preventDefault()
           setEditing({ kind: 'edit', txn: current.line.txn })
+        } else if (editable && current?.kind === 'assertion') {
+          e.preventDefault()
+          setEditing({
+            kind: 'check',
+            date: current.assertion.assertionDate,
+            balance: current.assertion.balance,
+            assertion: current.assertion,
+          })
+        }
+        return
+      case 'b':
+      case 'B':
+        // A balance check for the selected row's date, starting from the register's balance then.
+        if (editable && hasBalance && current?.kind === 'transaction') {
+          e.preventDefault()
+          newCheck(current.line.date)
         }
         return
       case 'Insert':
@@ -198,7 +238,7 @@ function RegisterGrid({
         return
       case 'Delete':
       case 'Backspace':
-        if (editable && current?.kind === 'transaction') {
+        if (editable && current) {
           e.preventDefault()
           setConfirmDelete(true)
         }
@@ -241,8 +281,13 @@ function RegisterGrid({
           <Button size="sm" variant="outline" disabled={!editable} onClick={() => setEditing({ kind: 'new', n: 0 })}>
             New transaction
           </Button>
+          {hasBalance && (
+            <Button size="sm" variant="outline" disabled={!editable} onClick={() => newCheck(todayIso())}>
+              Add balance check
+            </Button>
+          )}
           <span className="text-muted-foreground text-xs">
-            On the list: ↑ ↓ move · Enter edit · N or Insert new · Delete remove
+            On the list: ↑ ↓ move · Enter edit · N or Insert new · Delete remove{hasBalance ? ' · B balance check' : ''}
           </span>
         </>
       }
@@ -276,6 +321,21 @@ function RegisterGrid({
               ))}
             </thead>
             <tbody>
+              {editing?.kind === 'check' && !editing.assertion && (
+                <tr>
+                  <td colSpan={columns.length}>
+                    <BalanceCheckEditor
+                      acctId={acctId}
+                      date={editing.date}
+                      balance={editing.balance}
+                      onDone={() => {
+                        setEditing(null)
+                        focusGrid()
+                      }}
+                    />
+                  </td>
+                </tr>
+              )}
               {editing?.kind === 'new' && (
                 <tr key={`new-${editing.n}`}>
                   <td colSpan={columns.length}>{editor(null)}</td>
@@ -291,12 +351,32 @@ function RegisterGrid({
                   )
                 }
                 const selected = i === active
+                if (r.kind === 'assertion' && editing?.kind === 'check' && editing.assertion?.id === r.assertion.id) {
+                  return (
+                    <tr key={row.id}>
+                      <td colSpan={columns.length}>
+                        <BalanceCheckEditor
+                          acctId={acctId}
+                          assertion={r.assertion}
+                          date={r.assertion.assertionDate}
+                          balance={r.assertion.balance}
+                          onDone={() => {
+                            setEditing(null)
+                            focusGrid()
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  )
+                }
                 if (r.kind === 'assertion') {
+                  const confirming = selected && confirmDelete
                   return (
                     <tr
                       key={row.id}
                       id={rowId(i)}
                       aria-selected={selected}
+                      data-check={r.matches ? 'confirmed' : 'out-of-balance'}
                       onClick={() => setActive(i)}
                       className={cn(
                         'border-b text-xs',
@@ -304,14 +384,22 @@ function RegisterGrid({
                         selected && 'outline outline-ring',
                       )}
                     >
-                      <td className="px-2 py-1">{formatDate(r.assertion.assertionDate)}</td>
-                      <td colSpan={columns.length - 3} className="px-2 py-1">
-                        {r.matches
-                          ? `Balance confirmed: ${formatCents(r.assertion.balance)}`
-                          : `Out of balance: the statement says ${formatCents(r.assertion.balance)}, ${formatCents(Math.abs(r.difference))} ${r.difference > 0 ? 'more' : 'less'} than the register`}
-                      </td>
-                      <td className="px-2 py-1 text-right tabular-nums">{formatCents(r.balance)}</td>
-                      <td />
+                      {confirming ? (
+                        <td colSpan={columns.length} className="px-2 py-1 text-destructive" role="alert">
+                          Delete this balance check? Press Enter to delete, or Escape to keep it.
+                        </td>
+                      ) : (
+                        <>
+                          <td className="px-2 py-1">{formatDate(r.assertion.assertionDate)}</td>
+                          <td colSpan={columns.length - 3} className="px-2 py-1">
+                            {r.matches
+                              ? `Balance confirmed: ${formatCents(r.assertion.balance)}`
+                              : `Out of balance: the statement says ${formatCents(r.assertion.balance)}, ${formatCents(Math.abs(r.difference))} ${r.difference > 0 ? 'more' : 'less'} than the register`}
+                          </td>
+                          <td className="px-2 py-1 text-right tabular-nums">{formatCents(r.balance)}</td>
+                          <td />
+                        </>
+                      )}
                     </tr>
                   )
                 }

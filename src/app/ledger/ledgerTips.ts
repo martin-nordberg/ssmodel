@@ -31,6 +31,9 @@ export const LEDGER_TIPS = {
     'The amount. You can type arithmetic, such as 45.50 + 4.50, and it is worked out when you leave the field.',
   'txn.review': 'Marks the transaction to check later; it appears on the review list.',
   'split.account': 'The account this part of the amount belongs to.',
+  'check.date': 'The date of the statement. The check compares the balance at the end of this day.',
+  'check.balance':
+    'The balance the statement shows. The register marks the check as confirmed when its own balance agrees, or shows the difference.',
   'split.amount':
     'This line’s share of the amount. Use a negative amount for a part going the other way, such as taxes taken from a paycheck.',
 } as const

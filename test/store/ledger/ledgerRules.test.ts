@@ -3,6 +3,7 @@ import { genAcctCtgId } from '@/ledger/accountCategories/AcctCtgId.ts'
 import { acctCtgIdAssets, acctCtgIdExpenses } from '@/ledger/accountCategories/AcctCtgRoot.ts'
 import { genAcctId } from '@/ledger/accounts/AcctId.ts'
 import { acctIdNetWorth } from '@/ledger/accounts/NetWorthAccount.ts'
+import { genAsrtId } from '@/ledger/balanceAssertions/AsrtId.ts'
 import { genTxnId } from '@/ledger/transactions/TxnId.ts'
 import { genVndrId } from '@/ledger/vendors/VndrId.ts'
 import { openBunDriver } from '@/store/driver/bunSqlite.ts'
@@ -184,5 +185,22 @@ describe('vendors and references', () => {
         }),
       ),
     ).toContain('account')
+  })
+})
+
+describe('balance checks', () => {
+  test('one per account and date, only for asset and liability accounts', async () => {
+    const { s, checking, groceries } = await setup()
+    const asrt = (acctId: string, assertionDate: string) =>
+      s.command('balanceAssertions', 'createBalanceAssertion', {
+        id: genAsrtId(),
+        acctId,
+        assertionDate,
+        balance: 1000,
+      })
+    await asrt(checking, '2026-01-31')
+    expect(await refused(asrt(checking, '2026-01-31'))).toContain('already has a balance check')
+    expect(await refused(asrt(groceries, '2026-01-31'))).toContain('asset and liability')
+    await asrt(checking, '2026-02-28')
   })
 })
