@@ -796,9 +796,9 @@ Goal: the first release to family and friends [FR-PRD-8].
   - P1.9: a random data key encrypts the payloads, and the password key and the recovery key each wrap it.
     Checquery's files keep their scrypt key as the data key, wrapped on the first password change. The recovery key
     is 24 BIP39 words (`@scure/bip39`).
-- **P2 done** (P2.1–P2.9), except one step that needs you: the real `.checquery` file's conversion check. Run
-  `spike/checquery/convertParity.ts` with its password (see `spike/README.md`), then convert it in the app with
-  File › Convert a Checquery file…. Where the build differs from the plan:
+- **P2 done** (P2.1–P2.9). The household's one `.checquery` file was converted to `.plens` in the app (File ›
+  Convert a Checquery file…) on 2026-11-24, so Checquery is no longer needed. `spike/checquery/convertParity.ts`
+  (see `spike/README.md`) remains for checking a conversion's statements. Where the build differs from the plan:
   - P2.1: the File menu keeps the retirement model's household YAML commands until P6. Retiring Years still edits
     that YAML file. The app uses its own hash history, because TanStack's appends the page's query string to the
     route's search params.
