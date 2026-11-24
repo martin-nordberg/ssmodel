@@ -7,6 +7,7 @@ import { readContentVersion } from '@/store/actionLog/meta.ts'
 import type { DbDriver } from '@/store/driver/DbDriver.ts'
 import { loadSqlite, openWasmMemory, type WasmSqliteDriver } from '@/store/driver/wasmSqlite.ts'
 import { WorkingCopies, WorkingCopyLockedError } from '@/store/file/opfs.ts'
+import { convertChecquery } from '@/store/ledger/convertChecquery.ts'
 import {
   changeFilePassword,
   EncryptionSettingsError,
@@ -184,6 +185,24 @@ const handlers: Handlers = {
       (memory) => openLedgerFile(file, memory, { password, recoveryWords, deviceName, allowMigration }),
       () => wcs.closeCopy(info.fileId, file, true),
     )
+  },
+
+  async convertChecquery({ bytes, password, deviceName }) {
+    if (current) await closeCurrent(true)
+    const wcs = await workingCopies()
+    const fileId = createId()
+    const src = openWasmMemory(await loadSqlite(), bytes)
+    const file = await wcs.openCopy(fileId)
+    try {
+      return await start(
+        file,
+        false,
+        (memory) => convertChecquery(src, file, memory, { password, deviceName, fileId }),
+        () => wcs.closeCopy(fileId, file, false),
+      )
+    } finally {
+      src.close()
+    }
   },
 
   async openReadOnly({ bytes, password, recoveryWords }) {

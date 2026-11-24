@@ -88,6 +88,11 @@ export interface StoreOps {
    * (FR-STO-4). Commands are refused.
    */
   openReadOnly: { req: { bytes: Uint8Array; password: string | undefined; recoveryWords?: string }; res: OpenResult }
+  /**
+   * Converts a Checquery file (its bytes; the original is never touched) into a new file in a new working copy, and
+   * opens it [FR-MIG-1]. Write it to the user's new .plens file with `export`.
+   */
+  convertChecquery: { req: { bytes: Uint8Array; password: string; deviceName: string }; res: OpenResult }
   /** Replaces a read-only session's snapshot with a newer one (no password needed again). */
   reload: { req: { bytes: Uint8Array }; res: null }
   /** Records (or clears) which device has the file open for editing. Not a change. */

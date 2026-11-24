@@ -8,6 +8,7 @@ import { FileChannel } from '@/store/file/broadcast.ts'
 import { pickPlensToOpen, pickPlensToSave, readBytes, writeBytes } from '@/store/file/handles.ts'
 import { deviceId, type FileLock, lockFileWithin, tryLockFile } from '@/store/file/lock.ts'
 import type { OpenBy } from '@/store/ledger/ledgerFile.ts'
+import { pickChecquery } from './convertChecquery.ts'
 import { ensurePermission } from './fileAccess.ts'
 import { forgetRecent, getStored, putStored, type RecentFile, rememberRecent } from './recentFiles.ts'
 
@@ -22,7 +23,16 @@ export type Unlock = { password: string } | { recoveryWords: string }
 
 export type Prompt = { id: number } & (
   | { kind: 'new-password'; resolve: (answer: { password: string | undefined } | null) => void }
-  | { kind: 'password'; name: string; error: string | null; resolve: (answer: Unlock | null) => void }
+  | {
+      kind: 'password'
+      name: string
+      error: string | null
+      /** The dialog's title; "Open <name>" when omitted. */
+      title?: string
+      /** Offer the recovery key instead (not for a Checquery file, which has none). */
+      allowRecovery?: boolean
+      resolve: (answer: Unlock | null) => void
+    }
   | { kind: 'set-password'; title: string; description: string; resolve: (password: string | null) => void }
   | { kind: 'recovery-key'; words: string[]; resolve: (done: true) => void }
   | { kind: 'confirm'; title: string; description: string; action: string; resolve: (ok: boolean) => void }
@@ -508,5 +518,55 @@ export async function saveRollingBackupAs(name: string): Promise<void> {
     toast.success(`Saved the backup as ${handle.name}`)
   } catch (err) {
     toast.error(`Could not save the backup: ${errorText(err)}`)
+  }
+}
+
+/**
+ * File › Convert a Checquery file… [FR-MIG-1]: asks for the .checquery file, its password and where to save the new
+ * .plens file; converts it (the original is never modified) and opens the new file, showing its new recovery key.
+ */
+export async function convertChecqueryFile(): Promise<void> {
+  if (!(await closePlens())) return
+  const source = await pickChecquery()
+  if (!source) return
+  const client = getStoreClient()
+  try {
+    const bytes = await readBytes(source)
+    const baseName = source.name.replace(/\.checquery$/i, '')
+    let error: string | null = null
+    let opened: Awaited<ReturnType<typeof client.request<'convertChecquery'>>> | null = null
+    while (!opened) {
+      const answer = await ask<Extract<Prompt, { kind: 'password' }>>({
+        kind: 'password',
+        name: source.name,
+        title: `Convert ${source.name}`,
+        allowRecovery: false,
+        error,
+      })
+      if (answer === null || 'recoveryWords' in answer) return
+      try {
+        opened = await client.request('convertChecquery', {
+          bytes: bytes.slice(),
+          password: answer.password,
+          deviceName: deviceName(),
+        })
+      } catch (err) {
+        if (!(err instanceof StoreError && err.code === 'wrong-password')) throw err
+        error = 'That password is not right. Try again.'
+      }
+    }
+    const target = await pickPlensToSave(`${baseName}.plens`)
+    if (!target) {
+      await client.request('close', { keepWorkingCopy: false })
+      return
+    }
+    const lock = await tryLockFile(opened.fileId)
+    if (!lock) throw new Error('the new file is locked by another tab')
+    const file = { name: target.name, handle: target, fileId: opened.fileId, encrypted: opened.encrypted }
+    await attachWriter(file, lock, new FileChannel(opened.fileId))
+    if (opened.recoveryWords) await showRecoveryKey(opened.recoveryWords)
+    toast.success(`Converted ${source.name} to ${target.name}`)
+  } catch (err) {
+    toast.error(`Could not convert ${source.name}: ${errorText(err)}`)
   }
 }

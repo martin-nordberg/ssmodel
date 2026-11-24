@@ -93,7 +93,7 @@ function PasswordDialog({ prompt }: { prompt: Extract<Prompt, { kind: 'password'
           }}
         >
           <DialogHeader>
-            <DialogTitle>Open {prompt.name}</DialogTitle>
+            <DialogTitle>{prompt.title ?? `Open ${prompt.name}`}</DialogTitle>
             <DialogDescription>
               {useRecovery
                 ? 'Enter the 24 words of the recovery key you saved when the file was created.'
@@ -129,9 +129,13 @@ function PasswordDialog({ prompt }: { prompt: Extract<Prompt, { kind: 'password'
           )}
           {prompt.error && <p className="text-destructive text-xs">{prompt.error}</p>}
           <DialogFooter className="sm:justify-between">
-            <Button type="button" variant="link" className="px-0" onClick={() => setUseRecovery(!useRecovery)}>
-              {useRecovery ? 'Use the password' : 'Forgot the password? Use the recovery key'}
-            </Button>
+            {prompt.allowRecovery === false ? (
+              <span />
+            ) : (
+              <Button type="button" variant="link" className="px-0" onClick={() => setUseRecovery(!useRecovery)}>
+                {useRecovery ? 'Use the password' : 'Forgot the password? Use the recovery key'}
+              </Button>
+            )}
             <Button type="submit" disabled={!ready}>
               Open
             </Button>

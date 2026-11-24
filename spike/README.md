@@ -21,3 +21,15 @@ build, the unit tests or the e2e suite.
 | P0.1 | `sqlite.spike.ts` | SQLite WASM in a worker: import to OPFS, open, query, export, write to a file handle  |
 | P0.2 | `crypto.spike.ts` | scrypt (@noble/hashes) and AES-GCM (Web Crypto) against payloads written by Checquery |
 | P0.3 | `parity.spike.ts` | Decrypt and replay in the browser; statement totals against Checquery's own code      |
+
+## Converting the real file (P2.9)
+
+`spike/checquery/convertParity.ts` converts the real `.checquery` file with ProvisionLens's converter and checks
+that the converted statements match Checquery's own, for every year-end since 2000, every calendar year and today.
+It prints only counts, timings and pass/fail (differences by key, never amounts), and only reads the original:
+
+```sh
+read -rs SPIKE_CHECQUERY_PASSWORD && export SPIKE_CHECQUERY_PASSWORD && bun spike/checquery/convertParity.ts; unset SPIKE_CHECQUERY_PASSWORD
+```
+
+To convert it for use, open the app and choose File › Convert a Checquery file….

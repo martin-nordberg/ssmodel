@@ -796,3 +796,21 @@ Goal: the first release to family and friends [FR-PRD-8].
   - P1.9: a random data key encrypts the payloads, and the password key and the recovery key each wrap it.
     Checquery's files keep their scrypt key as the data key, wrapped on the first password change. The recovery key
     is 24 BIP39 words (`@scure/bip39`).
+- **P2 done** (P2.1–P2.9), except one step that needs you: the real `.checquery` file's conversion check. Run
+  `spike/checquery/convertParity.ts` with its password (see `spike/README.md`), then convert it in the app with
+  File › Convert a Checquery file…. Where the build differs from the plan:
+  - P2.1: the File menu keeps the retirement model's household YAML commands until P6. Retiring Years still edits
+    that YAML file. The app uses its own hash history, because TanStack's appends the page's query string to the
+    route's search params.
+  - P2.3: the store session enforces the ledger's structural rules for every client: same-type parents, no
+    category cycles, unique names among siblings and among vendors, no deleting anything in use, and live
+    references. Checquery checked these in its pages.
+  - P2.4: the register uses TanStack Table directly, not ssmodel's spreadsheet DataGrid, whose cell model doesn't
+    fit split entries. Splits are entered as signed allocations of the register's amount, so the plain view shows
+    no debits or credits. Patches can now clear a transaction's cleared date or vendor (`null`).
+  - P2.5: balance checks (balance assertions) are on asset and liability registers only, one per account and date.
+  - P2.7: the requirements define no FR-LED-11, so the code cites plan task P2.7 instead. Undoing a delete
+    re-creates the item with the same id, which the materialized store restores. The accounting view changes the
+    register's labels; split lines stay signed allocations.
+  - P2.9: the converter writes a new file with its own id, ProvisionLens's key scheme and a new recovery key. It
+    copies every action with its original timestamp and leaves the original untouched.

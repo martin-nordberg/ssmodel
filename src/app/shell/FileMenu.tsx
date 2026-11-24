@@ -1,6 +1,14 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { closePlens, newPlens, openPlens, openRecentPlens, savePlensCopy, usePlensFile } from '@/app/files/plensFile.ts'
+import {
+  closePlens,
+  convertChecqueryFile,
+  newPlens,
+  openPlens,
+  openRecentPlens,
+  savePlensCopy,
+  usePlensFile,
+} from '@/app/files/plensFile.ts'
 import { listRecent, type RecentFile } from '@/app/files/recentFiles.ts'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
 import { Button } from '@/components/ui/button'
@@ -73,6 +81,7 @@ export function FileMenu() {
         <DropdownMenuItem disabled={!hasPlens} onSelect={() => void closePlens()}>
           Close ProvisionLens file
         </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void convertChecqueryFile()}>Convert a Checquery file…</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-muted-foreground text-xs">
           Retirement model (household YAML)
