@@ -19,6 +19,20 @@ export const LEDGER_TIPS = {
   'vendor.defaultAccount':
     'The account a new transaction with this vendor is filed to, such as Groceries for a grocery store. You can change it on each transaction.',
   'vendor.active': 'Inactive vendors are hidden from suggestions when you enter transactions, but their history stays.',
+  'txn.postDate':
+    'The date the transaction happened, as on the receipt or statement. Shortcuts: t today, + and − a day, PageUp and PageDown a month.',
+  'txn.clearedDate':
+    'The date it cleared the bank, if different. The register orders and balances by this date when it is set.',
+  'txn.code': 'An optional check number or reference code.',
+  'txn.vendor': 'Who you paid or who paid you. Picking a vendor fills in its default account.',
+  'txn.description': 'A note about the transaction. Needed when there is no vendor.',
+  'txn.account': 'Where the money came from or went: an expense or income account, or another account for a transfer.',
+  'txn.amount':
+    'The amount. You can type arithmetic, such as 45.50 + 4.50, and it is worked out when you leave the field.',
+  'txn.review': 'Marks the transaction to check later; it appears on the review list.',
+  'split.account': 'The account this part of the amount belongs to.',
+  'split.amount':
+    'This line’s share of the amount. Use a negative amount for a part going the other way, such as taxes taken from a paycheck.',
 } as const
 
 export type LedgerTipKey = keyof typeof LEDGER_TIPS

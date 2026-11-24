@@ -59,8 +59,8 @@ const hasVendorOrDescriptionMessage = 'A transaction must have a vendor or a des
  * both together on save (see useTransactionRowForm.ts), so this covers the real save path. Historical actions
  * from before this constraint existed are fixed up at materialization time instead, not rejected here -- see
  * TransactionMaterializedStoreSvc's createTransaction/patchTransaction. */
-function postDateOnOrBeforeClearedDate(txn: { postDate?: IsoDate; clearedDate?: IsoDate }) {
-  if (txn.postDate === undefined || txn.clearedDate === undefined) {
+function postDateOnOrBeforeClearedDate(txn: { postDate?: IsoDate; clearedDate?: IsoDate | null }) {
+  if (txn.postDate === undefined || txn.clearedDate === undefined || txn.clearedDate === null) {
     return true
   }
   return txn.postDate <= txn.clearedDate // ISO "YYYY-MM-DD" strings compare lexically
@@ -127,6 +127,10 @@ export const transactionPatchEventSchema = transactionAttributesSchema
     hlc: hlcSchema.optional(),
     /** The two or more entries in the transaction. */
     entries: entriesWriteSchema,
+    /** A new cleared date, or null to clear it (ProvisionLens; Checquery patches never clear it). */
+    clearedDate: isoDateSchema.nullable(),
+    /** A new vendor, or null for none (ProvisionLens). */
+    vndrId: vndrIdSchema.nullable(),
   })
   .partial({
     code: true,

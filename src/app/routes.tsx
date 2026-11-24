@@ -5,12 +5,15 @@ import { HelpPage } from './pages/help/HelpPage.tsx'
 import { TemplateGalleryPage } from './pages/help/TemplateGalleryPage.tsx'
 import { HomePage } from './pages/home/HomePage.tsx'
 import { PastPage } from './pages/past/PastPage.tsx'
+import { RegistersPage } from './pages/past/RegistersPage.tsx'
+import { RegisterPage } from './pages/past/register/RegisterPage.tsx'
 import { SectionPlaceholder } from './pages/placeholder/SectionPlaceholder.tsx'
 import { RetiringLayout, RetiringView } from './pages/retiring/RetiringLayout.tsx'
 import { AccountsPage, type EditableType, editableTypes } from './pages/setup/accounts/AccountsPage.tsx'
 import { FileSettingsPage } from './pages/setup/FileSettingsPage.tsx'
 import { SetupPage } from './pages/setup/SetupPage.tsx'
 import { VendorsPage } from './pages/setup/vendors/VendorsPage.tsx'
+import type { Crumb } from './shell/Breadcrumbs.tsx'
 
 // Every page has a route [FR-UI-23, D: OQ-UI-6]: hash history, so back/forward, reload and a second window work on a
 // static host. Pages' main parameters (account, period, scenario) are route params or search params.
@@ -20,6 +23,22 @@ const rootRoute = createRootRoute({ component: AppShell })
 const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: HomePage })
 
 const pastRoute = createRoute({ getParentRoute: () => rootRoute, path: 'past', component: PastPage })
+const registersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'past/registers',
+  component: RegistersPage,
+})
+
+/** Pages reached by drilling down accept the trail back up [FR-UI-22]. */
+const trailSearch = (search: Record<string, unknown>): { trail?: Crumb[] } =>
+  Array.isArray(search.trail) ? { trail: search.trail as Crumb[] } : {}
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'past/register/$acctId',
+  component: RegisterPage,
+  validateSearch: trailSearch,
+})
 
 const placeholder = (path: string, id: Parameters<typeof SectionPlaceholder>[0]['section']) =>
   createRoute({ getParentRoute: () => rootRoute, path, component: () => <SectionPlaceholder section={id} /> })
@@ -63,6 +82,8 @@ const galleryRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   homeRoute,
   pastRoute,
+  registersRoute,
+  registerRoute,
   placeholder('this-year', 'thisYear'),
   placeholder('next-year', 'nextYear'),
   placeholder('goals', 'goals'),

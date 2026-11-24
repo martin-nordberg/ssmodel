@@ -171,6 +171,14 @@ function TreeRow(props: {
             {a.name}
           </button>
           {a.isPrimary && <Star className="size-3.5 fill-current text-warning" aria-label="Primary" />}
+          <Link
+            to="/past/register/$acctId"
+            params={{ acctId: a.id }}
+            aria-label={`${a.name} register`}
+            className="text-muted-foreground text-xs hover:text-foreground hover:underline"
+          >
+            Register
+          </Link>
         </div>
       </li>
     )

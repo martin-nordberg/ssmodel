@@ -137,6 +137,16 @@ export async function checkLedgerRules(store: LedgerStore, command: string, even
         const vendors = await store.svcs.vendors.findVendorsAll()
         if (!vendors.some((v) => v.id === event.vndrId)) throw new LedgerRuleError('That vendor no longer exists.')
       }
+      if (command === 'transactions.patchTransaction') {
+        // After the patch, the transaction still needs a vendor or a description (FR-LED-1).
+        const current = await store.svcs.transactions.findTransactionById(id as never)
+        if (!current) throw new LedgerRuleError('That transaction no longer exists.')
+        const vndrId = event.vndrId === null ? undefined : (event.vndrId ?? current.vndrId)
+        const description = (event.description as string | undefined) ?? current.description
+        if (vndrId === undefined && description.trim() === '') {
+          throw new LedgerRuleError('A transaction needs a vendor or a description.')
+        }
+      }
       return
     }
     default:

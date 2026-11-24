@@ -120,10 +120,13 @@ export class TransactionMaterializedStoreSvc implements ITransactionSvc {
         throw new Error(`patchTransaction: no transaction with id ${transactionPatch.id}`)
       }
       const postDate = transactionPatch.postDate ?? (current.post_date as IsoDate)
+      // null clears the cleared date; undefined keeps the stored one.
       const rawClearedDate =
-        transactionPatch.clearedDate !== undefined
-          ? transactionPatch.clearedDate
-          : ((current.cleared_date ?? undefined) as IsoDate | undefined)
+        transactionPatch.clearedDate === null
+          ? undefined
+          : transactionPatch.clearedDate !== undefined
+            ? transactionPatch.clearedDate
+            : ((current.cleared_date ?? undefined) as IsoDate | undefined)
       const clearedDate = normalizeClearedDate(postDate, rawClearedDate)
 
       sets.push('post_date = ?', 'cleared_date = ?')

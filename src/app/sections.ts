@@ -31,7 +31,10 @@ export const sections: SectionDef[] = [
     id: 'past',
     label: 'Past',
     to: '/past',
-    pages: [{ label: 'Overview', to: '/past', description: 'Registers and reports of what has happened.' }],
+    pages: [
+      { label: 'Overview', to: '/past', description: 'Registers and reports of what has happened.' },
+      { label: 'Registers', to: '/past/registers', description: 'Every account’s transactions, by search or list.' },
+    ],
   },
   {
     id: 'thisYear',
