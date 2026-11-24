@@ -27,6 +27,7 @@ import {
   vendorPatchEventSchema,
 } from '@/ledger/vendors/Vendor.ts'
 import type { LedgerStore } from '@/store/ledger/LedgerStore.ts'
+import { checkLedgerRules, LedgerRuleError } from '@/store/ledger/ledgerRules.ts'
 
 // One open ledger behind the store worker's protocol [NFR-ARCH-8]. Commands are validated with the domain's Zod
 // schemas, stamped with the session's origin [FR-LED-4], and run one at a time; each committed command produces a
@@ -137,6 +138,12 @@ export class LedgerSession {
       const parsed = schema.safeParse({ ...(input as object), origId: this.origId })
       if (!parsed.success) {
         throw new InvalidRequestError(`${entity}.${method}: ${parsed.error.issues.map((i) => i.message).join('; ')}`)
+      }
+      try {
+        await checkLedgerRules(this.store, `${entity}.${method}`, parsed.data as Record<string, unknown>)
+      } catch (err) {
+        if (err instanceof LedgerRuleError) throw new InvalidRequestError(err.message)
+        throw err
       }
       const result = await this.method(entity, method)(parsed.data)
       const op = method.startsWith('create') ? 'create' : method.startsWith('patch') ? 'patch' : 'delete'

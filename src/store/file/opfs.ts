@@ -30,20 +30,31 @@ export class WorkingCopies {
     this.sqlite3 = sqlite3
   }
 
-  private async acquire(fileId: string): Promise<SAHPoolUtil> {
-    try {
-      let pool = this.pools.get(fileId)
-      if (!pool) {
-        const name = poolName(fileId)
-        pool = await this.sqlite3.installOpfsSAHPoolVfs({ name, directory: `.${name}`, initialCapacity: 4 })
-        this.pools.set(fileId, pool)
-      } else if (pool.isPaused()) {
-        await pool.unpauseVfs()
+  /**
+   * Takes the pool's access handles. The store only does this while the main thread holds the file's Web Lock, so a
+   * pool still held belongs to a tab that just closed or crashed, whose handles the browser releases shortly: retry
+   * for up to `waitMs` before reporting it locked.
+   */
+  private async acquire(fileId: string, waitMs = 3000): Promise<SAHPoolUtil> {
+    const deadline = Date.now() + waitMs
+    for (;;) {
+      try {
+        let pool = this.pools.get(fileId)
+        if (!pool) {
+          const name = poolName(fileId)
+          pool = await this.sqlite3.installOpfsSAHPoolVfs({ name, directory: `.${name}`, initialCapacity: 4 })
+          this.pools.set(fileId, pool)
+        } else if (pool.isPaused()) {
+          await pool.unpauseVfs()
+        }
+        return pool
+      } catch (err) {
+        if (Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 100))
+          continue
+        }
+        throw new WorkingCopyLockedError(`The working copy is in use in another tab (${(err as Error).message})`)
       }
-      return pool
-    } catch (err) {
-      // Another tab holds the pool's access handles.
-      throw new WorkingCopyLockedError(`The working copy is in use in another tab (${(err as Error).message})`)
     }
   }
 
@@ -86,7 +97,8 @@ export class WorkingCopies {
     this.open.add(fileId)
     try {
       const db = new pool.OpfsSAHPoolDb(dbPath)
-      db.exec('PRAGMA journal_mode = DELETE')
+      // Every commit is flushed to the access handle, so it survives the tab closing or crashing [FR-STO-2].
+      db.exec('PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL')
       return new WasmSqliteDriver(this.sqlite3, db)
     } catch (err) {
       this.open.delete(fileId)

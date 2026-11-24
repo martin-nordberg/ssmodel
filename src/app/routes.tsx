@@ -7,8 +7,10 @@ import { HomePage } from './pages/home/HomePage.tsx'
 import { PastPage } from './pages/past/PastPage.tsx'
 import { SectionPlaceholder } from './pages/placeholder/SectionPlaceholder.tsx'
 import { RetiringLayout, RetiringView } from './pages/retiring/RetiringLayout.tsx'
+import { AccountsPage, type EditableType, editableTypes } from './pages/setup/accounts/AccountsPage.tsx'
 import { FileSettingsPage } from './pages/setup/FileSettingsPage.tsx'
 import { SetupPage } from './pages/setup/SetupPage.tsx'
+import { VendorsPage } from './pages/setup/vendors/VendorsPage.tsx'
 
 // Every page has a route [FR-UI-23, D: OQ-UI-6]: hash history, so back/forward, reload and a second window work on a
 // static host. Pages' main parameters (account, period, scenario) are route params or search params.
@@ -40,6 +42,16 @@ const fileSettingsRoute = createRoute({
   component: FileSettingsPage,
 })
 
+const accountsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'setup/accounts',
+  component: AccountsPage,
+  validateSearch: (search: Record<string, unknown>): { type: EditableType } => ({
+    type: editableTypes.includes(search.type as EditableType) ? (search.type as EditableType) : 'ASSET',
+  }),
+})
+const vendorsRoute = createRoute({ getParentRoute: () => rootRoute, path: 'setup/vendors', component: VendorsPage })
+
 const helpRoute = createRoute({ getParentRoute: () => rootRoute, path: 'help', component: HelpPage })
 const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: 'help/about', component: AboutPage })
 const galleryRoute = createRoute({
@@ -64,6 +76,8 @@ const routeTree = rootRoute.addChildren([
   ]),
   setupRoute,
   fileSettingsRoute,
+  accountsRoute,
+  vendorsRoute,
   helpRoute,
   aboutRoute,
   galleryRoute,

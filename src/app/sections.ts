@@ -74,6 +74,12 @@ export const sections: SectionDef[] = [
     to: '/setup',
     pages: [
       { label: 'Overview', to: '/setup', description: 'Everything that describes the household and the file.' },
+      {
+        label: 'Accounts and categories',
+        to: '/setup/accounts',
+        description: 'Every account, filed in categories, by type.',
+      },
+      { label: 'Vendors', to: '/setup/vendors', description: 'Who you pay and who pays you, with default accounts.' },
       { label: 'File settings', to: '/setup/file', description: 'Password, recovery key and backups.' },
     ],
   },

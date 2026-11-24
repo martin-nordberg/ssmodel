@@ -21,6 +21,22 @@ export function tryLockFile(fileId: string): Promise<FileLock | null> {
   })
 }
 
+/**
+ * Waits up to `timeoutMs` for the file's write lock (a tab that just closed or crashed releases it shortly); null if
+ * it's still held then.
+ */
+export function lockFileWithin(fileId: string, timeoutMs: number): Promise<FileLock | null> {
+  return new Promise((resolve) => {
+    navigator.locks
+      .request(
+        `provisionlens:file:${fileId}`,
+        { signal: AbortSignal.timeout(timeoutMs) },
+        () => new Promise<void>((release) => resolve({ release: () => release() })),
+      )
+      .catch(() => resolve(null))
+  })
+}
+
 /** This browser profile's device id, distinguishing devices with the same name in a file's open-by marker. */
 export function deviceId(): string {
   const key = 'provisionlens.deviceId'

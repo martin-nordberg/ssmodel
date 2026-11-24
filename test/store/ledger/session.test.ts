@@ -16,7 +16,12 @@ async function newSession() {
   return { session, changes, opened }
 }
 
-const category = (id = genAcctCtgId()) => ({ id, parentCtgId: acctCtgIdAssets, acctType: 'ASSET', name: 'Bank' })
+const category = (id = genAcctCtgId()) => ({
+  id,
+  parentCtgId: acctCtgIdAssets,
+  acctType: 'ASSET',
+  name: `Bank ${id.slice(-8)}`,
+})
 
 describe('LedgerSession', () => {
   test('a command is validated, stamped with the origin, stored, and reported', async () => {

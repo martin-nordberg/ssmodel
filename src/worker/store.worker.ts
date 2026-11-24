@@ -157,20 +157,18 @@ const handlers: Handlers = {
 
   async inspect({ bytes }) {
     const { info, contentVersion } = await inspectBytes(bytes)
-    let workingVersion: number | null = null
-    if (current?.fileId === info.fileId) {
-      if (!current.readOnly) workingVersion = readContentVersion(current.file)
-    } else {
-      try {
-        const wcs = await workingCopies()
-        if (await wcs.exists(info.fileId)) workingVersion = await wcs.peek(info.fileId, readContentVersion)
-      } catch {
-        // Held by another tab, or an unreadable leftover: nothing to offer here.
-      }
+    return { ...info, contentVersion }
+  },
+
+  async workingCopyVersion({ fileId }) {
+    if (current?.fileId === fileId) return current.readOnly ? null : readContentVersion(current.file)
+    const wcs = await workingCopies()
+    try {
+      return (await wcs.exists(fileId)) ? await wcs.peek(fileId, readContentVersion) : null
+    } catch (err) {
+      if (err instanceof WorkingCopyLockedError) throw err
+      return null // an unreadable leftover: opening from the file replaces it
     }
-    const newerWorkingCopy =
-      workingVersion !== null && workingVersion > contentVersion ? { contentVersion: workingVersion } : null
-    return { ...info, contentVersion, newerWorkingCopy }
   },
 
   async open({ bytes, password, recoveryWords, deviceName, allowMigration, source }) {

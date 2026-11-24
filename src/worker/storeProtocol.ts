@@ -49,12 +49,10 @@ export interface EncryptionInfo {
   hasRecoveryKey: boolean
 }
 
-/** What `inspect` learns from a file's bytes before its password, including any working copy left by a crash. */
+/** What `inspect` learns from a file's bytes before its password. */
 export interface InspectResult extends LedgerFileInfo {
   /** The file's change counter (FR-STO-3). */
   contentVersion: number
-  /** A working copy with changes the file lacks, e.g. after a crash; null when there is none or it isn't newer. */
-  newerWorkingCopy: { contentVersion: number } | null
 }
 
 /** Every request the worker accepts, with its result type. */
@@ -63,6 +61,12 @@ export interface StoreOps {
   /** A new, empty file, in a new working copy. Write it to the user's file with `export`. */
   create: { req: { password: string | undefined; deviceName: string }; res: OpenResult }
   inspect: { req: { bytes: Uint8Array }; res: InspectResult }
+  /**
+   * The change counter of the file's working copy in this browser (null if there's none). Ask while holding the
+   * file's Web Lock: a working copy still locked then belongs to a tab that just closed or crashed, so this waits a
+   * few seconds for its handles to be released [FR-STO-3].
+   */
+  workingCopyVersion: { req: { fileId: string }; res: number | null }
   /**
    * Opens a file: `source: 'file'` copies the bytes into the working copy first; `'working-copy'` keeps the working
    * copy (recovering changes the file lacks).

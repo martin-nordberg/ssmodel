@@ -102,7 +102,8 @@ test('a working copy left by a crash is detected and recovered', async ({ page }
     first.terminate() // a crash: no close, nothing written back to the file
 
     const second = window.harness.newStore().client
-    const offered = await second.request('inspect', { bytes: saved.slice() })
+    const info = await second.request('inspect', { bytes: saved.slice() })
+    const offeredVersion = await second.request('workingCopyVersion', { fileId: info.fileId })
     await second.request('open', {
       bytes: saved.slice(),
       password: undefined,
@@ -116,7 +117,7 @@ test('a working copy left by a crash is detected and recovered', async ({ page }
       'actgunsavedcategory000000001' as never,
     )
     await second.request('close', { keepWorkingCopy: false })
-    const afterClose = await second.request('inspect', { bytes: saved.slice() })
+    const afterClose = await second.request('workingCopyVersion', { fileId: info.fileId })
 
     // Choosing the file instead discards the working copy's changes.
     await second.request('open', {
@@ -132,9 +133,9 @@ test('a working copy left by a crash is detected and recovered', async ({ page }
       'actgunsavedcategory000000001' as never,
     )
     return {
-      offered: offered.newerWorkingCopy !== null && offered.newerWorkingCopy.contentVersion > offered.contentVersion,
+      offered: offeredVersion !== null && offeredVersion > info.contentVersion,
       recovered: recovered?.name,
-      afterClose: afterClose.newerWorkingCopy,
+      afterClose,
       fromFile,
     }
   })

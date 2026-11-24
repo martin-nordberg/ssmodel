@@ -6,7 +6,7 @@ import { Autosaver, type AutosaveStatus } from '@/store/file/autosave.ts'
 import { readRollingBackup, saveRollingBackup, writeFolderBackup } from '@/store/file/backup.ts'
 import { FileChannel } from '@/store/file/broadcast.ts'
 import { pickPlensToOpen, pickPlensToSave, readBytes, writeBytes } from '@/store/file/handles.ts'
-import { deviceId, type FileLock, tryLockFile } from '@/store/file/lock.ts'
+import { deviceId, type FileLock, lockFileWithin, tryLockFile } from '@/store/file/lock.ts'
 import type { OpenBy } from '@/store/ledger/ledgerFile.ts'
 import { ensurePermission } from './fileAccess.ts'
 import { forgetRecent, getStored, putStored, type RecentFile, rememberRecent } from './recentFiles.ts'
@@ -121,11 +121,12 @@ async function attachWriter(file: Omit<OpenPlens, 'readOnly'>, lock: FileLock, c
     () => clearInterval(heartbeat),
   ]
   session = { autosaver, lock, channel, cleanups }
+  // The file is saved at once (below), so it shows as pending until then, never "Saved" before the first save.
+  autosaver.noteChange()
   usePlensFile.setState({ file: { ...file, readOnly: false }, autosave: autosaver.current })
   await rememberRecent(file.handle, 'plens')
-  // Record this device in the file and save at once, with any new, recovered or migrated content [FR-STO-4].
+  // Record this device in the file and save, with any new, recovered or migrated content [FR-STO-4].
   await markOpen()
-  autosaver.noteChange()
   await autosaver.flush()
 }
 
@@ -252,13 +253,20 @@ export async function openPlensHandle(handle: FileSystemFileHandle): Promise<voi
     const file = { name: handle.name, handle, fileId: info.fileId, encrypted: info.encrypted }
     channel = new FileChannel(info.fileId)
     lock = await tryLockFile(info.fileId)
+    let snapshot: Uint8Array | null = null
+    if (!lock) {
+      // A tab editing the file answers at once. No answer means the lock belongs to a tab that just closed or
+      // crashed, which releases it shortly.
+      snapshot = await channel.requestSnapshot()
+      if (snapshot === null) lock = await lockFileWithin(info.fileId, 3000)
+    }
 
     if (!lock) {
       // Open for editing in another tab or window: follow it read-only [FR-STO-4].
       const reader = channel
       const opened = await withUnlock(handle.name, info.encrypted, async (unlock) => {
-        const snapshot = (await reader.requestSnapshot()) ?? bytes
-        return client.request('openReadOnly', { bytes: snapshot, ...unlock })
+        const latest = (await reader.requestSnapshot()) ?? snapshot ?? bytes
+        return client.request('openReadOnly', { bytes: latest, ...unlock })
       })
       if (!opened) return reader.close()
       attachReader(file, reader)
@@ -268,7 +276,8 @@ export async function openPlensHandle(handle: FileSystemFileHandle): Promise<voi
     }
 
     let source: 'file' | 'working-copy' = 'file'
-    if (info.newerWorkingCopy) {
+    const workingVersion = await client.request('workingCopyVersion', { fileId: info.fileId })
+    if (workingVersion !== null && workingVersion > info.contentVersion) {
       const choice = await ask<Extract<Prompt, { kind: 'recover' }>>({ kind: 'recover', name: handle.name })
       if (!choice) return cancel()
       source = choice

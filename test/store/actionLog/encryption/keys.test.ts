@@ -95,7 +95,10 @@ describe('wrapped keys', () => {
 })
 
 describe('encryption settings on an open file', () => {
-  const category = () => ({ id: genAcctCtgId(), parentCtgId: acctCtgIdAssets, acctType: 'ASSET', name: 'Bank' })
+  const category = () => {
+    const id = genAcctCtgId()
+    return { id, parentCtgId: acctCtgIdAssets, acctType: 'ASSET', name: `Bank ${id.slice(-8)}` }
+  }
 
   async function setup(password: string | undefined) {
     const db = openBunDriver()
