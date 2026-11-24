@@ -1,3 +1,4 @@
+import { formatDollars } from '@/lib/format.ts'
 // Input parsing for grid cells [FR-UI-4]: currency ($1,234 / 1.2k / 1.2M), percentages (3.5%), dates
 // (2032-01 / Jan 2032 / 1/2032 / 2032-01-15).
 
@@ -96,18 +97,12 @@ export function setMoneyStyle(style: 'full' | 'compact') {
 }
 export const getMoneyStyle = () => moneyStyle
 
+/** Planning dollars for display; see src/lib/format.ts, the one formatting module [FR-UI-30]. */
 export function formatCurrency(v: number | undefined, compact = false): string {
-  if (v === undefined || !Number.isFinite(v)) return ''
-  if (compact && Math.abs(v) >= 1e6) return `$${(v / 1e6).toFixed(2)}M`
-  if (compact && Math.abs(v) >= 1e4) return `$${(v / 1e3).toFixed(0)}k`
-  return `$${Math.round(v).toLocaleString('en-US')}`
+  return formatDollars(v, { compact })
 }
 
-export function formatPercent(v: number | undefined, digits = 2): string {
-  if (v === undefined || !Number.isFinite(v)) return ''
-  const t = (v * 100).toFixed(digits)
-  return `${t.includes('.') ? t.replace(/0+$/, '').replace(/\.$/, '') : t}%`
-}
+export { formatPercent } from '@/lib/format.ts'
 
 /** Tab-separated rows/columns as copied from a spreadsheet. */
 export function parseTsv(text: string): string[][] {

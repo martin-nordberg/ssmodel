@@ -44,6 +44,22 @@
     --color-brand-track: var(--brand-track);
     --color-brand-range: var(--brand-range);
     --color-brand-active: var(--brand-active);
+    /* Semantic colors [FR-UI-29]; see src/app/theme/tokens.ts. */
+    --color-actual: var(--actual);
+    --color-projected: var(--projected);
+    --color-today: var(--today);
+    --color-favorable: var(--favorable);
+    --color-unfavorable: var(--unfavorable);
+    --color-on-track: var(--on-track);
+    --color-at-risk: var(--at-risk);
+    --color-off-track: var(--off-track);
+    --color-warning: var(--warning);
+    --color-phase-past: var(--phase-past);
+    --color-phase-this-year: var(--phase-this-year);
+    --color-phase-next-year: var(--phase-next-year);
+    --color-phase-goals: var(--phase-goals);
+    --color-phase-building: var(--phase-building);
+    --color-phase-retiring: var(--phase-retiring);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -184,6 +200,43 @@
   --grid-line: #33332f;
   --ghost: #8f8e88;
   --path-line: #f07a45;
+}
+
+/* Semantic colors [FR-UI-29]: the same meaning everywhere. Text colors meet WCAG AA (4.5:1) on the page background
+   in both themes [NFR-UI-3]. Phase hues are quiet: for tab underlines and chart backgrounds, never for status. */
+:root {
+  --actual: #1c4f94;
+  --projected: #5b6b80;
+  --today: #b4231f;
+  --favorable: #13714d;
+  --unfavorable: #b4231f;
+  --on-track: #13714d;
+  --at-risk: #8a5a00;
+  --off-track: #b4231f;
+  --warning: #8a5a00;
+  --phase-past: #8c96a6;
+  --phase-this-year: #6f9fd8;
+  --phase-next-year: #78b7b0;
+  --phase-goals: #c9a35a;
+  --phase-building: #93b778;
+  --phase-retiring: #b39ad1;
+}
+.dark {
+  --actual: #9ec5f4;
+  --projected: #a3afbf;
+  --today: #ff8a80;
+  --favorable: #5fd3a2;
+  --unfavorable: #ff8a80;
+  --on-track: #5fd3a2;
+  --at-risk: #f2c25c;
+  --off-track: #ff8a80;
+  --warning: #f2c25c;
+  --phase-past: #6b7585;
+  --phase-this-year: #4f7fb8;
+  --phase-next-year: #4f938c;
+  --phase-goals: #a8843e;
+  --phase-building: #6f9456;
+  --phase-retiring: #8c74ab;
 }
 
 /* Print [FR-OUT-7]: content only, full width, no chrome. */

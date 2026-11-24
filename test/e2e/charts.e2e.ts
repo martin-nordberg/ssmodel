@@ -46,7 +46,10 @@ test('hovering a chart highlights the year in the detail strip', async ({ page }
   await charts.getByRole('tab', { name: 'Balance fan' }).click()
   const fig = charts.getByRole('figure', { name: /Total liquid savings/ })
   await expect(fig).toBeVisible({ timeout: 30_000 })
-  const box = (await fig.locator('svg.recharts-surface').boundingBox())!
+  // The chart re-renders as results arrive; wait until its surface has a box to hover.
+  const surface = fig.locator('svg.recharts-surface')
+  await expect.poll(async () => (await surface.boundingBox())?.width ?? 0).toBeGreaterThan(0)
+  const box = (await surface.boundingBox())!
   await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.5)
   await expect(page.getByRole('region', { name: 'Year-by-year' }).getByRole('heading')).toContainText(/— 20\d\d/)
 })

@@ -1,6 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronDown } from 'lucide-react'
 import { sectionOf, sections } from '@/app/sections.ts'
+import { phaseHue } from '@/app/theme/tokens.ts'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
@@ -18,9 +19,11 @@ export function SectionTabs() {
           <div
             key={section.id}
             className={cn(
-              'flex items-center rounded-md',
+              'flex items-center rounded-md border-b-2',
               active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
+            // The timeline phases carry a quiet hue [FR-UI-29, D: OQ-UI-9].
+            style={{ borderBottomColor: phaseHue[section.id] ?? 'transparent' }}
           >
             <Link
               to={section.to as '/'}

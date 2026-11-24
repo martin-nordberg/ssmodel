@@ -2,6 +2,7 @@ import { createHashHistory, createRootRoute, createRoute, createRouter, redirect
 import { AppShell } from '@/app/shell/AppShell.tsx'
 import { AboutPage } from './pages/help/AboutPage.tsx'
 import { HelpPage } from './pages/help/HelpPage.tsx'
+import { TemplateGalleryPage } from './pages/help/TemplateGalleryPage.tsx'
 import { HomePage } from './pages/home/HomePage.tsx'
 import { PastPage } from './pages/past/PastPage.tsx'
 import { SectionPlaceholder } from './pages/placeholder/SectionPlaceholder.tsx'
@@ -41,6 +42,11 @@ const fileSettingsRoute = createRoute({
 
 const helpRoute = createRoute({ getParentRoute: () => rootRoute, path: 'help', component: HelpPage })
 const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: 'help/about', component: AboutPage })
+const galleryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'help/gallery',
+  component: TemplateGalleryPage,
+})
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
@@ -60,6 +66,7 @@ const routeTree = rootRoute.addChildren([
   fileSettingsRoute,
   helpRoute,
   aboutRoute,
+  galleryRoute,
 ])
 
 export const router = createRouter({ routeTree, history: createHashHistory(), defaultPreload: false })
