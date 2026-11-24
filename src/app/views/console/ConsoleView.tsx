@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ExplainDialog, type ExplainState } from '@/app/components/ExplainDialog.tsx'
@@ -15,7 +16,6 @@ import { pinBaseline, shownClaim, useConsole } from '@/state/consoleStore.ts'
 import { useDocument, withOverrides } from '@/state/documentStore.ts'
 import { useActiveScenario, useEffectiveFile, useEffectivePrepared, useFile } from '@/state/scenario.ts'
 import { useSettings } from '@/state/settingsStore.ts'
-import { useUi } from '@/state/uiStore.ts'
 import { completeness, isComplete } from '../setup/completeness.ts'
 import { ChartArea } from './ChartArea.tsx'
 import { DetailStrip, pathLabel } from './DetailStrip.tsx'
@@ -33,11 +33,11 @@ export function ConsoleView() {
 }
 
 function Incomplete() {
-  const setView = useUi((s) => s.setView)
+  const navigate = useNavigate()
   return (
     <div className="mx-auto mt-16 max-w-md text-center text-sm">
       <p className="mb-3">Some facts are still missing. The Console needs the items on the Setup checklist.</p>
-      <Button onClick={() => setView('setup')}>Go to Setup</Button>
+      <Button onClick={() => void navigate({ to: '/retiring/setup' })}>Go to Setup</Button>
     </div>
   )
 }

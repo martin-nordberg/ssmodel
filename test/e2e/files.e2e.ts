@@ -1,17 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { installFsaMock, readDisk } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 const minimal = readFileSync(new URL('../fixtures/minimal.yaml', import.meta.url), 'utf8')
 
 test('open, edit, save, reopen', async ({ page }) => {
   await installFsaMock(page, { 'minimal.yaml': minimal })
   await page.goto('/')
-  await page.getByRole('button', { name: 'File' }).click()
+  await page.getByRole('button', { name: 'File', exact: true }).click()
   await page.getByRole('menuitem', { name: /^Open…/ }).click()
   await expect(page.getByTestId('status-file')).toHaveText('minimal.yaml')
 
-  await page.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page, 'Retiring Years', 'Setup')
   await page.getByLabel('Base date (month)').fill('2028-03')
   await page.getByLabel('Base date (month)').press('Enter')
   await expect(page.getByTestId('status-file')).toHaveText('minimal.yaml • modified')
@@ -28,7 +29,7 @@ test('open, edit, save, reopen', async ({ page }) => {
   await installFsaMock(page2, { 'minimal.yaml': saved ?? '' })
   await page2.goto('/')
   await page2.getByRole('button', { name: 'Open…' }).click()
-  await page2.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page2, 'Retiring Years', 'Setup')
   await expect(page2.getByLabel('Base date (month)')).toHaveValue('2028-03')
 })
 

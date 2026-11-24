@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
 import { installFsaMock } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 // Every data-input label and editable grid column heading has a (shadcn) tooltip.
 const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'utf8').replace(
@@ -22,8 +23,9 @@ test('every setup input label and column heading has a tooltip', async ({ page }
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page, 'Retiring Years', 'Setup')
   const nav = page.getByRole('navigation', { name: 'Setup sections' })
+  await expect(nav).toBeVisible()
   const n = await nav.getByRole('button').count()
   expect(n).toBeGreaterThan(8)
   const missing: string[] = []
@@ -49,7 +51,7 @@ test('every Console lever has a tooltip', async ({ page }) => {
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/?poolSize=2')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Console' }).click()
+  await openPage(page, 'Retiring Years', 'Console')
   const rail = page.getByRole('complementary', { name: 'Levers' })
   await expect(rail.locator('[data-lever]').first()).toBeVisible()
   const bare = await rail

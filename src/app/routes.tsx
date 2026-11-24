@@ -1,0 +1,71 @@
+import { createHashHistory, createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
+import { AppShell } from '@/app/shell/AppShell.tsx'
+import { AboutPage } from './pages/help/AboutPage.tsx'
+import { HelpPage } from './pages/help/HelpPage.tsx'
+import { HomePage } from './pages/home/HomePage.tsx'
+import { PastPage } from './pages/past/PastPage.tsx'
+import { SectionPlaceholder } from './pages/placeholder/SectionPlaceholder.tsx'
+import { RetiringLayout, RetiringView } from './pages/retiring/RetiringLayout.tsx'
+import { FileSettingsPage } from './pages/setup/FileSettingsPage.tsx'
+import { SetupPage } from './pages/setup/SetupPage.tsx'
+
+// Every page has a route [FR-UI-23, D: OQ-UI-6]: hash history, so back/forward, reload and a second window work on a
+// static host. Pages' main parameters (account, period, scenario) are route params or search params.
+
+const rootRoute = createRootRoute({ component: AppShell })
+
+const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: HomePage })
+
+const pastRoute = createRoute({ getParentRoute: () => rootRoute, path: 'past', component: PastPage })
+
+const placeholder = (path: string, id: Parameters<typeof SectionPlaceholder>[0]['section']) =>
+  createRoute({ getParentRoute: () => rootRoute, path, component: () => <SectionPlaceholder section={id} /> })
+
+const retiringRoute = createRoute({ getParentRoute: () => rootRoute, path: 'retiring', component: RetiringLayout })
+const retiringIndex = createRoute({
+  getParentRoute: () => retiringRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/retiring/console' })
+  },
+})
+const retiringPage = (view: 'console' | 'setup' | 'results' | 'compare') =>
+  createRoute({ getParentRoute: () => retiringRoute, path: view, component: () => <RetiringView view={view} /> })
+
+const setupRoute = createRoute({ getParentRoute: () => rootRoute, path: 'setup', component: SetupPage })
+const fileSettingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'setup/file',
+  component: FileSettingsPage,
+})
+
+const helpRoute = createRoute({ getParentRoute: () => rootRoute, path: 'help', component: HelpPage })
+const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: 'help/about', component: AboutPage })
+
+const routeTree = rootRoute.addChildren([
+  homeRoute,
+  pastRoute,
+  placeholder('this-year', 'thisYear'),
+  placeholder('next-year', 'nextYear'),
+  placeholder('goals', 'goals'),
+  placeholder('building', 'building'),
+  retiringRoute.addChildren([
+    retiringIndex,
+    retiringPage('console'),
+    retiringPage('setup'),
+    retiringPage('results'),
+    retiringPage('compare'),
+  ]),
+  setupRoute,
+  fileSettingsRoute,
+  helpRoute,
+  aboutRoute,
+])
+
+export const router = createRouter({ routeTree, history: createHashHistory(), defaultPreload: false })
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
+  }
+}

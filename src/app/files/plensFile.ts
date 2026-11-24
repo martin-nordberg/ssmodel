@@ -44,14 +44,12 @@ interface PlensState {
   file: OpenPlens | null
   autosave: AutosaveStatus
   prompt: Prompt | null
-  settingsOpen: boolean
 }
 
 export const usePlensFile = create<PlensState>()(() => ({
   file: null,
   autosave: { state: 'saved', lastSavedAt: null, error: null },
   prompt: null,
-  settingsOpen: false,
 }))
 
 /** How often the editing tab refreshes the file's open-by marker, and how old a marker is taken as stale. */
@@ -389,10 +387,6 @@ async function backUp(file: OpenPlens): Promise<void> {
 }
 
 // File settings [FR-STO-5, FR-STO-6].
-
-export function openPlensSettings(open = true): void {
-  usePlensFile.setState({ settingsOpen: open })
-}
 
 export async function changePlensPassword(password?: string): Promise<void> {
   const next =

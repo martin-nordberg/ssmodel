@@ -1,25 +1,27 @@
-import { useEffect } from 'react'
+import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
+import { CircleHelp } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { PlensDialogs } from '@/app/files/PlensDialogs.tsx'
-import { PlensSettingsDialog } from '@/app/files/PlensSettingsDialog.tsx'
-import { flushPlens, hasUnsavedPlens, openPlensHandle } from '@/app/files/plensFile.ts'
+import { flushPlens, hasUnsavedPlens, openPlensHandle, usePlensFile } from '@/app/files/plensFile.ts'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
 import { useLaunchQueue } from '@/app/pwa/useLaunchQueue.ts'
 import { usePwa } from '@/app/pwa/usePwa.ts'
-import { ViewHost } from '@/app/views/ViewHost.tsx'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDocument } from '@/state/documentStore.ts'
 import { useSettings } from '@/state/settingsStore.ts'
-import { useUi, type View } from '@/state/uiStore.ts'
+import { useUi } from '@/state/uiStore.ts'
 import { CommandPalette } from './CommandPalette.tsx'
 import { FileMenu } from './FileMenu.tsx'
 import { NewHouseholdDialog } from './NewHouseholdDialog.tsx'
-import { ScenarioTabs } from './ScenarioTabs.tsx'
+import { SectionTabs } from './SectionTabs.tsx'
 import { SettingsMenu } from './SettingsMenu.tsx'
 import { StatusBar } from './StatusBar.tsx'
 import { useDisplaySettings } from './useDisplaySettings.ts'
 import { useShortcuts } from './useShortcuts.ts'
+
+// The app shell [FR-UI-20]: a toolbar (file commands, section tabs, the command palette, settings and help), the
+// page, and the status bar.
 
 export function AppShell() {
   useShortcuts()
@@ -28,15 +30,17 @@ export function AppShell() {
   useLaunchQueue(openHandle, openPlensHandle)
   useDisplaySettings()
   useSettings((s) => s.numberFormat)
+  useYamlNavigation()
   const name = useDocument((s) => s.name)
   const dirty = useDocument((s) => s.dirty)
   const hasFile = useDocument((s) => s.file !== null)
-  const view = useUi((s) => s.view)
-  const setView = useUi((s) => s.setView)
+  const plens = usePlensFile((s) => s.file)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    document.title = hasFile ? `${dirty ? '• ' : ''}${name} — SS Claiming Model` : 'SS Claiming Model'
-  }, [name, dirty, hasFile])
+    const parts = [plens?.name, hasFile ? `${dirty ? '• ' : ''}${name}` : null].filter(Boolean)
+    document.title = parts.length > 0 ? `${parts.join(' · ')} — ProvisionLens` : 'ProvisionLens'
+  }, [name, dirty, hasFile, plens])
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -62,23 +66,8 @@ export function AppShell() {
     <div className="flex h-screen flex-col bg-background text-foreground text-sm">
       <header className="no-print flex h-10 items-center gap-2 border-b px-2">
         <FileMenu />
-        <Tabs value={view} onValueChange={(v) => setView(v as View)}>
-          <TabsList>
-            <TabsTrigger value="console" disabled={!hasFile}>
-              Console
-            </TabsTrigger>
-            <TabsTrigger value="setup" disabled={!hasFile}>
-              Setup
-            </TabsTrigger>
-            <TabsTrigger value="results" disabled={!hasFile}>
-              Results
-            </TabsTrigger>
-            <TabsTrigger value="compare" disabled={!hasFile}>
-              Compare
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <h1 className="ml-auto font-semibold text-sm">Social Security Claiming Model</h1>
+        <SectionTabs />
+        <span className="ml-auto font-semibold text-sm">ProvisionLens</span>
         <Button
           variant="ghost"
           size="sm"
@@ -88,34 +77,32 @@ export function AppShell() {
           Commands <kbd className="font-mono text-[10px]">Ctrl+K</kbd>
         </Button>
         <SettingsMenu />
+        <Button variant="ghost" size="icon" aria-label="Help" onClick={() => void navigate({ to: '/help' })}>
+          <CircleHelp className="size-4" />
+        </Button>
       </header>
-      {hasFile && <ScenarioTabs />}
       <LoadErrors />
-      <div className="min-h-0 flex-1 overflow-auto">{hasFile ? <ViewHost /> : <Welcome />}</div>
+      <div className="min-h-0 flex-1 overflow-auto">
+        <Outlet />
+      </div>
       <StatusBar />
       <NewHouseholdDialog />
-      <PlensSettingsDialog />
       <PlensDialogs />
       <CommandPalette />
     </div>
   )
 }
 
-function Welcome() {
-  const cmd = useFileCommands()
-  return (
-    <div className="mx-auto mt-24 flex max-w-md flex-col items-center gap-4 text-center">
-      <p className="text-muted-foreground">
-        Model when to start Social Security, using your savings, taxes, expected expenses and uncertainty.
-      </p>
-      <div className="flex gap-2">
-        <Button onClick={cmd.newHousehold}>New household…</Button>
-        <Button variant="outline" onClick={() => void cmd.open()}>
-          Open…
-        </Button>
-      </div>
-    </div>
-  )
+/** Opening or creating a household YAML file goes to Retiring Years › Setup, where it is edited. */
+function useYamlNavigation() {
+  const hasFile = useDocument((s) => s.file !== null)
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const navigate = useNavigate()
+  const had = useRef(hasFile)
+  useEffect(() => {
+    if (hasFile && !had.current && !pathname.startsWith('/retiring')) void navigate({ to: '/retiring/setup' })
+    had.current = hasFile
+  }, [hasFile, pathname, navigate])
 }
 
 function LoadErrors() {

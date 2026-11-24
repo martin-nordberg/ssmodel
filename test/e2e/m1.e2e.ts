@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
 import { installFsaMock, readDisk } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'utf8')
 
 async function resultsText(page: Page) {
-  await page.getByRole('tab', { name: 'Results' }).click()
+  await openPage(page, 'Retiring Years', 'Results')
   const grid = page.getByRole('grid', { name: 'Year-by-year results' })
   await expect(grid).toContainText('2027')
   return grid.textContent()
@@ -16,7 +17,7 @@ test('edit, save and reopen reproduces the results', async ({ page, context }) =
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page, 'Retiring Years', 'Setup')
   await page
     .getByRole('navigation', { name: 'Setup sections' })
     .getByRole('button', { name: /^Expenses/ })

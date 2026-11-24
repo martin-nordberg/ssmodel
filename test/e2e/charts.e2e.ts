@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
 import { installFsaMock } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'utf8').replace(
   'paths: 5000',
@@ -11,7 +12,7 @@ async function openConsole(page: Page) {
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/?poolSize=3')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Console' }).click()
+  await openPage(page, 'Retiring Years', 'Console')
   await expect(page.getByTestId('recommendation')).toContainText('Claim at', { timeout: 30_000 })
 }
 
@@ -59,7 +60,7 @@ test('layout menu hides a chart tab (saved in the browser)', async ({ page }) =>
   await expect(charts.getByRole('tab', { name: 'Taxes' })).toHaveCount(0)
   await page.reload()
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Console' }).click()
+  await openPage(page, 'Retiring Years', 'Console')
   await expect(page.getByRole('region', { name: 'Charts' }).getByRole('tab', { name: 'Taxes' })).toHaveCount(0)
 })
 

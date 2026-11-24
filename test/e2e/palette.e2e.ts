@@ -17,21 +17,22 @@ test('the command palette filters and runs commands from each group', async ({ p
   await installFsaMock(page, { 'minimal.yaml': minimal })
   await page.goto('/')
 
-  // Without a file only File and Display commands are offered.
+  // Without a file: File, Go to and Display commands, but no household commands.
   await page.keyboard.press('Control+k')
   const dialog = page.getByRole('dialog', { name: 'Command palette' })
   await expect(dialog.getByRole('option', { name: 'Open…' })).toBeVisible()
-  await expect(dialog.getByRole('option', { name: 'Results' })).toHaveCount(0)
+  await expect(dialog.getByRole('option', { name: 'Retiring Years: Results' })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: 'Undo' })).toHaveCount(0)
   await page.keyboard.press('Escape')
 
   await run(page, 'open', 'Open…') // File
   await expect(page.getByRole('tablist', { name: 'Scenarios' })).toBeVisible()
 
-  await run(page, 'home', /^Home/) // Setup panel
+  await run(page, 'retirement setup home', 'Home') // Retirement setup panel
   await expect(page.getByRole('heading', { name: 'Home', level: 2 })).toBeVisible()
 
-  await run(page, 'results', /^Results/) // Go to
-  await expect(page.getByRole('tab', { name: 'Results' })).toHaveAttribute('aria-selected', 'true')
+  await run(page, 'results', 'Retiring Years: Results') // Go to
+  await expect(page).toHaveURL(/#\/retiring\/results$/)
 
   await run(page, 'nominal', 'Show nominal dollars') // Display
   await expect(page.getByRole('radio', { name: 'Nominal $' })).toHaveAttribute('aria-checked', 'true')

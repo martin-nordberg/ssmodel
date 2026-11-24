@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
 import { installFsaMock, readDisk } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'utf8')
 
@@ -13,7 +14,7 @@ async function openFull(page: Page) {
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page, 'Retiring Years', 'Setup')
 }
 
 test('setup sections show the loaded household', async ({ page }) => {
@@ -52,7 +53,7 @@ test('enter a household by hand and save it', async ({ page }) => {
   await page.getByLabel('Spouse current monthly benefit ($)').fill('1400')
   await page.getByLabel('Spouse claimed (month)').fill('2025-03')
   await page.getByRole('button', { name: 'Create' }).click()
-  await page.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page, 'Retiring Years', 'Setup')
   await expect(page.getByTestId('completeness')).toContainText('At least one account')
 
   // Earnings: FRA estimate and a pasted record.
@@ -126,7 +127,7 @@ test('M3 panels: add an inheritance with real estate, an annuity, and a home sal
   await installFsaMock(page, { 'minimal.yaml': minimal })
   await page.goto('/')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page, 'Retiring Years', 'Setup')
 
   await section(page, 'Inheritances').click()
   await page.getByRole('button', { name: 'Add row' }).first().click()

@@ -11,8 +11,7 @@ export const category = {
 }
 
 export async function plensMenu(page: Page, item: string) {
-  await page.getByRole('button', { name: 'File' }).click()
-  await page.getByRole('menuitem', { name: 'ProvisionLens file (preview)' }).click()
+  await page.getByRole('button', { name: 'File', exact: true }).click()
   await page.getByRole('menuitem', { name: item }).click()
 }
 

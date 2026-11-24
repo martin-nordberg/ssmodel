@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { installFsaMock } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 // FR-UI-14: clicking a computed value opens its breakdown; the breakdown's total is the value shown.
 const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'utf8').replace(
@@ -30,7 +31,7 @@ test('explain values in the Results year table', async ({ page }) => {
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Results' }).click()
+  await openPage(page, 'Retiring Years', 'Results')
   const grid = page.getByRole('grid', { name: 'Year-by-year results' })
   await expect(grid).toContainText('2027')
 
@@ -56,7 +57,7 @@ test('explain values in the Console detail strip (median path)', async ({ page }
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/?poolSize=3')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Console' }).click()
+  await openPage(page, 'Retiring Years', 'Console')
   await expect(page.getByText('Median path')).toBeVisible({ timeout: 60_000 })
   const strip = page.getByRole('grid', { name: 'Year-by-year strip' })
   const d = await explainAndCheck(page, strip, 2, 'Taxes', /^Taxes, 2028/)

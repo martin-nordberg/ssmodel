@@ -1,6 +1,8 @@
 // Command palette [FR-UI-12]: Ctrl/Cmd+K opens a searchable list of file, view, scenario, Setup-panel, Console and
 // display commands. Commands are built from the stores, so the list always matches the current document.
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
+import { router } from '@/app/routes.tsx'
+import { sections } from '@/app/sections.ts'
 import { SECTIONS } from '@/app/views/setup/SetupView.tsx'
 import {
   Command,
@@ -15,19 +17,14 @@ import {
 import { pinBaseline, useConsole } from '@/state/consoleStore.ts'
 import { useDocument } from '@/state/documentStore.ts'
 import { useSettings } from '@/state/settingsStore.ts'
-import { useUi, type View } from '@/state/uiStore.ts'
+import { useUi } from '@/state/uiStore.ts'
 
 // A stable empty list: a selector that returns a new [] on each read re-renders forever.
 const NO_SCENARIOS: never[] = []
 
 type Cmd = { id: string; label: string; run: () => void; shortcut?: string; keywords?: string[] }
 
-const VIEWS: { id: View; label: string }[] = [
-  { id: 'console', label: 'Console' },
-  { id: 'setup', label: 'Setup' },
-  { id: 'results', label: 'Results' },
-  { id: 'compare', label: 'Compare' },
-]
+const go = (to: string) => void router.navigate({ to: to as '/' })
 
 export function CommandPalette() {
   const open = useUi((s) => s.paletteOpen)
@@ -114,17 +111,27 @@ function useGroups(hasFile: boolean): { heading: string; items: Cmd[]; always?: 
       ],
     },
     {
+      // Every page of every section [FR-UI-21].
       heading: 'Go to',
-      items: VIEWS.map((v) => ({ id: `view-${v.id}`, label: v.label, run: () => ui().setView(v.id) })),
+      always: true,
+      items: sections.flatMap((section) =>
+        section.pages.map((page) => ({
+          id: `page-${page.to}`,
+          label:
+            page.to === section.to && section.pages.length === 1 ? section.label : `${section.label}: ${page.label}`,
+          run: () => go(page.to),
+          keywords: [page.description],
+        })),
+      ),
     },
     {
-      heading: 'Setup',
+      heading: 'Retirement setup',
       items: SECTIONS.map((s) => ({
         id: `setup-${s.id}`,
         label: s.label,
         run: () => {
           ui().setSetupSection(s.id)
-          ui().setView('setup')
+          go('/retiring/setup')
         },
       })),
     },

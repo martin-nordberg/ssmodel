@@ -23,6 +23,7 @@
     "@paralleldrive/cuid2": "3.3.0",
     "@scure/bip39": "2.4.0",
     "@sqlite.org/sqlite-wasm": "3.54.1-build1",
+    "@tanstack/react-router": "1.170.46",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",

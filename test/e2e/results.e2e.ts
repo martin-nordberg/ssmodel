@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { installFsaMock } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'utf8')
 
@@ -8,7 +9,7 @@ test('results table, dollars toggle and CSV export', async ({ page }) => {
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Results' }).click()
+  await openPage(page, 'Retiring Years', 'Results')
   const grid = page.getByRole('grid', { name: 'Year-by-year results' })
   await expect(grid).toContainText('2027')
   await expect(grid.getByRole('columnheader', { name: 'Deduction' })).toBeVisible()
@@ -38,7 +39,7 @@ test('withdrawal schedule view', async ({ page }) => {
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Results' }).click()
+  await openPage(page, 'Retiring Years', 'Results')
   await page.getByRole('radio', { name: 'Withdrawal schedule' }).click()
   const grid = page.getByRole('grid', { name: 'Year-by-year results' })
   await expect(grid).toContainText('Roth conversions')
@@ -51,7 +52,7 @@ test('sensitivity view', async ({ page }) => {
   await installFsaMock(page, { 'full.yaml': light })
   await page.goto('/?poolSize=3')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Results' }).click()
+  await openPage(page, 'Retiring Years', 'Results')
   await page.getByRole('radio', { name: 'Sensitivity' }).click()
   await page.getByRole('button', { name: 'Run sensitivity' }).click()
   const chart = page.getByTestId('sensitivity')
@@ -78,7 +79,7 @@ test('display settings: dark theme, compact numbers, persisted in the browser', 
   await expect(page.locator('html')).toHaveClass(/dark/)
   await page.getByRole('menuitemradio', { name: '$1.23M' }).click()
   await page.keyboard.press('Escape')
-  await page.getByRole('tab', { name: 'Results' }).click()
+  await openPage(page, 'Retiring Years', 'Results')
   await expect(page.getByRole('grid', { name: 'Year-by-year results' })).toContainText(/\$1\.\d\dM/)
   await page.screenshot({ path: 'test-results/dark.png' })
   await page.reload()

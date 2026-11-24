@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
 import { installFsaMock, readDisk } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 // A lighter run for tests: 600 paths.
 const full = readFileSync(new URL('../fixtures/full.yaml', import.meta.url), 'utf8').replace(
@@ -12,7 +13,7 @@ async function openConsole(page: Page) {
   await installFsaMock(page, { 'full.yaml': full })
   await page.goto('/?poolSize=3')
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Console' }).click()
+  await openPage(page, 'Retiring Years', 'Console')
   await expect(page.getByTestId('recommendation')).toContainText('Claim at', { timeout: 30_000 })
 }
 
@@ -64,14 +65,14 @@ test('the claim-age lever inspects another date', async ({ page }) => {
 
 test('add a Setup field to the Console', async ({ page }) => {
   await openConsole(page)
-  await page.getByRole('tab', { name: 'Setup' }).click()
+  await openPage(page, 'Retiring Years', 'Setup')
   await page
     .getByRole('navigation', { name: 'Setup sections' })
     .getByRole('button', { name: /^Assumptions/ })
     .click()
   await page.getByLabel("Heirs' tax rate on IRAs").click({ button: 'right' })
   await page.getByRole('menuitem', { name: 'Add to Console' }).click()
-  await page.getByRole('tab', { name: 'Console' }).click()
+  await openPage(page, 'Retiring Years', 'Console')
   await expect(page.getByText('Added from Setup')).toBeVisible()
   await expect(page.getByRole('slider', { name: "Heirs' tax rate on IRAs" })).toBeVisible()
   await page.getByRole('button', { name: "Remove Heirs' tax rate on IRAs from Console" }).click()

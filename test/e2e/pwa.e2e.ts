@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { installFsaMock } from './fsaMock.ts'
+import { openPage } from './nav.ts'
 
 // Installable, offline-capable app [NFR-ARCH-7, FR-FILE-9].
 
@@ -37,9 +38,9 @@ test('runs offline once loaded', async ({ page, context }) => {
 
   await context.setOffline(true)
   await page.reload()
-  await expect(page.getByRole('heading', { name: /Social Security Claiming Model/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Home', level: 2 })).toBeVisible()
   // Opening a household and running the Monte Carlo needs the engine worker chunk, which must come from the cache.
   await page.getByRole('button', { name: 'Open…' }).click()
-  await page.getByRole('tab', { name: 'Console' }).click()
+  await openPage(page, 'Retiring Years', 'Console')
   await expect(page.getByTestId('recommendation')).toContainText('Claim at', { timeout: 30_000 })
 })
