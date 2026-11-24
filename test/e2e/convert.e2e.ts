@@ -28,6 +28,8 @@ test('a Checquery file converts to a new .plens file with matching statements; t
   await expect(page.getByText('That password is not right. Try again.')).toBeVisible()
   await page.getByLabel('Password').fill(password)
   await page.getByRole('button', { name: 'Open' }).click()
+  // The save picker opens from a dialog button: the browser needs a fresh click after the conversion.
+  await page.getByRole('button', { name: 'Save as…' }).click()
 
   // The new file gets a recovery key of its own.
   await expect(page.getByTestId('recovery-words').locator('li')).toHaveCount(24)

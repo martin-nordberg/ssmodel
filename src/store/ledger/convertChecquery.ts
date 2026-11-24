@@ -7,7 +7,7 @@ import type { PayloadCodec } from '@/store/actionLog/encryption/PayloadCodec.ts'
 import { PlaintextCodec } from '@/store/actionLog/encryption/PlaintextCodec.ts'
 import { setMetaValue } from '@/store/actionLog/meta.ts'
 import { runAllMigrations, runMigrations } from '@/store/actionLog/migrations/runMigrations.ts'
-import type { DbDriver } from '@/store/driver/DbDriver.ts'
+import { type DbDriver, exclusiveAsyncTransaction } from '@/store/driver/DbDriver.ts'
 import { LedgerStore } from '@/store/ledger/LedgerStore.ts'
 import { bootstrapOrigin, inspectLedgerFile, LedgerFileError, type OpenedLedger } from '@/store/ledger/ledgerFile.ts'
 import { MaterializedStore } from '@/store/materialized/MaterializedStore.ts'
@@ -70,12 +70,17 @@ export async function convertChecquery(
     setMetaValue(dst, 'encrypted', 'false')
   }
   const target = await ActionLog.open(dst, codec, nodeId)
-  let actions = 0
-  for await (const action of source.readActions()) {
-    // The payload carries its hlc, so the copy keeps the original order and timestamps.
-    await target.appendAction(action.actionType, action.payload as { id: string })
-    actions++
-  }
+  // One transaction for the whole copy: committed per action, an OPFS working copy syncs each time (about 20 s
+  // for the household's file instead of about 1 s). Nothing else writes to the new file meanwhile.
+  const actions = await exclusiveAsyncTransaction(dst, async () => {
+    let n = 0
+    for await (const action of source.readActions()) {
+      // The payload carries its hlc, so the copy keeps the original order and timestamps.
+      await target.appendAction(action.actionType, action.payload as { id: string })
+      n++
+    }
+    return n
+  })
   const store = await LedgerStore.open(target, new MaterializedStore(memory))
   const origId = await bootstrapOrigin(store, opts.deviceName)
   return { store, origId, fileId, encrypted: newPassword !== undefined, codec, recoveryWords, actions }

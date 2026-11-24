@@ -544,6 +544,7 @@ export async function convertChecqueryFile(): Promise<void> {
         error,
       })
       if (answer === null || 'recoveryWords' in answer) return
+      const busy = toast.loading(`Converting ${source.name}…`)
       try {
         opened = await client.request('convertChecquery', {
           bytes: bytes.slice(),
@@ -553,9 +554,19 @@ export async function convertChecqueryFile(): Promise<void> {
       } catch (err) {
         if (!(err instanceof StoreError && err.code === 'wrong-password')) throw err
         error = 'That password is not right. Try again.'
+      } finally {
+        toast.dismiss(busy)
       }
     }
-    const target = await pickPlensToSave(`${baseName}.plens`)
+    // The browser shows a file picker only right after a click, and the conversion takes a while, so the picker
+    // opens from this dialog's button.
+    const save = await ask<Extract<Prompt, { kind: 'confirm' }>>({
+      kind: 'confirm',
+      title: `Save the converted file`,
+      description: `${source.name} is converted (and unchanged). Choose where to save the new ProvisionLens file.`,
+      action: 'Save as…',
+    })
+    const target = save ? await pickPlensToSave(`${baseName}.plens`) : null
     if (!target) {
       await client.request('close', { keepWorkingCopy: false })
       return
