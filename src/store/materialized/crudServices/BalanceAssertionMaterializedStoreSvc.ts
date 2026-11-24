@@ -40,9 +40,11 @@ export class BalanceAssertionMaterializedStoreSvc implements IBalanceAssertionSv
   async createBalanceAssertion(
     assertionCreation: BalanceAssertionCreationEvent,
   ): Promise<BalanceAssertionCreationEvent | null> {
-    this.db.run(
+    // Creating a deleted id restores it (the undo of a delete); creating a live id is an error.
+    const { changes } = this.db.run(
       `INSERT INTO balance_assertions (id, orig_id, acct_id, assertion_date, balance_cents)
-             VALUES (?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT (id) DO UPDATE SET orig_id = excluded.orig_id, acct_id = excluded.acct_id, assertion_date = excluded.assertion_date, balance_cents = excluded.balance_cents, is_deleted = 0 WHERE balance_assertions.is_deleted = 1`,
       [
         assertionCreation.id,
         assertionCreation.origId,
@@ -51,6 +53,7 @@ export class BalanceAssertionMaterializedStoreSvc implements IBalanceAssertionSv
         assertionCreation.balance,
       ],
     )
+    if (changes === 0) throw new Error(`createBalanceAssertion: id ${assertionCreation.id} already exists`)
     return assertionCreation
   }
 

@@ -36,9 +36,11 @@ export class VendorMaterializedStoreSvc implements IVendorSvc {
   }
 
   async createVendor(vendorCreation: VendorCreationEvent): Promise<VendorCreationEvent | null> {
-    this.db.run(
+    // Creating a deleted id restores it (the undo of a delete); creating a live id is an error.
+    const { changes } = this.db.run(
       `INSERT INTO vendors (id, orig_id, name, description, default_acct_id, is_active)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT (id) DO UPDATE SET orig_id = excluded.orig_id, name = excluded.name, description = excluded.description, default_acct_id = excluded.default_acct_id, is_active = excluded.is_active, is_deleted = 0 WHERE vendors.is_deleted = 1`,
       [
         vendorCreation.id,
         vendorCreation.origId,
@@ -48,6 +50,7 @@ export class VendorMaterializedStoreSvc implements IVendorSvc {
         vendorCreation.isActive ? 1 : 0,
       ],
     )
+    if (changes === 0) throw new Error(`createVendor: id ${vendorCreation.id} already exists`)
     return vendorCreation
   }
 

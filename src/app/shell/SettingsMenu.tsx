@@ -54,6 +54,11 @@ export function SettingsMenu() {
           ['full', '$1,234,567'],
           ['compact', '$1.23M'],
         ])}
+        <DropdownMenuSeparator />
+        {group('ledgerView', 'Registers', [
+          ['plain', 'Plain (spent, received)'],
+          ['accounting', 'Accounting (debit, credit)'],
+        ])}
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -87,9 +87,11 @@ export class TransactionMaterializedStoreSvc implements ITransactionSvc {
 
   async createTransaction(transactionCreation: TransactionCreationEvent): Promise<TransactionCreationEvent | null> {
     const clearedDate = normalizeClearedDate(transactionCreation.postDate, transactionCreation.clearedDate)
-    this.db.run(
+    // Creating a deleted id restores it (the undo of a delete); creating a live id is an error.
+    const { changes } = this.db.run(
       `INSERT INTO transactions (id, orig_id, post_date, cleared_date, code, vndr_id, description, needs_review)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT (id) DO UPDATE SET orig_id = excluded.orig_id, post_date = excluded.post_date, cleared_date = excluded.cleared_date, code = excluded.code, vndr_id = excluded.vndr_id, description = excluded.description, needs_review = excluded.needs_review, is_deleted = 0 WHERE transactions.is_deleted = 1`,
       [
         transactionCreation.id,
         transactionCreation.origId,
@@ -101,6 +103,9 @@ export class TransactionMaterializedStoreSvc implements ITransactionSvc {
         transactionCreation.needsReview ? 1 : 0,
       ],
     )
+    if (changes === 0) throw new Error(`createTransaction: id ${transactionCreation.id} already exists`)
+    // A restored transaction gets its entries back as given.
+    this.db.run(`DELETE FROM entries WHERE transaction_id = ?`, [transactionCreation.id])
     this.insertEntries(transactionCreation.id, transactionCreation.entries)
     return transactionCreation
   }

@@ -8,6 +8,8 @@ export type Settings = {
   numberFormat: 'compact' | 'full'
   /** The device/user name stamped on every ledger change made here [FR-LED-4]. */
   deviceName: string
+  /** Registers in plain words (spent, received; the default) or as debits and credits [FR-HLP-6, D: OQ-HLP-6]. */
+  ledgerView: 'plain' | 'accounting'
 }
 
 const KEY = 'ssmodel.settings'
@@ -17,6 +19,7 @@ const defaults: Settings = {
   density: 'compact',
   numberFormat: 'full',
   deviceName: 'This device',
+  ledgerView: 'plain',
 }
 
 function load(): Settings {

@@ -46,9 +46,11 @@ export class AccountMaterializedStoreSvc implements IAccountSvc {
   }
 
   async createAccount(account: AccountCreationEvent): Promise<AccountCreationEvent | null> {
-    this.db.run(
+    // Creating a deleted id restores it (the undo of a delete); creating a live id is an error.
+    const { changes } = this.db.run(
       `INSERT INTO accounts (id, orig_id, parent_ctg_id, acct_type, name, description, is_primary)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT (id) DO UPDATE SET orig_id = excluded.orig_id, parent_ctg_id = excluded.parent_ctg_id, acct_type = excluded.acct_type, name = excluded.name, description = excluded.description, is_primary = excluded.is_primary, is_deleted = 0 WHERE accounts.is_deleted = 1`,
       [
         account.id,
         account.origId,
@@ -59,6 +61,7 @@ export class AccountMaterializedStoreSvc implements IAccountSvc {
         account.isPrimary ? 1 : 0,
       ],
     )
+    if (changes === 0) throw new Error(`createAccount: an account with id ${account.id} already exists`)
     return account
   }
 

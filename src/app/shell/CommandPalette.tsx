@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/command'
 import { pinBaseline, useConsole } from '@/state/consoleStore.ts'
 import { useDocument } from '@/state/documentStore.ts'
+import { redoLedger, undoLedger, useLedgerUndo } from '@/state/ledgerUndo.ts'
 import { useSettings } from '@/state/settingsStore.ts'
 import { useUi } from '@/state/uiStore.ts'
 
@@ -76,6 +77,12 @@ function useGroups(hasFile: boolean): { heading: string; items: Cmd[]; always?: 
   const ui = useUi.getState
   const doc = useDocument.getState
   const active = scenarios.find((s) => s.id === activeId)
+
+  const canUndoLedger = useLedgerUndo((s) => s.undo.length > 0)
+  const canRedoLedger = useLedgerUndo((s) => s.redo.length > 0)
+  const ledger: Cmd[] = []
+  if (canUndoLedger) ledger.push({ id: 'undo-ledger', label: 'Undo ledger change', run: () => void undoLedger() })
+  if (canRedoLedger) ledger.push({ id: 'redo-ledger', label: 'Redo ledger change', run: () => void redoLedger() })
 
   const edit: Cmd[] = []
   if (canUndo) edit.push({ id: 'undo', label: 'Undo', shortcut: 'Ctrl+Z', run: () => doc().undo() })
@@ -147,6 +154,7 @@ function useGroups(hasFile: boolean): { heading: string; items: Cmd[]; always?: 
     },
     { heading: 'Console', items: consoleCmds },
     { heading: 'Edit', items: edit },
+    { heading: 'Ledger', items: ledger, always: true },
     {
       heading: 'Display',
       always: true,

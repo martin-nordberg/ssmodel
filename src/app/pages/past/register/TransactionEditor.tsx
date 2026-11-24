@@ -14,7 +14,8 @@ import type { Transaction } from '@/ledger/transactions/Transaction.ts'
 import { genTxnId } from '@/ledger/transactions/TxnId.ts'
 import type { Vendor } from '@/ledger/vendors/Vendor.ts'
 import { formatCents } from '@/lib/format.ts'
-import { AmountField, amountLabels, DateField, ListField, TextField } from './registerFields.tsx'
+import { useSettings } from '@/state/settingsStore.ts'
+import { AmountField, amountLabelsFor, DateField, ListField, TextField } from './registerFields.tsx'
 
 // The register's row editor [FR-LED-3, FR-UI-31]: keyboard-first, in tab order (date, cleared, code, vendor,
 // description, account or split lines, amounts, review). Enter saves; Escape cancels. A vendor fills in its default
@@ -44,7 +45,8 @@ let nextKey = 1
 
 export function TransactionEditor(props: EditorProps) {
   const { acctId, acctType, txn, accounts, categories, vendors, defaultDate, onSaved, onCancel } = props
-  const labels = amountLabels[acctType]
+  const ledgerView = useSettings((st) => st.ledgerView)
+  const labels = amountLabelsFor(acctType, ledgerView)
   const pathOf = useMemo(() => {
     const m = new Map(accounts.map((a) => [a.id as string, accountFullPath(a, categories)]))
     return (id: string) => m.get(id) ?? ''

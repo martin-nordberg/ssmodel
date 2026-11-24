@@ -43,9 +43,11 @@ export class AccountCategoryMaterializedStoreSvc implements IAccountCategorySvc 
   }
 
   async createAccountCategory(category: AccountCategoryCreationEvent): Promise<AccountCategoryCreationEvent | null> {
-    this.db.run(
+    // Creating a deleted id restores it (the undo of a delete); creating a live id is an error.
+    const { changes } = this.db.run(
       `INSERT INTO account_categories (id, orig_id, parent_ctg_id, acct_type, name, description)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT (id) DO UPDATE SET orig_id = excluded.orig_id, parent_ctg_id = excluded.parent_ctg_id, acct_type = excluded.acct_type, name = excluded.name, description = excluded.description, is_deleted = 0 WHERE account_categories.is_deleted = 1`,
       [
         category.id,
         category.origId,
@@ -55,6 +57,7 @@ export class AccountCategoryMaterializedStoreSvc implements IAccountCategorySvc 
         category.description,
       ],
     )
+    if (changes === 0) throw new Error(`createAccountCategory: id ${category.id} already exists`)
     return category
   }
 

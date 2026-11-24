@@ -9,16 +9,27 @@ import { cn } from '@/lib/utils'
 // Inputs for the register's row editor [FR-UI-31]: dates with shortcut keys, amounts with the inline calculator,
 // and pickers that autocomplete from a list (accounts, vendors).
 
+type AmountLabels = { decrease: string; increase: string; order: ('decrease' | 'increase')[] }
+
 /** The register's two amount columns in the plain view [FR-HLP-6]: labels for a decrease and an increase. */
-export const amountLabels: Record<
-  AcctTypeStr,
-  { decrease: string; increase: string; order: ('decrease' | 'increase')[] }
-> = {
+export const amountLabels: Record<AcctTypeStr, AmountLabels> = {
   ASSET: { decrease: 'Payment', increase: 'Deposit', order: ['decrease', 'increase'] },
   LIABILITY: { decrease: 'Payment', increase: 'Charge', order: ['increase', 'decrease'] },
   INCOME: { decrease: 'Refund', increase: 'Received', order: ['increase', 'decrease'] },
   EXPENSE: { decrease: 'Refund', increase: 'Spent', order: ['increase', 'decrease'] },
   EQUITY: { decrease: 'Decrease', increase: 'Increase', order: ['decrease', 'increase'] },
+}
+
+/**
+ * The amount columns for a view [FR-HLP-6, D: OQ-HLP-6]: plain words by default, or debits and credits (a debit
+ * increases assets and expenses; a credit increases liabilities and income).
+ */
+export function amountLabelsFor(acctType: AcctTypeStr, view: 'plain' | 'accounting'): AmountLabels {
+  if (view === 'plain') return amountLabels[acctType]
+  const debitIncreases = acctType === 'ASSET' || acctType === 'EXPENSE'
+  return debitIncreases
+    ? { increase: 'Debit', decrease: 'Credit', order: ['increase', 'decrease'] }
+    : { increase: 'Credit', decrease: 'Debit', order: ['decrease', 'increase'] }
 }
 
 const inputClass =

@@ -14,11 +14,13 @@ import type { Transaction } from '@/ledger/transactions/Transaction.ts'
 import { todayIso } from '@/lib/dateShortcuts.ts'
 import { formatCents, formatDate } from '@/lib/format.ts'
 import { cn } from '@/lib/utils'
+import { redoLedger, undoLedger, useLedgerUndo } from '@/state/ledgerUndo.ts'
+import { useSettings } from '@/state/settingsStore.ts'
 import { getStoreClient, useStoreQuery } from '@/state/storeClient.ts'
 import { NoPlensFile } from '../../home/NoPlensFile.tsx'
 import { PageHeader } from '../../PageHeader.tsx'
 import { BalanceCheckEditor } from './BalanceCheckEditor.tsx'
-import { amountCell, amountLabels } from './registerFields.tsx'
+import { amountCell, amountLabelsFor } from './registerFields.tsx'
 import { TransactionEditor } from './TransactionEditor.tsx'
 
 // An account's register [FR-LED-3, FR-UI-31, D: OQ-UI-13]: a keyboard-first transaction grid with a running balance,
@@ -135,7 +137,8 @@ function RegisterGrid({
   vendors: Parameters<typeof TransactionEditor>[0]['vendors']
   editable: boolean
 }) {
-  const labels = amountLabels[acctType]
+  const ledgerView = useSettings((st) => st.ledgerView)
+  const labels = amountLabelsFor(acctType, ledgerView)
   const [active, setActive] = useState(0)
   const [editing, setEditing] = useState<Editing>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -286,6 +289,7 @@ function RegisterGrid({
               Add balance check
             </Button>
           )}
+          <UndoButtons />
           <span className="text-muted-foreground text-xs">
             On the list: ↑ ↓ move · Enter edit · N or Insert new · Delete remove{hasBalance ? ' · B balance check' : ''}
           </span>
@@ -459,5 +463,21 @@ function RegisterGrid({
       }
       footer={<span>{txnRows.length} transactions</span>}
     />
+  )
+}
+
+/** Undo and redo for ledger changes made in this session (also Ctrl+Z and Ctrl+Shift+Z) (plan P2.7). */
+function UndoButtons() {
+  const canUndo = useLedgerUndo((s) => s.undo.length > 0)
+  const canRedo = useLedgerUndo((s) => s.redo.length > 0)
+  return (
+    <>
+      <Button size="sm" variant="ghost" disabled={!canUndo} onClick={() => void undoLedger()}>
+        Undo
+      </Button>
+      <Button size="sm" variant="ghost" disabled={!canRedo} onClick={() => void redoLedger()}>
+        Redo
+      </Button>
+    </>
   )
 }

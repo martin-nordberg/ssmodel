@@ -1,11 +1,18 @@
 import { useEffect } from 'react'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
+import { router } from '@/app/routes.tsx'
 import { useDocument } from '@/state/documentStore.ts'
+import { redoLedger, undoLedger } from '@/state/ledgerUndo.ts'
 import { useUi } from '@/state/uiStore.ts'
 
 function inTextField(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+}
+
+/** Pages whose Ctrl+Z undoes ledger changes. */
+export function isLedgerPage(pathname: string): boolean {
+  return pathname.startsWith('/past') || pathname.startsWith('/setup/accounts') || pathname.startsWith('/setup/vendors')
 }
 
 /** Global keyboard shortcuts [FR-FILE-1, FR-UI-12, FR-UI-13]. Browsers reserve Ctrl+N, so New is Ctrl+Alt+N. */
@@ -30,9 +37,14 @@ export function useShortcuts() {
         cmd.newHousehold()
       } else if ((key === 'z' || key === 'y') && !inTextField(e.target)) {
         e.preventDefault()
-        const doc = useDocument.getState()
-        if (key === 'y' || e.shiftKey) doc.redo()
-        else doc.undo()
+        const redo = key === 'y' || e.shiftKey
+        // Ledger pages undo ledger changes (plan P2.7); the retirement model's pages undo household edits.
+        if (isLedgerPage(router.state.location.pathname)) void (redo ? redoLedger() : undoLedger())
+        else {
+          const doc = useDocument.getState()
+          if (redo) doc.redo()
+          else doc.undo()
+        }
       }
     }
     window.addEventListener('keydown', onKey)
