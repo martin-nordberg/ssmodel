@@ -1,5 +1,7 @@
-import { createHashHistory, createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
+import { parseHref } from '@tanstack/history'
+import { createBrowserHistory, createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
 import { AppShell } from '@/app/shell/AppShell.tsx'
+import { periodRegex } from '@/ledger/core/Period.ts'
 import { AboutPage } from './pages/help/AboutPage.tsx'
 import { HelpPage } from './pages/help/HelpPage.tsx'
 import { TemplateGalleryPage } from './pages/help/TemplateGalleryPage.tsx'
@@ -8,6 +10,7 @@ import { BalanceChecksPage, LogsPage } from './pages/past/LogsPage.tsx'
 import { PastPage } from './pages/past/PastPage.tsx'
 import { RegistersPage } from './pages/past/RegistersPage.tsx'
 import { RegisterPage } from './pages/past/register/RegisterPage.tsx'
+import { BalanceSheetPage, defaultPeriod, IncomeStatementPage } from './pages/past/statements/StatementsPages.tsx'
 import { SectionPlaceholder } from './pages/placeholder/SectionPlaceholder.tsx'
 import { RetiringLayout, RetiringView } from './pages/retiring/RetiringLayout.tsx'
 import { AccountsPage, type EditableType, editableTypes } from './pages/setup/accounts/AccountsPage.tsx'
@@ -38,6 +41,26 @@ const expenseLogRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'past/expense-log',
   component: () => <LogsPage type="EXPENSE" />,
+})
+/** A report period from the address; a bare year arrives as a number (search params are JSON). */
+const period = (search: Record<string, unknown>) => {
+  const raw = typeof search.period === 'number' ? String(search.period) : search.period
+  return typeof raw === 'string' && periodRegex.test(raw) ? raw : defaultPeriod()
+}
+const balanceSheetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'past/balance-sheet',
+  component: BalanceSheetPage,
+  validateSearch: (search: Record<string, unknown>): { period: string } => ({ period: period(search) }),
+})
+const incomeStatementRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'past/income-statement',
+  component: IncomeStatementPage,
+  validateSearch: (search: Record<string, unknown>): { period: string; view: 'summary' | 'details' } => ({
+    period: period(search),
+    view: search.view === 'details' ? 'details' : 'summary',
+  }),
 })
 const balanceChecksRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -102,6 +125,8 @@ const routeTree = rootRoute.addChildren([
   incomeLogRoute,
   expenseLogRoute,
   balanceChecksRoute,
+  balanceSheetRoute,
+  incomeStatementRoute,
   registerRoute,
   placeholder('this-year', 'thisYear'),
   placeholder('next-year', 'nextYear'),
@@ -123,7 +148,24 @@ const routeTree = rootRoute.addChildren([
   galleryRoute,
 ])
 
-export const router = createRouter({ routeTree, history: createHashHistory(), defaultPreload: false })
+/**
+ * Hash history whose route (path and search) lives entirely in the hash. TanStack's createHashHistory also appends
+ * the page's real query string to the route, which corrupts a route's own search params whenever the page has one
+ * (the e2e and debug flags, such as ?e2e).
+ */
+function hashHistory() {
+  return createBrowserHistory({
+    parseLocation: () => {
+      const hash = window.location.hash
+      let end = hash.indexOf('#', 1)
+      if (end < 0) end = hash.length
+      return parseHref(`${hash ? hash.slice(1, end) : '/'}${hash.slice(end)}`, window.history.state)
+    },
+    createHref: (href) => `${window.location.pathname}${window.location.search}#${href}`,
+  })
+}
+
+export const router = createRouter({ routeTree, history: hashHistory(), defaultPreload: false })
 
 declare module '@tanstack/react-router' {
   interface Register {

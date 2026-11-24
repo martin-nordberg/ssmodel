@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router'
 import { ChevronRight } from 'lucide-react'
 
 // Breadcrumbs only as a trail for drill-downs, e.g. "Past › Income Statement 2026 › Groceries › Register"
@@ -16,9 +15,10 @@ export function Breadcrumbs({ trail, current }: { trail: Crumb[]; current: strin
       <ol className="flex flex-wrap items-center gap-1">
         {trail.map((c) => (
           <li key={c.href} className="flex items-center gap-1">
-            <Link to={c.href as '/'} className="hover:text-foreground hover:underline">
+            {/* A hash link, so the trail can carry each page's search params. */}
+            <a href={`#${c.href}`} className="hover:text-foreground hover:underline">
               {c.label}
-            </Link>
+            </a>
             <ChevronRight className="size-3" aria-hidden />
           </li>
         ))}

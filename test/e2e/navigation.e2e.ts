@@ -53,6 +53,9 @@ test('back, forward and reload keep the page', async ({ page }) => {
 })
 
 test('a page opens directly from its address, and the palette lists every page', async ({ page }) => {
+  // The route's own search params survive a page query string (such as the test flag ?e2e).
+  await page.goto('/?e2e#/past/balance-sheet?period=2026-01')
+  await expect(page).toHaveURL(/#\/past\/balance-sheet\?period=2026-01$/)
   await page.goto('/#/help/about')
   await expect(page.getByRole('heading', { name: 'About ProvisionLens' })).toBeVisible()
   await page.keyboard.press('Control+k')

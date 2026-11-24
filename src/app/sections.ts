@@ -36,6 +36,8 @@ export const sections: SectionDef[] = [
       { label: 'Registers', to: '/past/registers', description: 'Every account’s transactions, by search or list.' },
       { label: 'Income Log', to: '/past/income-log', description: 'Each income account’s transactions.' },
       { label: 'Expense Log', to: '/past/expense-log', description: 'Each expense account’s transactions.' },
+      { label: 'Balance Sheet', to: '/past/balance-sheet', description: 'What you own and owe, and net worth.' },
+      { label: 'Income Statement', to: '/past/income-statement', description: 'Income and spending for a period.' },
       {
         label: 'Balance checks',
         to: '/past/balance-checks',
