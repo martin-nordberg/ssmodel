@@ -75,6 +75,10 @@ export class TransactionTeeSvc implements ITransactionSvc {
     return this.qrySvc.findTransactionsForPeriod(startDate, endDate)
   }
 
+  async searchTransactions(text: string, cents: number | null, limit: number): Promise<Transaction[]> {
+    return this.qrySvc.searchTransactions(text, cents, limit)
+  }
+
   /** Updates a transaction's attributes. */
   async patchTransaction(transactionPatch: TransactionPatchEvent): Promise<TransactionPatchEvent | null> {
     let result: TransactionPatchEvent | null = transactionPatch

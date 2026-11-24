@@ -286,4 +286,23 @@ export class TransactionMaterializedStoreSvc implements ITransactionSvc {
     ) as TransactionRow[]
     return rows.map((row) => this.hydrate(row))
   }
+
+  /** See ITransactionQrySvc.searchTransactions [FR-UI-26]. */
+  async searchTransactions(text: string, cents: number | null, limit: number): Promise<Transaction[]> {
+    const pattern = `%${text.trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+    const hasText = text.trim().length > 0
+    const rows = this.db.all(
+      `SELECT * FROM transactions t
+       WHERE t.is_deleted = 0 AND (
+         (? AND (t.description LIKE ? ESCAPE '\\' OR t.code LIKE ? ESCAPE '\\'
+                 OR EXISTS (SELECT 1 FROM vendors v WHERE v.id = t.vndr_id AND v.name LIKE ? ESCAPE '\\')))
+         OR (? IS NOT NULL AND EXISTS (SELECT 1 FROM entries e WHERE e.transaction_id = t.id
+                                       AND (e.debit_cents = ? OR e.credit_cents = ?)))
+       )
+       ORDER BY t.post_date DESC, t.rowid DESC
+       LIMIT ?`,
+      [hasText ? 1 : 0, pattern, pattern, pattern, cents, cents, cents, limit],
+    ) as TransactionRow[]
+    return rows.map((row) => this.hydrate(row))
+  }
 }

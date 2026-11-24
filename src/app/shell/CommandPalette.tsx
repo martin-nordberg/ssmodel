@@ -1,5 +1,7 @@
 // Command palette [FR-UI-12]: Ctrl/Cmd+K opens a searchable list of file, view, scenario, Setup-panel, Console and
 // display commands. Commands are built from the stores, so the list always matches the current document.
+import { useState } from 'react'
+import { usePlensFile } from '@/app/files/plensFile.ts'
 import { useFileCommands } from '@/app/files/useFileCommands.ts'
 import { router } from '@/app/routes.tsx'
 import { sections } from '@/app/sections.ts'
@@ -19,6 +21,7 @@ import { useDocument } from '@/state/documentStore.ts'
 import { redoLedger, undoLedger, useLedgerUndo } from '@/state/ledgerUndo.ts'
 import { useSettings } from '@/state/settingsStore.ts'
 import { useUi } from '@/state/uiStore.ts'
+import { PaletteSearch } from './PaletteSearch.tsx'
 
 // A stable empty list: a selector that returns a new [] on each read re-renders forever.
 const NO_SCENARIOS: never[] = []
@@ -32,12 +35,28 @@ export function CommandPalette() {
   const setOpen = useUi((s) => s.setPaletteOpen)
   const hasFile = useDocument((s) => s.file !== null)
   const groups = useGroups(hasFile)
+  const hasPlens = usePlensFile((s) => s.file !== null)
+  const [query, setQuery] = useState('')
   return (
-    <CommandDialog open={open} onOpenChange={setOpen} title="Command palette" description="Search for a command">
+    <CommandDialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o)
+        if (!o) setQuery('')
+      }}
+      title="Command palette"
+      description="Search for a command"
+    >
       <Command>
-        <CommandInput placeholder="Type a command or search…" />
+        <CommandInput
+          placeholder="Type a command, or search accounts, vendors and transactions…"
+          value={query}
+          onValueChange={setQuery}
+        />
         <CommandList>
           <CommandEmpty>No matching command.</CommandEmpty>
+          {/* Ledger search [FR-UI-26]: accounts, categories, vendors, and transactions by text or amount. */}
+          {hasPlens && <PaletteSearch query={query} onDone={() => setOpen(false)} />}
           {groups
             .filter((g) => g.items.length > 0 && (hasFile || g.always))
             .map((g) => (

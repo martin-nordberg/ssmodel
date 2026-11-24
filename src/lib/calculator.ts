@@ -97,3 +97,10 @@ export function amountToCents(text: string): { cents: number } | { error: string
     return { error: (err as Error).message }
   }
 }
+
+/** The amount a search could mean, in cents, or null when the text isn't a number ("45.50", "$1,200"). */
+export function searchAmount(text: string): number | null {
+  if (!/\d/.test(text) || !/^[\s$\d.,]+$/.test(text)) return null
+  const result = amountToCents(text)
+  return 'cents' in result && result.cents > 0 ? result.cents : null
+}

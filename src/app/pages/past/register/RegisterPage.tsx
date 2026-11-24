@@ -45,7 +45,7 @@ const NONE: never[] = []
 
 function Register() {
   const { acctId } = useParams({ from: '/past/register/$acctId' })
-  const { trail } = useSearch({ from: '/past/register/$acctId' })
+  const { trail, select } = useSearch({ from: '/past/register/$acctId' })
   const client = getStoreClient()
   const accounts = useAccounts()
   const categories = useCategories()
@@ -101,6 +101,7 @@ function Register() {
         acctId={acctId}
         acctType={account.acctType}
         rows={rows}
+        select={select}
         hasBalance={hasBalance}
         accounts={accounts}
         categories={categories}
@@ -122,6 +123,7 @@ function RegisterGrid({
   acctId,
   acctType,
   rows,
+  select,
   hasBalance,
   accounts,
   categories,
@@ -131,6 +133,8 @@ function RegisterGrid({
   acctId: string
   acctType: Parameters<typeof TransactionEditor>[0]['acctType']
   rows: RegisterRow[]
+  /** A transaction to select when it appears (from a search result). */
+  select?: string
   hasBalance: boolean
   accounts: Parameters<typeof TransactionEditor>[0]['accounts']
   categories: Parameters<typeof TransactionEditor>[0]['categories']
@@ -149,6 +153,20 @@ function RegisterGrid({
   useEffect(() => {
     if (active >= rows.length && rows.length > 0) setActive(rows.length - 1)
   }, [rows.length, active])
+
+  // Select the transaction a search result pointed at, once, and put the keyboard on the list.
+  const [selected, setSelected] = useState<string | undefined>(undefined)
+  useEffect(() => {
+    if (!select || select === selected) return
+    const index = rows.findIndex((r) => r.kind === 'transaction' && r.line.txn.id === select)
+    if (index < 0) return
+    setSelected(select)
+    setActive(index)
+    setTimeout(() => {
+      gridRef.current?.focus()
+      document.getElementById(`register-row-${index}`)?.scrollIntoView({ block: 'nearest' })
+    }, 0)
+  }, [select, selected, rows])
 
   const columns = useMemo<ColumnDef<RegisterRow>[]>(
     () => [

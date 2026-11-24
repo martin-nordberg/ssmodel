@@ -37,4 +37,8 @@ export interface ITransactionQrySvc {
    *  resolves vendor labels. Unscoped by which accounts a transaction touches (same reasoning as
    *  findTransactionsByAccount). */
   findTransactionsForPeriod(startDate: IsoDate, endDate: IsoDate): Promise<Transaction[]>
+
+  /** Live transactions whose description, code or vendor name contains `text` (ignoring case), or with an entry of
+   *  exactly `cents`, newest first, at most `limit` [FR-UI-26]. */
+  searchTransactions(text: string, cents: number | null, limit: number): Promise<Transaction[]>
 }

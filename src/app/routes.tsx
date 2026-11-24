@@ -76,7 +76,11 @@ const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'past/register/$acctId',
   component: RegisterPage,
-  validateSearch: trailSearch,
+  // `select`: a transaction to select (from search results).
+  validateSearch: (search: Record<string, unknown>): { trail?: Crumb[]; select?: string } => ({
+    ...trailSearch(search),
+    ...(typeof search.select === 'string' ? { select: search.select } : {}),
+  }),
 })
 
 const placeholder = (path: string, id: Parameters<typeof SectionPlaceholder>[0]['section']) =>
